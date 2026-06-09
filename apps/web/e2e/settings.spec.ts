@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("сохранение интеграций переживает перезагрузку", async ({ page }) => {
-  await page.goto("/settings");
+  await page.goto("/settings?tab=integrations");
   await page.getByLabel("TMDb API ключ").fill("test-tmdb-key");
   await page.getByLabel("Jackett URL").fill("http://192.168.1.50:9117");
   await page.getByLabel("Jackett API ключ").fill("test-jackett-key");

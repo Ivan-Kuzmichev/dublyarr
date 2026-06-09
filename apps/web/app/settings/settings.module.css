@@ -34,3 +34,50 @@
 
 .ok { color: var(--ok); font-size: 13px; margin: 0; }
 .muted { color: var(--text-muted); font-size: 13px; margin: 0; }
+
+.tabs {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 16px;
+  overflow-x: auto;
+}
+
+.tab,
+.tabActive {
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  white-space: nowrap;
+  color: var(--text-2);
+  border: 1px solid var(--border);
+}
+
+.tabActive {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.presetList { display: flex; flex-direction: column; gap: 14px; max-width: 520px; }
+
+.qualityGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 14px;
+  font-size: 13px;
+}
+
+.qualityGrid label { display: flex; gap: 6px; align-items: center; }
+
+.field select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 9px 12px;
+  font-size: 14px;
+}
+
+.inline { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--text-2); }
+
+.err { color: #e05c5c; font-size: 13px; margin: 0; }
