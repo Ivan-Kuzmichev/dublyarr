@@ -1,0 +1,62 @@
+.top {
+  display: none;
+  align-items: center;
+  gap: 22px;
+  padding: 13px 22px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.logo { color: var(--text); font-weight: bold; font-size: 15px; }
+
+.topLinks { display: flex; gap: 22px; flex: 1; }
+
+.topLinks .active {
+  color: var(--text);
+  border-bottom: 2px solid var(--accent);
+  padding-bottom: 2px;
+}
+
+.gear { font-size: 16px; }
+
+.mobileHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 11px 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.tabBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  z-index: 10;
+}
+
+.tabBar a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.tabBar .active { color: var(--accent); }
+.tabIcon { font-size: 17px; }
+
+@media (min-width: 768px) {
+  .top { display: flex; }
+  .mobileHead { display: none; }
+  .tabBar { display: none; }
+}
