@@ -16,13 +16,21 @@ export default async function TitlePage({
 }) {
   const { type, id } = await params;
   if (type !== "movie" && type !== "tv") notFound();
+  const numId = Number(id);
+  if (!Number.isInteger(numId) || numId <= 0) notFound();
   const db = getDb();
   const apiKey = getSetting(db, "tmdb_api_key");
   if (!apiKey) {
     return <p>Укажите TMDb API ключ в <a href="/settings">настройках</a>.</p>;
   }
 
-  const details = await getDetails(type as TmdbType, Number(id), apiKey);
+  let details;
+  try {
+    details = await getDetails(type as TmdbType, numId, apiKey);
+  } catch (e) {
+    if (e instanceof Error && e.message.includes("404")) notFound();
+    throw e;
+  }
   const poster = posterUrl(details.posterPath, 500);
 
   return (
