@@ -88,7 +88,10 @@ export async function searchJackett(
   u.searchParams.set("apikey", apiKey);
   u.searchParams.set("t", "search");
   u.searchParams.set("q", query);
-  const res = await fetch(u, { headers: { Accept: "application/xml" } });
+  const res = await fetch(u, {
+    headers: { Accept: "application/xml" },
+    signal: AbortSignal.timeout(30_000),
+  });
   if (!res.ok) throw new Error(`Jackett ${res.status} ${res.statusText}`);
   return parseTorznabResponse(await res.text());
 }

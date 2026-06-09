@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { getSetting } from "@dublyarr/core/db";
-import { getDetails, posterUrl, type TmdbType } from "@dublyarr/core/tmdb";
+import { TmdbError, getDetails, posterUrl, type TmdbType } from "@dublyarr/core/tmdb";
 import { getDb } from "@/server/db";
 import { Availability } from "./Availability";
 import styles from "./title.module.css";
@@ -28,7 +28,7 @@ export default async function TitlePage({
   try {
     details = await getDetails(type as TmdbType, numId, apiKey);
   } catch (e) {
-    if (e instanceof Error && e.message.includes("404")) notFound();
+    if (e instanceof TmdbError && e.status === 404) notFound();
     throw e;
   }
   const poster = posterUrl(details.posterPath, 500);

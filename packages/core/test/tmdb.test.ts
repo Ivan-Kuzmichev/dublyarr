@@ -1,5 +1,10 @@
-import { describe, expect, test } from "vitest";
-import { normalizeDetails, normalizeSearchResults } from "../src/tmdb.js";
+import { afterEach, describe, expect, test, vi } from "vitest";
+import {
+  TmdbError,
+  normalizeDetails,
+  normalizeSearchResults,
+  searchMulti,
+} from "../src/tmdb.js";
 
 describe("normalizeSearchResults", () => {
   test("фильтрует не-movie/tv, сортирует по популярности, маппит поля", () => {
@@ -52,5 +57,25 @@ describe("normalizeDetails", () => {
       genres: ["Анимация", "Комедия"], imdbId: "tt2861424", tvdbId: 275274,
       posterPath: "/poster.jpg", rating: 8.7,
     });
+  });
+});
+
+describe("TmdbError", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  test("не-2xx ответ → TmdbError со status", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response('{"status_message":"not found"}', {
+          status: 404,
+          statusText: "Not Found",
+        }),
+      ),
+    );
+    const err = await searchMulti("x", "key").catch((e) => e);
+    expect(err).toBeInstanceOf(TmdbError);
+    expect((err as TmdbError).status).toBe(404);
+    expect((err as TmdbError).message).toContain("404");
   });
 });

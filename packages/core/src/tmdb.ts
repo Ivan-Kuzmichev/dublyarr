@@ -2,6 +2,16 @@ const BASE = "https://api.themoviedb.org/3";
 
 export type TmdbType = "movie" | "tv";
 
+export class TmdbError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "TmdbError";
+  }
+}
+
 export interface TmdbSearchResult {
   id: number;
   type: TmdbType;
@@ -30,10 +40,16 @@ async function tmdbGet(path: string, params: Record<string, string>, apiKey: str
   url.searchParams.set("api_key", apiKey);
   url.searchParams.set("language", "ru-RU");
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
-  const res = await fetch(url, { headers: { Accept: "application/json" } });
+  const res = await fetch(url, {
+    headers: { Accept: "application/json" },
+    signal: AbortSignal.timeout(15_000),
+  });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`TMDb ${res.status} ${res.statusText}: ${body.slice(0, 200)}`);
+    throw new TmdbError(
+      res.status,
+      `TMDb ${res.status} ${res.statusText}: ${body.slice(0, 200)}`,
+    );
   }
   return res.json();
 }
