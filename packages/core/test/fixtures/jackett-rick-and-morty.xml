@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:torznab="http://torznab.com/schemas/2015/feed">
   <channel>
-    <atom:link href="http://192.168.1.50:9117/" rel="self" type="application/rss+xml" />
+    <atom:link href="http://jackett.local:9117/" rel="self" type="application/rss+xml" />
     <title>AggregateSearch</title>
     <description>This feed includes all configured trackers</description>
     <link>http://127.0.0.1/</link>
@@ -19,10 +19,10 @@
       <description>Uploader: 
 			ZheGalua
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 7 / Серии: 1-10 из 10 (Уэсли Арчер / Wesley Archer) [2023, США, Мультфильм, комедия, фантастика, WEB-DL 1080p] VO (Сыендук) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVha09Ob1pObjlVWXQ4bG9hTGRnRUcwNFA3X2Rld2s0ZzlLaUswQjdCdTRiQVYxWU5yT2ZqeHd2bXZiTnlVV21rYXdUU002eFZzREZQWXRVaWtqbmNXSFNkTkdlXzVHTzloZ2Y2cG53SU12dnpxUVVkVHpSR09IaDV6Mnc4cFNWLXF2Z3pBRmxiMU1fdzJEWTJaNTJ3VnM&amp;file=Rick+and+Morty+%2F+S7E1-10+of+10+(Wesley+Archer)+%5B2023%2C+WEB-DL+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVha09Ob1pObjlVWXQ4bG9hTGRnRUcwNFA3X2Rld2s0ZzlLaUswQjdCdTRiQVYxWU5yT2ZqeHd2bXZiTnlVV21rYXdUU002eFZzREZQWXRVaWtqbmNXSFNkTkdlXzVHTzloZ2Y2cG53SU12dnpxUVVkVHpSR09IaDV6Mnc4cFNWLXF2Z3pBRmxiMU1fdzJEWTJaNTJ3VnM&amp;file=Rick+and+Morty+%2F+S7E1-10+of+10+(Wesley+Archer)+%5B2023%2C+WEB-DL+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVha09Ob1pObjlVWXQ4bG9hTGRnRUcwNFA3X2Rld2s0ZzlLaUswQjdCdTRiQVYxWU5yT2ZqeHd2bXZiTnlVV21rYXdUU002eFZzREZQWXRVaWtqbmNXSFNkTkdlXzVHTzloZ2Y2cG53SU12dnpxUVVkVHpSR09IaDV6Mnc4cFNWLXF2Z3pBRmxiMU1fdzJEWTJaNTJ3VnM&amp;file=Rick+and+Morty+%2F+S7E1-10+of+10+(Wesley+Archer)+%5B2023%2C+WEB-DL+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="15894550528" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVha09Ob1pObjlVWXQ4bG9hTGRnRUcwNFA3X2Rld2s0ZzlLaUswQjdCdTRiQVYxWU5yT2ZqeHd2bXZiTnlVV21rYXdUU002eFZzREZQWXRVaWtqbmNXSFNkTkdlXzVHTzloZ2Y2cG53SU12dnpxUVVkVHpSR09IaDV6Mnc4cFNWLXF2Z3pBRmxiMU1fdzJEWTJaNTJ3VnM&amp;file=Rick+and+Morty+%2F+S7E1-10+of+10+(Wesley+Archer)+%5B2023%2C+WEB-DL+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="15894550528" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="372" />
@@ -44,10 +44,10 @@
       <description>Uploader: 
 			kogesan
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 8 / Серии: 1-10 из 10 (Уэсли Арчер / Wesley Archer) [2025, США, мультфильм, комедия, фантастика, приключения, WEB-DL 1080p] VO (Сыендук, RedRussian1337) + MVO (TVShows, HDrezka, WStudio, LE-Production) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZcUQ4MDdVaF9nbmNoelpYZm9xb3VvQzRPNWZXQWhhMnV3bV9lcE8xbFhySVRFdkl4by13ZF94cll3R0ZlWWQtamtVaUJpU3dVZl9peVNkcV9fazNsb1F3YnNPVlpTeGE3Q3g4N2I5ZEE5SlVoSUpjN3dfOTk3ckZxbUpxd1hBRTd2QnNrUFNxdmdSODIxc2xrWkhJNEM&amp;file=Rick+and+Morty+%2F+S8E1-10+of+10+(Wesley+Archer)+%5B2025%2C+WEB-DL+1080p%5D+VO+(+RedRussian1337)+%2B+MVO+(TVShows%2C+HDrezka%2C+WStudio%2C+LE-Production)+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZcUQ4MDdVaF9nbmNoelpYZm9xb3VvQzRPNWZXQWhhMnV3bV9lcE8xbFhySVRFdkl4by13ZF94cll3R0ZlWWQtamtVaUJpU3dVZl9peVNkcV9fazNsb1F3YnNPVlpTeGE3Q3g4N2I5ZEE5SlVoSUpjN3dfOTk3ckZxbUpxd1hBRTd2QnNrUFNxdmdSODIxc2xrWkhJNEM&amp;file=Rick+and+Morty+%2F+S8E1-10+of+10+(Wesley+Archer)+%5B2025%2C+WEB-DL+1080p%5D+VO+(+RedRussian1337)+%2B+MVO+(TVShows%2C+HDrezka%2C+WStudio%2C+LE-Production)+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZcUQ4MDdVaF9nbmNoelpYZm9xb3VvQzRPNWZXQWhhMnV3bV9lcE8xbFhySVRFdkl4by13ZF94cll3R0ZlWWQtamtVaUJpU3dVZl9peVNkcV9fazNsb1F3YnNPVlpTeGE3Q3g4N2I5ZEE5SlVoSUpjN3dfOTk3ckZxbUpxd1hBRTd2QnNrUFNxdmdSODIxc2xrWkhJNEM&amp;file=Rick+and+Morty+%2F+S8E1-10+of+10+(Wesley+Archer)+%5B2025%2C+WEB-DL+1080p%5D+VO+(+RedRussian1337)+%2B+MVO+(TVShows%2C+HDrezka%2C+WStudio%2C+LE-Production)+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="10683571200" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZcUQ4MDdVaF9nbmNoelpYZm9xb3VvQzRPNWZXQWhhMnV3bV9lcE8xbFhySVRFdkl4by13ZF94cll3R0ZlWWQtamtVaUJpU3dVZl9peVNkcV9fazNsb1F3YnNPVlpTeGE3Q3g4N2I5ZEE5SlVoSUpjN3dfOTk3ckZxbUpxd1hBRTd2QnNrUFNxdmdSODIxc2xrWkhJNEM&amp;file=Rick+and+Morty+%2F+S8E1-10+of+10+(Wesley+Archer)+%5B2025%2C+WEB-DL+1080p%5D+VO+(+RedRussian1337)+%2B+MVO+(TVShows%2C+HDrezka%2C+WStudio%2C+LE-Production)+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="10683571200" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="499" />
@@ -69,10 +69,10 @@
       <description>Uploader: 
 			ZheGalua
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 6 / Серии: 1-10 из 10 (Уэсли Арчер / Wesley Archer) [2022, США, Мультфильм, комедия, фантастика, WEB-DL 1080p] VO (Сыендук) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZUXNuSjdCTTlNRUtRQUh5a2xGTy1DUHZfQnVHNm5JUTBwd0tGRkp6cTFIOWxwUDVBVnJyYzRjY2x2Qmg3MzQ0d2NfRF96Ri1VOEhCcnpkNDZBdEs4b3ZDUkZPZjRtMEtCbFdpcEFHOTliZkNid3RGMzVlZTZyODVnZGk5ZjBQb0NWSXV1MktGSVFXYnhqbm9aS3U1VzE&amp;file=Rick+and+Morty+%2F+S6E1-10+of+10+(Wesley+Archer)+%5B2022%2C+WEB-DL+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZUXNuSjdCTTlNRUtRQUh5a2xGTy1DUHZfQnVHNm5JUTBwd0tGRkp6cTFIOWxwUDVBVnJyYzRjY2x2Qmg3MzQ0d2NfRF96Ri1VOEhCcnpkNDZBdEs4b3ZDUkZPZjRtMEtCbFdpcEFHOTliZkNid3RGMzVlZTZyODVnZGk5ZjBQb0NWSXV1MktGSVFXYnhqbm9aS3U1VzE&amp;file=Rick+and+Morty+%2F+S6E1-10+of+10+(Wesley+Archer)+%5B2022%2C+WEB-DL+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZUXNuSjdCTTlNRUtRQUh5a2xGTy1DUHZfQnVHNm5JUTBwd0tGRkp6cTFIOWxwUDVBVnJyYzRjY2x2Qmg3MzQ0d2NfRF96Ri1VOEhCcnpkNDZBdEs4b3ZDUkZPZjRtMEtCbFdpcEFHOTliZkNid3RGMzVlZTZyODVnZGk5ZjBQb0NWSXV1MktGSVFXYnhqbm9aS3U1VzE&amp;file=Rick+and+Morty+%2F+S6E1-10+of+10+(Wesley+Archer)+%5B2022%2C+WEB-DL+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="15647726592" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZUXNuSjdCTTlNRUtRQUh5a2xGTy1DUHZfQnVHNm5JUTBwd0tGRkp6cTFIOWxwUDVBVnJyYzRjY2x2Qmg3MzQ0d2NfRF96Ri1VOEhCcnpkNDZBdEs4b3ZDUkZPZjRtMEtCbFdpcEFHOTliZkNid3RGMzVlZTZyODVnZGk5ZjBQb0NWSXV1MktGSVFXYnhqbm9aS3U1VzE&amp;file=Rick+and+Morty+%2F+S6E1-10+of+10+(Wesley+Archer)+%5B2022%2C+WEB-DL+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="15647726592" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="332" />
@@ -94,10 +94,10 @@
       <description>Uploader: 
 			Camerado
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 1, 2 / Серии: 1-21 из 21 (Пит Мишелс, Брайан Ньютон, Джон Райс) [2013-2015, США, комедия, фантастика, BDRip 1080p] VO (Сыендук) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZZWJ4UmNUTmNfWE5WakdJcGZSajdjQVJtNFdlY25LbWZ1ZHQzZlB6eTh2YldIQ2xDX2Zoa2JGa21MaF90R1F0ZEUzRUNfZTcwZWViMGNYaWZmaDNlUXNWbkkycjB3Nmt3YlZyS1pIUHA1aTU5b250cEREZEJFYThfT0hncFU1M1p5T3hHSDRXa3ZzZGd4UEVEYzJnQVY&amp;file=Rick+and+Morty+%2F+S1E1-21+of+21+%5B2013-2015%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZZWJ4UmNUTmNfWE5WakdJcGZSajdjQVJtNFdlY25LbWZ1ZHQzZlB6eTh2YldIQ2xDX2Zoa2JGa21MaF90R1F0ZEUzRUNfZTcwZWViMGNYaWZmaDNlUXNWbkkycjB3Nmt3YlZyS1pIUHA1aTU5b250cEREZEJFYThfT0hncFU1M1p5T3hHSDRXa3ZzZGd4UEVEYzJnQVY&amp;file=Rick+and+Morty+%2F+S1E1-21+of+21+%5B2013-2015%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZZWJ4UmNUTmNfWE5WakdJcGZSajdjQVJtNFdlY25LbWZ1ZHQzZlB6eTh2YldIQ2xDX2Zoa2JGa21MaF90R1F0ZEUzRUNfZTcwZWViMGNYaWZmaDNlUXNWbkkycjB3Nmt3YlZyS1pIUHA1aTU5b250cEREZEJFYThfT0hncFU1M1p5T3hHSDRXa3ZzZGd4UEVEYzJnQVY&amp;file=Rick+and+Morty+%2F+S1E1-21+of+21+%5B2013-2015%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="19152545792" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZZWJ4UmNUTmNfWE5WakdJcGZSajdjQVJtNFdlY25LbWZ1ZHQzZlB6eTh2YldIQ2xDX2Zoa2JGa21MaF90R1F0ZEUzRUNfZTcwZWViMGNYaWZmaDNlUXNWbkkycjB3Nmt3YlZyS1pIUHA1aTU5b250cEREZEJFYThfT0hncFU1M1p5T3hHSDRXa3ZzZGd4UEVEYzJnQVY&amp;file=Rick+and+Morty+%2F+S1E1-21+of+21+%5B2013-2015%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="19152545792" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="218" />
@@ -119,10 +119,10 @@
       <description>Uploader: 
 			karvai
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 5 / Серии: 1-10 из 10 (Пит Мишелс, Брайан Ньютон, Джон Райс) [2021, США, мультфильм, комедия, фантастика, WEB-DL 1080p] VO (Сыендук) + Original (Eng) + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaVFNXTjBxVld4TmphdlB6QnZNYVBad3dwUGZDTmZZQ1Nad1JFMjd6ZTV5Q0VERzVQMk1SdVI0TjF6YUEwdzh0b1hKMDVVS0RkM05HVlB6ZTdISFlhY0h5UXBVcmJueGt3SllBcm5xVHdIYmtOZ0l5RWU5TzFSMXRVaGc1TkNWd1pUcWkxNDFxcE9SeWpSVHlLdk1UVVI&amp;file=Rick+and+Morty+%2F+S5E1-10+of+10+%5B2021%2C+WEB-DL+1080p%5D+VO+%2B+Original+(Eng)+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaVFNXTjBxVld4TmphdlB6QnZNYVBad3dwUGZDTmZZQ1Nad1JFMjd6ZTV5Q0VERzVQMk1SdVI0TjF6YUEwdzh0b1hKMDVVS0RkM05HVlB6ZTdISFlhY0h5UXBVcmJueGt3SllBcm5xVHdIYmtOZ0l5RWU5TzFSMXRVaGc1TkNWd1pUcWkxNDFxcE9SeWpSVHlLdk1UVVI&amp;file=Rick+and+Morty+%2F+S5E1-10+of+10+%5B2021%2C+WEB-DL+1080p%5D+VO+%2B+Original+(Eng)+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaVFNXTjBxVld4TmphdlB6QnZNYVBad3dwUGZDTmZZQ1Nad1JFMjd6ZTV5Q0VERzVQMk1SdVI0TjF6YUEwdzh0b1hKMDVVS0RkM05HVlB6ZTdISFlhY0h5UXBVcmJueGt3SllBcm5xVHdIYmtOZ0l5RWU5TzFSMXRVaGc1TkNWd1pUcWkxNDFxcE9SeWpSVHlLdk1UVVI&amp;file=Rick+and+Morty+%2F+S5E1-10+of+10+%5B2021%2C+WEB-DL+1080p%5D+VO+%2B+Original+(Eng)+%2B+Sub+(Rus%2C+Eng)" length="9143164928" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaVFNXTjBxVld4TmphdlB6QnZNYVBad3dwUGZDTmZZQ1Nad1JFMjd6ZTV5Q0VERzVQMk1SdVI0TjF6YUEwdzh0b1hKMDVVS0RkM05HVlB6ZTdISFlhY0h5UXBVcmJueGt3SllBcm5xVHdIYmtOZ0l5RWU5TzFSMXRVaGc1TkNWd1pUcWkxNDFxcE9SeWpSVHlLdk1UVVI&amp;file=Rick+and+Morty+%2F+S5E1-10+of+10+%5B2021%2C+WEB-DL+1080p%5D+VO+%2B+Original+(Eng)+%2B+Sub+(Rus%2C+Eng)" length="9143164928" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="228" />
@@ -144,10 +144,10 @@
       <description>Uploader: 
 			dimag0g
 		&lt;br&gt;[MULT] Рик и Морти / Rick and Morty / Сезон: 1-8 / Серии: 1-81 из 81 (Пит Мишелс, Брайан Ньютон, Джон Райс, Уэсли Арчер) [2013-2023, США, мультфильм, комедия, фантастика, HDRip, BDRip, WEB-DLRip] [MP4, 960x] VO (Сыендук) + Original + Sub (Eng, Rus)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhUmZwaFRIUXZBUm9FM1NYcUdHNE5BTGNkVVNTQmc2Q3lWcEhxSzZnbVZ1MVlCWXpSYndCbDMwV2k3YTNTajFRWDQzOEVPbXpzQ00tTnhrOUVWeDVxM1JpcXBCQ0dnRksyVVpERktDUDdkSW8wOF80NGFFX25mVlFXNG1Ldmw3SHBfVGpZTkRYbURDa05hUjNoS2RSR0M&amp;file=%5BMULT%5D+%2F+Rick+and+Morty+%2F+%3A+1-8+%2F+%3A+1-81+81+%5B2013-2023%2C+HDRip%2C+BDRip%2C+WEB-DL%5D+%5BMP4%2C+960x%5D+VO+%2B+Original+%2B+Sub+(Eng%2C+Rus)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhUmZwaFRIUXZBUm9FM1NYcUdHNE5BTGNkVVNTQmc2Q3lWcEhxSzZnbVZ1MVlCWXpSYndCbDMwV2k3YTNTajFRWDQzOEVPbXpzQ00tTnhrOUVWeDVxM1JpcXBCQ0dnRksyVVpERktDUDdkSW8wOF80NGFFX25mVlFXNG1Ldmw3SHBfVGpZTkRYbURDa05hUjNoS2RSR0M&amp;file=%5BMULT%5D+%2F+Rick+and+Morty+%2F+%3A+1-8+%2F+%3A+1-81+81+%5B2013-2023%2C+HDRip%2C+BDRip%2C+WEB-DL%5D+%5BMP4%2C+960x%5D+VO+%2B+Original+%2B+Sub+(Eng%2C+Rus)</link>
       <category>4040</category>
       <category>100287</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhUmZwaFRIUXZBUm9FM1NYcUdHNE5BTGNkVVNTQmc2Q3lWcEhxSzZnbVZ1MVlCWXpSYndCbDMwV2k3YTNTajFRWDQzOEVPbXpzQ00tTnhrOUVWeDVxM1JpcXBCQ0dnRksyVVpERktDUDdkSW8wOF80NGFFX25mVlFXNG1Ldmw3SHBfVGpZTkRYbURDa05hUjNoS2RSR0M&amp;file=%5BMULT%5D+%2F+Rick+and+Morty+%2F+%3A+1-8+%2F+%3A+1-81+81+%5B2013-2023%2C+HDRip%2C+BDRip%2C+WEB-DL%5D+%5BMP4%2C+960x%5D+VO+%2B+Original+%2B+Sub+(Eng%2C+Rus)" length="17231898624" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhUmZwaFRIUXZBUm9FM1NYcUdHNE5BTGNkVVNTQmc2Q3lWcEhxSzZnbVZ1MVlCWXpSYndCbDMwV2k3YTNTajFRWDQzOEVPbXpzQ00tTnhrOUVWeDVxM1JpcXBCQ0dnRksyVVpERktDUDdkSW8wOF80NGFFX25mVlFXNG1Ldmw3SHBfVGpZTkRYbURDa05hUjNoS2RSR0M&amp;file=%5BMULT%5D+%2F+Rick+and+Morty+%2F+%3A+1-8+%2F+%3A+1-81+81+%5B2013-2023%2C+HDRip%2C+BDRip%2C+WEB-DL%5D+%5BMP4%2C+960x%5D+VO+%2B+Original+%2B+Sub+(Eng%2C+Rus)" length="17231898624" type="application/x-bittorrent" />
       <torznab:attr name="category" value="4040" />
       <torznab:attr name="category" value="100287" />
       <torznab:attr name="seeders" value="107" />
@@ -169,10 +169,10 @@
       <description>Uploader: 
 			Litoy
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 4 / Серии: 1-10 из 10 (Пит Мишелс, Джон Райс, Джастин Ройланд) [2020, США, комедия, фантастика, BDRemux 1080p] VO (Сыендук) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZcmVTeUpQNXdyVURacUV5QTdBX0Zqd2RTNGM2YWN0N1kwZmxuYTFtdUdocklPUmFxMHZfMG1yazJtTkhWcmtnT1FMTEhKZXhIc0pjcFpmbUlKR3Y1MFY2VkRPWTJmX283MGt4SjJ5QXBRQ1ZBM0Z1dG1PaWd2N2kxbFAwbS1ISjh0bXFNLXdIOGtqdFFRT1NvUTByczk&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2020%2C+BDRemux+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZcmVTeUpQNXdyVURacUV5QTdBX0Zqd2RTNGM2YWN0N1kwZmxuYTFtdUdocklPUmFxMHZfMG1yazJtTkhWcmtnT1FMTEhKZXhIc0pjcFpmbUlKR3Y1MFY2VkRPWTJmX283MGt4SjJ5QXBRQ1ZBM0Z1dG1PaWd2N2kxbFAwbS1ISjh0bXFNLXdIOGtqdFFRT1NvUTByczk&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2020%2C+BDRemux+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZcmVTeUpQNXdyVURacUV5QTdBX0Zqd2RTNGM2YWN0N1kwZmxuYTFtdUdocklPUmFxMHZfMG1yazJtTkhWcmtnT1FMTEhKZXhIc0pjcFpmbUlKR3Y1MFY2VkRPWTJmX283MGt4SjJ5QXBRQ1ZBM0Z1dG1PaWd2N2kxbFAwbS1ISjh0bXFNLXdIOGtqdFFRT1NvUTByczk&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2020%2C+BDRemux+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="28142397440" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZcmVTeUpQNXdyVURacUV5QTdBX0Zqd2RTNGM2YWN0N1kwZmxuYTFtdUdocklPUmFxMHZfMG1yazJtTkhWcmtnT1FMTEhKZXhIc0pjcFpmbUlKR3Y1MFY2VkRPWTJmX283MGt4SjJ5QXBRQ1ZBM0Z1dG1PaWd2N2kxbFAwbS1ISjh0bXFNLXdIOGtqdFFRT1NvUTByczk&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2020%2C+BDRemux+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="28142397440" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="49" />
@@ -194,10 +194,10 @@
       <description>Uploader: 
 			Litoy
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 3 / Серии: 1-10 из 10 (Пит Мишелс, Джон Райс, Джастин Ройланд) [2017, США, комедия, фантастика, BDRip 1080p] VO (Сыендук) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViM092bXdsSjhpWTZoWEFVRnlQa3JoVGpwRW1rVGZWUTBOZ3J2aXpUbmFuYTNEOS1kYnBYUFNVQXpnb3NKQ2VZc3BKd1ZRaUlUZTk4dWtSRDZsRXBmOUh3ME5YdmFpam4xZXMwQ3ViOHhkdk5XWndCOWxmTFhRQmNISXFPcUw1T2tFb1o2ZWJreml1WFJNMFFHSVQ0OFQ&amp;file=Rick+and+Morty+%2F+S3E1-10+of+10+%5B2017%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViM092bXdsSjhpWTZoWEFVRnlQa3JoVGpwRW1rVGZWUTBOZ3J2aXpUbmFuYTNEOS1kYnBYUFNVQXpnb3NKQ2VZc3BKd1ZRaUlUZTk4dWtSRDZsRXBmOUh3ME5YdmFpam4xZXMwQ3ViOHhkdk5XWndCOWxmTFhRQmNISXFPcUw1T2tFb1o2ZWJreml1WFJNMFFHSVQ0OFQ&amp;file=Rick+and+Morty+%2F+S3E1-10+of+10+%5B2017%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViM092bXdsSjhpWTZoWEFVRnlQa3JoVGpwRW1rVGZWUTBOZ3J2aXpUbmFuYTNEOS1kYnBYUFNVQXpnb3NKQ2VZc3BKd1ZRaUlUZTk4dWtSRDZsRXBmOUh3ME5YdmFpam4xZXMwQ3ViOHhkdk5XWndCOWxmTFhRQmNISXFPcUw1T2tFb1o2ZWJreml1WFJNMFFHSVQ0OFQ&amp;file=Rick+and+Morty+%2F+S3E1-10+of+10+%5B2017%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="7217262080" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViM092bXdsSjhpWTZoWEFVRnlQa3JoVGpwRW1rVGZWUTBOZ3J2aXpUbmFuYTNEOS1kYnBYUFNVQXpnb3NKQ2VZc3BKd1ZRaUlUZTk4dWtSRDZsRXBmOUh3ME5YdmFpam4xZXMwQ3ViOHhkdk5XWndCOWxmTFhRQmNISXFPcUw1T2tFb1o2ZWJreml1WFJNMFFHSVQ0OFQ&amp;file=Rick+and+Morty+%2F+S3E1-10+of+10+%5B2017%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="7217262080" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="186" />
@@ -219,10 +219,10 @@
       <description>Uploader: 
 			Hanzores
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезоны: 1-5 / Серии: 1-51 из 51 (Пит Мишелс, Брайан Ньютон, Джон Райс) [2013-2021, США, Мультфильм, комедия, фантастика, приключения, BDRip, WEB-DLRip] VO (Сыендук) + Original</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhVnJ4bC1pUk5mRDAxWkhFUDcwdHNkaUJ1bnp5VUlsRW1kM3BCdTAwdWJHTWx6Y0U1aEdQUzU5ZTJYcG5WT1lYck05eHZubnRnWmNNOVRzU1VCZ1JzbUg1RURCeE9KTDlhZWczaXVwQkk1eTZsck04ZzdtaWhNZkExM1p6Uk1LYTMxcGZOWGc5SGlfdmNwUHlBQ0I3OVg&amp;file=Rick+and+Morty+%2F+%3A+1-5+%2F+E1-51+of+51+%5B2013-2021%2C+BDRip%2C+WEB-DL%5D+VO+%2B+Original</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhVnJ4bC1pUk5mRDAxWkhFUDcwdHNkaUJ1bnp5VUlsRW1kM3BCdTAwdWJHTWx6Y0U1aEdQUzU5ZTJYcG5WT1lYck05eHZubnRnWmNNOVRzU1VCZ1JzbUg1RURCeE9KTDlhZWczaXVwQkk1eTZsck04ZzdtaWhNZkExM1p6Uk1LYTMxcGZOWGc5SGlfdmNwUHlBQ0I3OVg&amp;file=Rick+and+Morty+%2F+%3A+1-5+%2F+E1-51+of+51+%5B2013-2021%2C+BDRip%2C+WEB-DL%5D+VO+%2B+Original</link>
       <category>5030</category>
       <category>100815</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhVnJ4bC1pUk5mRDAxWkhFUDcwdHNkaUJ1bnp5VUlsRW1kM3BCdTAwdWJHTWx6Y0U1aEdQUzU5ZTJYcG5WT1lYck05eHZubnRnWmNNOVRzU1VCZ1JzbUg1RURCeE9KTDlhZWczaXVwQkk1eTZsck04ZzdtaWhNZkExM1p6Uk1LYTMxcGZOWGc5SGlfdmNwUHlBQ0I3OVg&amp;file=Rick+and+Morty+%2F+%3A+1-5+%2F+E1-51+of+51+%5B2013-2021%2C+BDRip%2C+WEB-DL%5D+VO+%2B+Original" length="19295430656" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhVnJ4bC1pUk5mRDAxWkhFUDcwdHNkaUJ1bnp5VUlsRW1kM3BCdTAwdWJHTWx6Y0U1aEdQUzU5ZTJYcG5WT1lYck05eHZubnRnWmNNOVRzU1VCZ1JzbUg1RURCeE9KTDlhZWczaXVwQkk1eTZsck04ZzdtaWhNZkExM1p6Uk1LYTMxcGZOWGc5SGlfdmNwUHlBQ0I3OVg&amp;file=Rick+and+Morty+%2F+%3A+1-5+%2F+E1-51+of+51+%5B2013-2021%2C+BDRip%2C+WEB-DL%5D+VO+%2B+Original" length="19295430656" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5030" />
       <torznab:attr name="category" value="100815" />
       <torznab:attr name="seeders" value="65" />
@@ -244,10 +244,10 @@
       <description>Uploader: 
 			Litoy
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 3 / Серии: 1-10 из 10 (Пит Мишелс, Джон Райс, Джастин Ройланд) [2017, США, комедия, фантастика, BDRemux 1080p] VO (Сыендук) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViRkpSNTZCclZCZXpMaXoyWTRDWVMwQWh6Y2JmM1JpMUdUWWszMy13REhEcnUwOXpTdi1SSXc4Rzh1aWxPb0ZoSkNYZldwVDM5R2czdEhxMEprZ1NVcnFJNjhOenVQRldCM0xKTGluenQxNE9qSnFEUnZpQ2tUalo0U3pyRS1pcjVSWnljYkh5SnlEb3NZNFA4a3VTbDg&amp;file=Rick+and+Morty+%2F+S3E1-10+of+10+%5B2017%2C+BDRemux+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViRkpSNTZCclZCZXpMaXoyWTRDWVMwQWh6Y2JmM1JpMUdUWWszMy13REhEcnUwOXpTdi1SSXc4Rzh1aWxPb0ZoSkNYZldwVDM5R2czdEhxMEprZ1NVcnFJNjhOenVQRldCM0xKTGluenQxNE9qSnFEUnZpQ2tUalo0U3pyRS1pcjVSWnljYkh5SnlEb3NZNFA4a3VTbDg&amp;file=Rick+and+Morty+%2F+S3E1-10+of+10+%5B2017%2C+BDRemux+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViRkpSNTZCclZCZXpMaXoyWTRDWVMwQWh6Y2JmM1JpMUdUWWszMy13REhEcnUwOXpTdi1SSXc4Rzh1aWxPb0ZoSkNYZldwVDM5R2czdEhxMEprZ1NVcnFJNjhOenVQRldCM0xKTGluenQxNE9qSnFEUnZpQ2tUalo0U3pyRS1pcjVSWnljYkh5SnlEb3NZNFA4a3VTbDg&amp;file=Rick+and+Morty+%2F+S3E1-10+of+10+%5B2017%2C+BDRemux+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="19395629056" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViRkpSNTZCclZCZXpMaXoyWTRDWVMwQWh6Y2JmM1JpMUdUWWszMy13REhEcnUwOXpTdi1SSXc4Rzh1aWxPb0ZoSkNYZldwVDM5R2czdEhxMEprZ1NVcnFJNjhOenVQRldCM0xKTGluenQxNE9qSnFEUnZpQ2tUalo0U3pyRS1pcjVSWnljYkh5SnlEb3NZNFA4a3VTbDg&amp;file=Rick+and+Morty+%2F+S3E1-10+of+10+%5B2017%2C+BDRemux+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="19395629056" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="62" />
@@ -269,10 +269,10 @@
       <description>Uploader: 
 			$k_0r
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 1 / Серии: 1-11 из 11 (Пит Мишелс, Брайан Ньютон, Джон Райс) [2013, США, комедия, фантастика, BDRemux 1080p] VO (Сыендук) + Original + Com + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVibnJwenYtZ1paUF9MVVpTVmQ4M05OZ1NLTWtXSlF0LUVKLXlqREYwd0xNQUJZRlFUQTFWTUsyZE83ZUl5NzFYMTl1bmw0WjVZZXBla3BkZVlGTWp6MjU2OENVLTVsUDFTLU0tRHBmbzc1V2hpV1MxWkhTMG5PVUxaQVVnV3F3d2RzVTdqQXkyT1h1ZERsa1lud3FlWkI&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+BDRemux+1080p%5D+VO+%2B+Original+%2B+Com+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVibnJwenYtZ1paUF9MVVpTVmQ4M05OZ1NLTWtXSlF0LUVKLXlqREYwd0xNQUJZRlFUQTFWTUsyZE83ZUl5NzFYMTl1bmw0WjVZZXBla3BkZVlGTWp6MjU2OENVLTVsUDFTLU0tRHBmbzc1V2hpV1MxWkhTMG5PVUxaQVVnV3F3d2RzVTdqQXkyT1h1ZERsa1lud3FlWkI&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+BDRemux+1080p%5D+VO+%2B+Original+%2B+Com+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVibnJwenYtZ1paUF9MVVpTVmQ4M05OZ1NLTWtXSlF0LUVKLXlqREYwd0xNQUJZRlFUQTFWTUsyZE83ZUl5NzFYMTl1bmw0WjVZZXBla3BkZVlGTWp6MjU2OENVLTVsUDFTLU0tRHBmbzc1V2hpV1MxWkhTMG5PVUxaQVVnV3F3d2RzVTdqQXkyT1h1ZERsa1lud3FlWkI&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+BDRemux+1080p%5D+VO+%2B+Original+%2B+Com+%2B+Sub+(Rus%2C+Eng)" length="36713152512" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVibnJwenYtZ1paUF9MVVpTVmQ4M05OZ1NLTWtXSlF0LUVKLXlqREYwd0xNQUJZRlFUQTFWTUsyZE83ZUl5NzFYMTl1bmw0WjVZZXBla3BkZVlGTWp6MjU2OENVLTVsUDFTLU0tRHBmbzc1V2hpV1MxWkhTMG5PVUxaQVVnV3F3d2RzVTdqQXkyT1h1ZERsa1lud3FlWkI&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+BDRemux+1080p%5D+VO+%2B+Original+%2B+Com+%2B+Sub+(Rus%2C+Eng)" length="36713152512" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="31" />
@@ -294,10 +294,10 @@
       <description>Uploader: 
 			kogesan
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 4 / Серии: 1-10 из 10 (Пит Мишелс) [2019, США, мультфильм, комедия, фантастика, приключения, WEB-DL 1080p] VO (Сыендук) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVicmlHVGhmQTd0WnI4OGVvT2VVTVRqRTJGaGdGN0VwaVg0MlZaWWl1SjBKT1BzSXk1TURyMjlocUNTZmNNTGxSdGFKSHFLOUJBTnpmRUl1X0Uzd0J1VGRjbTY2T2UtM3M2ZjR4TFV6bFhWa0E1X1AySk9SdTdQcXd5RDlPdmhoTnJyamVfVFRYNm5zd2tlTndUaXhXeWU&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2019%2C+WEB-DL+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVicmlHVGhmQTd0WnI4OGVvT2VVTVRqRTJGaGdGN0VwaVg0MlZaWWl1SjBKT1BzSXk1TURyMjlocUNTZmNNTGxSdGFKSHFLOUJBTnpmRUl1X0Uzd0J1VGRjbTY2T2UtM3M2ZjR4TFV6bFhWa0E1X1AySk9SdTdQcXd5RDlPdmhoTnJyamVfVFRYNm5zd2tlTndUaXhXeWU&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2019%2C+WEB-DL+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVicmlHVGhmQTd0WnI4OGVvT2VVTVRqRTJGaGdGN0VwaVg0MlZaWWl1SjBKT1BzSXk1TURyMjlocUNTZmNNTGxSdGFKSHFLOUJBTnpmRUl1X0Uzd0J1VGRjbTY2T2UtM3M2ZjR4TFV6bFhWa0E1X1AySk9SdTdQcXd5RDlPdmhoTnJyamVfVFRYNm5zd2tlTndUaXhXeWU&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2019%2C+WEB-DL+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="6620836864" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVicmlHVGhmQTd0WnI4OGVvT2VVTVRqRTJGaGdGN0VwaVg0MlZaWWl1SjBKT1BzSXk1TURyMjlocUNTZmNNTGxSdGFKSHFLOUJBTnpmRUl1X0Uzd0J1VGRjbTY2T2UtM3M2ZjR4TFV6bFhWa0E1X1AySk9SdTdQcXd5RDlPdmhoTnJyamVfVFRYNm5zd2tlTndUaXhXeWU&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2019%2C+WEB-DL+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="6620836864" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="158" />
@@ -319,10 +319,10 @@
       <description>Uploader: 
 			Wilmots
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 8 / Серии: 1-10 из 10 (Филл Марк Сагадрака / Fill Marc Sagadraca) [2025, США, мультфильм, комедия, фантастика, приключения, WEB-DL 1080p] VO (HBO) + Original + Sub (Rus, Eng, Chi, Heb, Jap, Rom)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaclZHZTJabzFZdzAwWVNRRzFWNDNzc3JxcmpqcWVLQXJNUko2cHlfeDZJN0Nld05IS1lMak5GSUp0dHR0TXMtZHY5WWl1VF80YzFIeDZSZUFfOENHRENiV0xadGMwS2pIbUpwSDBJSTBiYkM1S2o5T2lBbmFveXFtNDVXQVhzVkhMMVp1VDVlckV0dW5PX0ZZUjdXVkU&amp;file=Rick+and+Morty+%2F+S8E1-10+of+10+(Fill+Marc+Sagadraca)+%5B2025%2C+WEB-DL+1080p%5D+VO+(HBO)+%2B+Original+%2B+Sub+(Rus%2C+Eng%2C+Chi%2C+Heb%2C+Jap%2C+Rom)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaclZHZTJabzFZdzAwWVNRRzFWNDNzc3JxcmpqcWVLQXJNUko2cHlfeDZJN0Nld05IS1lMak5GSUp0dHR0TXMtZHY5WWl1VF80YzFIeDZSZUFfOENHRENiV0xadGMwS2pIbUpwSDBJSTBiYkM1S2o5T2lBbmFveXFtNDVXQVhzVkhMMVp1VDVlckV0dW5PX0ZZUjdXVkU&amp;file=Rick+and+Morty+%2F+S8E1-10+of+10+(Fill+Marc+Sagadraca)+%5B2025%2C+WEB-DL+1080p%5D+VO+(HBO)+%2B+Original+%2B+Sub+(Rus%2C+Eng%2C+Chi%2C+Heb%2C+Jap%2C+Rom)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaclZHZTJabzFZdzAwWVNRRzFWNDNzc3JxcmpqcWVLQXJNUko2cHlfeDZJN0Nld05IS1lMak5GSUp0dHR0TXMtZHY5WWl1VF80YzFIeDZSZUFfOENHRENiV0xadGMwS2pIbUpwSDBJSTBiYkM1S2o5T2lBbmFveXFtNDVXQVhzVkhMMVp1VDVlckV0dW5PX0ZZUjdXVkU&amp;file=Rick+and+Morty+%2F+S8E1-10+of+10+(Fill+Marc+Sagadraca)+%5B2025%2C+WEB-DL+1080p%5D+VO+(HBO)+%2B+Original+%2B+Sub+(Rus%2C+Eng%2C+Chi%2C+Heb%2C+Jap%2C+Rom)" length="9080793088" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaclZHZTJabzFZdzAwWVNRRzFWNDNzc3JxcmpqcWVLQXJNUko2cHlfeDZJN0Nld05IS1lMak5GSUp0dHR0TXMtZHY5WWl1VF80YzFIeDZSZUFfOENHRENiV0xadGMwS2pIbUpwSDBJSTBiYkM1S2o5T2lBbmFveXFtNDVXQVhzVkhMMVp1VDVlckV0dW5PX0ZZUjdXVkU&amp;file=Rick+and+Morty+%2F+S8E1-10+of+10+(Fill+Marc+Sagadraca)+%5B2025%2C+WEB-DL+1080p%5D+VO+(HBO)+%2B+Original+%2B+Sub+(Rus%2C+Eng%2C+Chi%2C+Heb%2C+Jap%2C+Rom)" length="9080793088" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="114" />
@@ -344,10 +344,10 @@
       <description>Uploader: 
 			SerjDogWin2012
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 2 / Серии: 10 из 10 (Пит Мишелс, Брайан Ньютон, Джон Райс) [2015, США, Комедия, Фантастика, BDRemux] VO + Rus Sub</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViSWpxQzlESzZoamVuWXhJUGRhbkNZLXJQalg2V2d3WEctWXFGUXd5LVZQM3dHSnZpUG9Pd2RnbzFFSklEd1JiM0d2U1p3blFXb2hLWXZVd2taa3U2TTFmTERBQzlNbTZtTDlRSjRPeGkwZ0RXRnc3N3l6NURKUDR4czlkQ1FCdjVtWFBSdHpsUWZyZXdWTzh5SE9hamc&amp;file=Rick+and+Morty+%2F+S2E10+of+10+%5B2015%2C+BDRemux%5D+VO+%2B+Rus+Sub</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViSWpxQzlESzZoamVuWXhJUGRhbkNZLXJQalg2V2d3WEctWXFGUXd5LVZQM3dHSnZpUG9Pd2RnbzFFSklEd1JiM0d2U1p3blFXb2hLWXZVd2taa3U2TTFmTERBQzlNbTZtTDlRSjRPeGkwZ0RXRnc3N3l6NURKUDR4czlkQ1FCdjVtWFBSdHpsUWZyZXdWTzh5SE9hamc&amp;file=Rick+and+Morty+%2F+S2E10+of+10+%5B2015%2C+BDRemux%5D+VO+%2B+Rus+Sub</link>
       <category>5000</category>
       <category>100921</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViSWpxQzlESzZoamVuWXhJUGRhbkNZLXJQalg2V2d3WEctWXFGUXd5LVZQM3dHSnZpUG9Pd2RnbzFFSklEd1JiM0d2U1p3blFXb2hLWXZVd2taa3U2TTFmTERBQzlNbTZtTDlRSjRPeGkwZ0RXRnc3N3l6NURKUDR4czlkQ1FCdjVtWFBSdHpsUWZyZXdWTzh5SE9hamc&amp;file=Rick+and+Morty+%2F+S2E10+of+10+%5B2015%2C+BDRemux%5D+VO+%2B+Rus+Sub" length="36102545408" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViSWpxQzlESzZoamVuWXhJUGRhbkNZLXJQalg2V2d3WEctWXFGUXd5LVZQM3dHSnZpUG9Pd2RnbzFFSklEd1JiM0d2U1p3blFXb2hLWXZVd2taa3U2TTFmTERBQzlNbTZtTDlRSjRPeGkwZ0RXRnc3N3l6NURKUDR4czlkQ1FCdjVtWFBSdHpsUWZyZXdWTzh5SE9hamc&amp;file=Rick+and+Morty+%2F+S2E10+of+10+%5B2015%2C+BDRemux%5D+VO+%2B+Rus+Sub" length="36102545408" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5000" />
       <torznab:attr name="category" value="100921" />
       <torznab:attr name="seeders" value="19" />
@@ -369,10 +369,10 @@
       <description>Uploader: 
 			kogesan
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 5 / Серии: 1-10 из 10 (Уэсли Арчер) [2021, США, мультфильм, комедия, фантастика, приключения, WEB-DL 1080p] MVO (TVShows) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhVnBoWUpadHEzaXBUUGI2NEswbmdSdmlUT09JaGFBalp3Wi1oMjg1a1hzSFFaSjV4TDd5ajIxTGQzRU5xZXlSNVRGX1lvQjBwVmJNMWRGTEoyZzJpa1NOSGlnV2Yzd2UwTWxJWUd0SGpJbnY0LW5IMU1Bcjhmd08tajg0X2xESFV3M1JjOTdKc3g5VWc2MXMzU2NONnY&amp;file=Rick+and+Morty+%2F+S5E1-10+of+10+%5B2021%2C+WEB-DL+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhVnBoWUpadHEzaXBUUGI2NEswbmdSdmlUT09JaGFBalp3Wi1oMjg1a1hzSFFaSjV4TDd5ajIxTGQzRU5xZXlSNVRGX1lvQjBwVmJNMWRGTEoyZzJpa1NOSGlnV2Yzd2UwTWxJWUd0SGpJbnY0LW5IMU1Bcjhmd08tajg0X2xESFV3M1JjOTdKc3g5VWc2MXMzU2NONnY&amp;file=Rick+and+Morty+%2F+S5E1-10+of+10+%5B2021%2C+WEB-DL+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhVnBoWUpadHEzaXBUUGI2NEswbmdSdmlUT09JaGFBalp3Wi1oMjg1a1hzSFFaSjV4TDd5ajIxTGQzRU5xZXlSNVRGX1lvQjBwVmJNMWRGTEoyZzJpa1NOSGlnV2Yzd2UwTWxJWUd0SGpJbnY0LW5IMU1Bcjhmd08tajg0X2xESFV3M1JjOTdKc3g5VWc2MXMzU2NONnY&amp;file=Rick+and+Morty+%2F+S5E1-10+of+10+%5B2021%2C+WEB-DL+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="11019324416" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhVnBoWUpadHEzaXBUUGI2NEswbmdSdmlUT09JaGFBalp3Wi1oMjg1a1hzSFFaSjV4TDd5ajIxTGQzRU5xZXlSNVRGX1lvQjBwVmJNMWRGTEoyZzJpa1NOSGlnV2Yzd2UwTWxJWUd0SGpJbnY0LW5IMU1Bcjhmd08tajg0X2xESFV3M1JjOTdKc3g5VWc2MXMzU2NONnY&amp;file=Rick+and+Morty+%2F+S5E1-10+of+10+%5B2021%2C+WEB-DL+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="11019324416" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="51" />
@@ -394,10 +394,10 @@
       <description>Uploader: 
 			Litoy
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 4 / Серии: 1-10 из 10 (Пит Мишелс, Джон Райс, Джастин Ройланд) [2020, США, комедия, фантастика, BDRip 1080p] VO (Сыендук) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZcmdCTGtpZXh5eXlpZWhCa1NJRHJFUHVWQnFnbW42Nkg1anY1eHVsNHQwNGtxYUZ4QndkQXBQX0Y4VVp5TTRPSWdaajZsRkl3djMtOGtSTHpVVjAxYUk5NHRiM0lOYlZRdUR4VDRyb3gyc0Nqc0R5MHVZc0QzeXk4d1ZlZGhvTUd4d1hsN0RjaC02WHRsS0JXanRRYTI&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2020%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZcmdCTGtpZXh5eXlpZWhCa1NJRHJFUHVWQnFnbW42Nkg1anY1eHVsNHQwNGtxYUZ4QndkQXBQX0Y4VVp5TTRPSWdaajZsRkl3djMtOGtSTHpVVjAxYUk5NHRiM0lOYlZRdUR4VDRyb3gyc0Nqc0R5MHVZc0QzeXk4d1ZlZGhvTUd4d1hsN0RjaC02WHRsS0JXanRRYTI&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2020%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZcmdCTGtpZXh5eXlpZWhCa1NJRHJFUHVWQnFnbW42Nkg1anY1eHVsNHQwNGtxYUZ4QndkQXBQX0Y4VVp5TTRPSWdaajZsRkl3djMtOGtSTHpVVjAxYUk5NHRiM0lOYlZRdUR4VDRyb3gyc0Nqc0R5MHVZc0QzeXk4d1ZlZGhvTUd4d1hsN0RjaC02WHRsS0JXanRRYTI&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2020%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="8212478976" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZcmdCTGtpZXh5eXlpZWhCa1NJRHJFUHVWQnFnbW42Nkg1anY1eHVsNHQwNGtxYUZ4QndkQXBQX0Y4VVp5TTRPSWdaajZsRkl3djMtOGtSTHpVVjAxYUk5NHRiM0lOYlZRdUR4VDRyb3gyc0Nqc0R5MHVZc0QzeXk4d1ZlZGhvTUd4d1hsN0RjaC02WHRsS0JXanRRYTI&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2020%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="8212478976" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="64" />
@@ -419,10 +419,10 @@
       <description>Uploader: 
 			Camerado
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 1, 2 / Серии: 1-21 из 21 (Пит Мишелс, Брайан Ньютон, Джон Райс) [2013-2015, США, комедия, фантастика, BDRip 720p] VO (Сыендук) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVabWx4SkJpbEZObURPQUMxOXRKUVFMSVZvN0hCMHM4TzVTZUpzQ1dsQWNFTzdOa3RBVW1zVTVIMGxoaUlZVm1SY3phak1XUGh4QXhkTzh3dzVyOVk0Vy1ncnRUMHFDR1VPSTRoQWJrWF83eGUwbzU3cGNVQi1iQmNxcFQ5MFAzbHJEazlaQml1ZG9PRHVrWWpXN25tRXA&amp;file=Rick+and+Morty+%2F+S1E1-21+of+21+%5B2013-2015%2C+BDRip+720p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVabWx4SkJpbEZObURPQUMxOXRKUVFMSVZvN0hCMHM4TzVTZUpzQ1dsQWNFTzdOa3RBVW1zVTVIMGxoaUlZVm1SY3phak1XUGh4QXhkTzh3dzVyOVk0Vy1ncnRUMHFDR1VPSTRoQWJrWF83eGUwbzU3cGNVQi1iQmNxcFQ5MFAzbHJEazlaQml1ZG9PRHVrWWpXN25tRXA&amp;file=Rick+and+Morty+%2F+S1E1-21+of+21+%5B2013-2015%2C+BDRip+720p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVabWx4SkJpbEZObURPQUMxOXRKUVFMSVZvN0hCMHM4TzVTZUpzQ1dsQWNFTzdOa3RBVW1zVTVIMGxoaUlZVm1SY3phak1XUGh4QXhkTzh3dzVyOVk0Vy1ncnRUMHFDR1VPSTRoQWJrWF83eGUwbzU3cGNVQi1iQmNxcFQ5MFAzbHJEazlaQml1ZG9PRHVrWWpXN25tRXA&amp;file=Rick+and+Morty+%2F+S1E1-21+of+21+%5B2013-2015%2C+BDRip+720p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="12263866368" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVabWx4SkJpbEZObURPQUMxOXRKUVFMSVZvN0hCMHM4TzVTZUpzQ1dsQWNFTzdOa3RBVW1zVTVIMGxoaUlZVm1SY3phak1XUGh4QXhkTzh3dzVyOVk0Vy1ncnRUMHFDR1VPSTRoQWJrWF83eGUwbzU3cGNVQi1iQmNxcFQ5MFAzbHJEazlaQml1ZG9PRHVrWWpXN25tRXA&amp;file=Rick+and+Morty+%2F+S1E1-21+of+21+%5B2013-2015%2C+BDRip+720p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="12263866368" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="37" />
@@ -444,10 +444,10 @@
       <description>Uploader: 
 			Ultramarinad
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 2 / Серии: 10 из 10 (Пит Мишелс, Брайан Ньютон, Джон Райс) [2015, США, Комедия, Фантастика, BDRemux, AI upscaled to 2160p] VO (Сыендук) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZVkxMdEFNdkZrOFlFVUMteEI2UEVjbHlyMXdIR29hMEc0c0ExVXktQWNjeFEtV1VwRlJmTjdlOVNpc1kwMlYtd3k3cXNCYTJ0Z3dEVmYxeVlvQlpvRW9YRjNKVW0tLWNUWFVTaVpnUEhua2RFalJMcWRzUVFfVGRGVG52Q0RIc3hkdzRwcVY5T0I3RXdnT0NCdTQyM2w&amp;file=Rick+and+Morty+%2F+S2E10+of+10+%5B2015%2C+BDRemux%2C+AI+upscaled+to+2160p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZVkxMdEFNdkZrOFlFVUMteEI2UEVjbHlyMXdIR29hMEc0c0ExVXktQWNjeFEtV1VwRlJmTjdlOVNpc1kwMlYtd3k3cXNCYTJ0Z3dEVmYxeVlvQlpvRW9YRjNKVW0tLWNUWFVTaVpnUEhua2RFalJMcWRzUVFfVGRGVG52Q0RIc3hkdzRwcVY5T0I3RXdnT0NCdTQyM2w&amp;file=Rick+and+Morty+%2F+S2E10+of+10+%5B2015%2C+BDRemux%2C+AI+upscaled+to+2160p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5050</category>
       <category>100807</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZVkxMdEFNdkZrOFlFVUMteEI2UEVjbHlyMXdIR29hMEc0c0ExVXktQWNjeFEtV1VwRlJmTjdlOVNpc1kwMlYtd3k3cXNCYTJ0Z3dEVmYxeVlvQlpvRW9YRjNKVW0tLWNUWFVTaVpnUEhua2RFalJMcWRzUVFfVGRGVG52Q0RIc3hkdzRwcVY5T0I3RXdnT0NCdTQyM2w&amp;file=Rick+and+Morty+%2F+S2E10+of+10+%5B2015%2C+BDRemux%2C+AI+upscaled+to+2160p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="44492500992" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZVkxMdEFNdkZrOFlFVUMteEI2UEVjbHlyMXdIR29hMEc0c0ExVXktQWNjeFEtV1VwRlJmTjdlOVNpc1kwMlYtd3k3cXNCYTJ0Z3dEVmYxeVlvQlpvRW9YRjNKVW0tLWNUWFVTaVpnUEhua2RFalJMcWRzUVFfVGRGVG52Q0RIc3hkdzRwcVY5T0I3RXdnT0NCdTQyM2w&amp;file=Rick+and+Morty+%2F+S2E10+of+10+%5B2015%2C+BDRemux%2C+AI+upscaled+to+2160p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="44492500992" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5050" />
       <torznab:attr name="category" value="100807" />
       <torznab:attr name="seeders" value="10" />
@@ -469,10 +469,10 @@
       <description>Uploader: 
 			Wentworth_Miller
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 6 / Серии: 1-10 из 10 (Уэсли Арчер / Wesley Archer) [2022, США, Мультфильм, комедия, фантастика, WEB-DL 1080p] MVO (HDrezka Studio) + VO (Audiodrome) + Ukr MVO (HDrezka Studio) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaNUdoRHN0VHlSZUpYbXNGcHUzU0lxRDlCRFRITG5Qc2E1OG9DRXdQZkJHNk1wdm5BWWhFM0NIbTJQUVR4bjlzVklER2l0YWRXempNTEIyR2RyZUtnTXdjUEgwd2lnMkZISjA4TFFuYzJvSDFxcjQ1cGx3YVJuTmM5WTFPNGNVZWZQYkE4bVhOUkhnSWIyRllMaXBYaVA&amp;file=Rick+and+Morty+%2F+S6E1-10+of+10+(Wesley+Archer)+%5B2022%2C+WEB-DL+1080p%5D+MVO+(HDrezka+Studio)+%2B+VO+(Audiodrome)+%2B+Ukr+MVO+(HDrezka+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaNUdoRHN0VHlSZUpYbXNGcHUzU0lxRDlCRFRITG5Qc2E1OG9DRXdQZkJHNk1wdm5BWWhFM0NIbTJQUVR4bjlzVklER2l0YWRXempNTEIyR2RyZUtnTXdjUEgwd2lnMkZISjA4TFFuYzJvSDFxcjQ1cGx3YVJuTmM5WTFPNGNVZWZQYkE4bVhOUkhnSWIyRllMaXBYaVA&amp;file=Rick+and+Morty+%2F+S6E1-10+of+10+(Wesley+Archer)+%5B2022%2C+WEB-DL+1080p%5D+MVO+(HDrezka+Studio)+%2B+VO+(Audiodrome)+%2B+Ukr+MVO+(HDrezka+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaNUdoRHN0VHlSZUpYbXNGcHUzU0lxRDlCRFRITG5Qc2E1OG9DRXdQZkJHNk1wdm5BWWhFM0NIbTJQUVR4bjlzVklER2l0YWRXempNTEIyR2RyZUtnTXdjUEgwd2lnMkZISjA4TFFuYzJvSDFxcjQ1cGx3YVJuTmM5WTFPNGNVZWZQYkE4bVhOUkhnSWIyRllMaXBYaVA&amp;file=Rick+and+Morty+%2F+S6E1-10+of+10+(Wesley+Archer)+%5B2022%2C+WEB-DL+1080p%5D+MVO+(HDrezka+Studio)+%2B+VO+(Audiodrome)+%2B+Ukr+MVO+(HDrezka+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="15827885056" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaNUdoRHN0VHlSZUpYbXNGcHUzU0lxRDlCRFRITG5Qc2E1OG9DRXdQZkJHNk1wdm5BWWhFM0NIbTJQUVR4bjlzVklER2l0YWRXempNTEIyR2RyZUtnTXdjUEgwd2lnMkZISjA4TFFuYzJvSDFxcjQ1cGx3YVJuTmM5WTFPNGNVZWZQYkE4bVhOUkhnSWIyRllMaXBYaVA&amp;file=Rick+and+Morty+%2F+S6E1-10+of+10+(Wesley+Archer)+%5B2022%2C+WEB-DL+1080p%5D+MVO+(HDrezka+Studio)+%2B+VO+(Audiodrome)+%2B+Ukr+MVO+(HDrezka+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="15827885056" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="28" />
@@ -494,10 +494,10 @@
       <description>Uploader: 
 			CEBEPu2D
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 9 / Серии: 1-3 из 10 (Уэсли Арчер / Wesley Archer) [2026, США, мультфильм, комедия, фантастика, приключения, WEB-DL 1080p] MVO + VO (Сыендук) + Ukr + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZZFp6elpsZklsM1FGSVBLenJnZUpGX0dFeXFrc19wc0p6V1dRbW9YaE5YQlZJSGVvVnRWMlRKTXFIaVdGODFqWUdNSDdxX2dvTGwyOUxXUjZWUVgweWpja1AyZHhqMmpjbDQyZEdhNkQ0VHR4Mk41VGM0WHV5aFhRendvdHNsMDFlaHVBZEV5MzhVdlp2akZ0WTZ5OFI&amp;file=Rick+and+Morty+%2F+S9E1-3+of+10+(Wesley+Archer)+%5B2026%2C+WEB-DL+1080p%5D+MVO+%2B+VO+%2B+Ukr+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZZFp6elpsZklsM1FGSVBLenJnZUpGX0dFeXFrc19wc0p6V1dRbW9YaE5YQlZJSGVvVnRWMlRKTXFIaVdGODFqWUdNSDdxX2dvTGwyOUxXUjZWUVgweWpja1AyZHhqMmpjbDQyZEdhNkQ0VHR4Mk41VGM0WHV5aFhRendvdHNsMDFlaHVBZEV5MzhVdlp2akZ0WTZ5OFI&amp;file=Rick+and+Morty+%2F+S9E1-3+of+10+(Wesley+Archer)+%5B2026%2C+WEB-DL+1080p%5D+MVO+%2B+VO+%2B+Ukr+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5000</category>
       <category>100921</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZZFp6elpsZklsM1FGSVBLenJnZUpGX0dFeXFrc19wc0p6V1dRbW9YaE5YQlZJSGVvVnRWMlRKTXFIaVdGODFqWUdNSDdxX2dvTGwyOUxXUjZWUVgweWpja1AyZHhqMmpjbDQyZEdhNkQ0VHR4Mk41VGM0WHV5aFhRendvdHNsMDFlaHVBZEV5MzhVdlp2akZ0WTZ5OFI&amp;file=Rick+and+Morty+%2F+S9E1-3+of+10+(Wesley+Archer)+%5B2026%2C+WEB-DL+1080p%5D+MVO+%2B+VO+%2B+Ukr+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="3329356288" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZZFp6elpsZklsM1FGSVBLenJnZUpGX0dFeXFrc19wc0p6V1dRbW9YaE5YQlZJSGVvVnRWMlRKTXFIaVdGODFqWUdNSDdxX2dvTGwyOUxXUjZWUVgweWpja1AyZHhqMmpjbDQyZEdhNkQ0VHR4Mk41VGM0WHV5aFhRendvdHNsMDFlaHVBZEV5MzhVdlp2akZ0WTZ5OFI&amp;file=Rick+and+Morty+%2F+S9E1-3+of+10+(Wesley+Archer)+%5B2026%2C+WEB-DL+1080p%5D+MVO+%2B+VO+%2B+Ukr+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="3329356288" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5000" />
       <torznab:attr name="category" value="100921" />
       <torznab:attr name="seeders" value="123" />
@@ -519,10 +519,10 @@
       <description>Uploader: 
 			kogesan
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 6 / Серии: 1-10 из 10 (Уэсли Арчер / Wesley Archer) [2022, США, мультфильм, комедия, фантастика, приключения, WEB-DLRip] VO (Сыендук, Audiodrome) + MVO (HDrezka Studio) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViLW9iV3pCWmxPSndtanVKLW1vWHZEUEl3bWlwYWljdW1rOUpuNmVBMldmRTJfak5zUlVaZ1FSa2pHVGFhcmJYdTB1amZleUgxWkljOVlNN0pjeVNiTjFiSzhmem9lQi15RnlvN2EtZG9rc2tTWFlCYmhxYTVLVXlhRG1WZWo4Tms1akVVX1pzeF9SWXFhOXZHQkktX3M&amp;file=Rick+and+Morty+%2F+S6E1-10+of+10+(Wesley+Archer)+%5B2022%2C+WEB-DL%5D+VO+(+Audiodrome)+%2B+MVO+(HDrezka+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViLW9iV3pCWmxPSndtanVKLW1vWHZEUEl3bWlwYWljdW1rOUpuNmVBMldmRTJfak5zUlVaZ1FSa2pHVGFhcmJYdTB1amZleUgxWkljOVlNN0pjeVNiTjFiSzhmem9lQi15RnlvN2EtZG9rc2tTWFlCYmhxYTVLVXlhRG1WZWo4Tms1akVVX1pzeF9SWXFhOXZHQkktX3M&amp;file=Rick+and+Morty+%2F+S6E1-10+of+10+(Wesley+Archer)+%5B2022%2C+WEB-DL%5D+VO+(+Audiodrome)+%2B+MVO+(HDrezka+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5030</category>
       <category>100815</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViLW9iV3pCWmxPSndtanVKLW1vWHZEUEl3bWlwYWljdW1rOUpuNmVBMldmRTJfak5zUlVaZ1FSa2pHVGFhcmJYdTB1amZleUgxWkljOVlNN0pjeVNiTjFiSzhmem9lQi15RnlvN2EtZG9rc2tTWFlCYmhxYTVLVXlhRG1WZWo4Tms1akVVX1pzeF9SWXFhOXZHQkktX3M&amp;file=Rick+and+Morty+%2F+S6E1-10+of+10+(Wesley+Archer)+%5B2022%2C+WEB-DL%5D+VO+(+Audiodrome)+%2B+MVO+(HDrezka+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="5248346624" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViLW9iV3pCWmxPSndtanVKLW1vWHZEUEl3bWlwYWljdW1rOUpuNmVBMldmRTJfak5zUlVaZ1FSa2pHVGFhcmJYdTB1amZleUgxWkljOVlNN0pjeVNiTjFiSzhmem9lQi15RnlvN2EtZG9rc2tTWFlCYmhxYTVLVXlhRG1WZWo4Tms1akVVX1pzeF9SWXFhOXZHQkktX3M&amp;file=Rick+and+Morty+%2F+S6E1-10+of+10+(Wesley+Archer)+%5B2022%2C+WEB-DL%5D+VO+(+Audiodrome)+%2B+MVO+(HDrezka+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="5248346624" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5030" />
       <torznab:attr name="category" value="100815" />
       <torznab:attr name="seeders" value="55" />
@@ -544,10 +544,10 @@
       <description>Uploader: 
 			Renesаns
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 1 / Серии: 1-11 из 11 (Пит Мишелс, Уэсли Арчер, Брайан Ньютон) [2013, США, Мультфильм, приключения, фантастика, комедия, BDRip 1080p] MVO (TVShows) + Original + Sub (Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVadjdXdEllRFhpaTNoZDN2YU9acVVWbTBzTUhoMmRiY21tcTZVbVJfdzhDYVpYbEY0QXFfQ3ZMSGF4QnhJcVViWUk0cXY2a0tVUkJIclZJLW01MnhVYm9wQ3ZvQU9wVlgzOXhsSE5UYW5VNU5DYjNrckdDeWdkT0NIN25xNl9sV3NFV2RyeGpuMEdjQWpEenBLUTIwRjc&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+BDRip+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVadjdXdEllRFhpaTNoZDN2YU9acVVWbTBzTUhoMmRiY21tcTZVbVJfdzhDYVpYbEY0QXFfQ3ZMSGF4QnhJcVViWUk0cXY2a0tVUkJIclZJLW01MnhVYm9wQ3ZvQU9wVlgzOXhsSE5UYW5VNU5DYjNrckdDeWdkT0NIN25xNl9sV3NFV2RyeGpuMEdjQWpEenBLUTIwRjc&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+BDRip+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVadjdXdEllRFhpaTNoZDN2YU9acVVWbTBzTUhoMmRiY21tcTZVbVJfdzhDYVpYbEY0QXFfQ3ZMSGF4QnhJcVViWUk0cXY2a0tVUkJIclZJLW01MnhVYm9wQ3ZvQU9wVlgzOXhsSE5UYW5VNU5DYjNrckdDeWdkT0NIN25xNl9sV3NFV2RyeGpuMEdjQWpEenBLUTIwRjc&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+BDRip+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Eng)" length="13580742656" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVadjdXdEllRFhpaTNoZDN2YU9acVVWbTBzTUhoMmRiY21tcTZVbVJfdzhDYVpYbEY0QXFfQ3ZMSGF4QnhJcVViWUk0cXY2a0tVUkJIclZJLW01MnhVYm9wQ3ZvQU9wVlgzOXhsSE5UYW5VNU5DYjNrckdDeWdkT0NIN25xNl9sV3NFV2RyeGpuMEdjQWpEenBLUTIwRjc&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+BDRip+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Eng)" length="13580742656" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="17" />
@@ -569,10 +569,10 @@
       <description>Uploader: 
 			ZheGalua
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 5 / Серии: 1-10 из 10 (Пит Мишелс, Брайан Ньютон, Джон Райс) [2021, США, Мультфильм, комедия, фантастика, WEB-DL 720p] VO (Сыендук) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaX0E5Y2s0SkNNbjFialM2ejVfMnFZSklfQ2tZbGU0ZWtWX2dmTE1FTU5iZmRINUdsVExScVFoVEJWSnRDdzlGaWliaEpGVGZNYS1RRHRfOU5MSkpyMWE4OFVWU2loOW5FTUNwNzVKZEVvajAweGpzaU5XNGx5VHJkVm9oX1JNWVBqVW9RLW92UjBFVkE1WDRyX1JyMTQ&amp;file=Rick+and+Morty+%2F+S5E1-10+of+10+%5B2021%2C+WEB-DL+720p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaX0E5Y2s0SkNNbjFialM2ejVfMnFZSklfQ2tZbGU0ZWtWX2dmTE1FTU5iZmRINUdsVExScVFoVEJWSnRDdzlGaWliaEpGVGZNYS1RRHRfOU5MSkpyMWE4OFVWU2loOW5FTUNwNzVKZEVvajAweGpzaU5XNGx5VHJkVm9oX1JNWVBqVW9RLW92UjBFVkE1WDRyX1JyMTQ&amp;file=Rick+and+Morty+%2F+S5E1-10+of+10+%5B2021%2C+WEB-DL+720p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaX0E5Y2s0SkNNbjFialM2ejVfMnFZSklfQ2tZbGU0ZWtWX2dmTE1FTU5iZmRINUdsVExScVFoVEJWSnRDdzlGaWliaEpGVGZNYS1RRHRfOU5MSkpyMWE4OFVWU2loOW5FTUNwNzVKZEVvajAweGpzaU5XNGx5VHJkVm9oX1JNWVBqVW9RLW92UjBFVkE1WDRyX1JyMTQ&amp;file=Rick+and+Morty+%2F+S5E1-10+of+10+%5B2021%2C+WEB-DL+720p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="5963437056" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaX0E5Y2s0SkNNbjFialM2ejVfMnFZSklfQ2tZbGU0ZWtWX2dmTE1FTU5iZmRINUdsVExScVFoVEJWSnRDdzlGaWliaEpGVGZNYS1RRHRfOU5MSkpyMWE4OFVWU2loOW5FTUNwNzVKZEVvajAweGpzaU5XNGx5VHJkVm9oX1JNWVBqVW9RLW92UjBFVkE1WDRyX1JyMTQ&amp;file=Rick+and+Morty+%2F+S5E1-10+of+10+%5B2021%2C+WEB-DL+720p%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="5963437056" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="37" />
@@ -594,10 +594,10 @@
       <description>Uploader: 
 			Wentworth_Miller
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 7 / Серии: 1-9 из 10 (Уэсли Арчер / Wesley Archer) [2023, США, Мультфильм, комедия, фантастика, WEB-DL 1080p] MVO (TVShows) + Original + Sub (Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaZ2tuZWRxTDNrR3lxbS14Wl93Qm0yM2JxWjhnUmRvTkJoQ1MtVVUxWHQ4Z2R5dVItblNMbUhWNWFtUHVWRDAzaHNhaldqdzhQVDFnNlh5VHNxRG9pNC1yTkVMU0EyMHp6NEZFMmUyT2M1QXM4NnBocm5rTjk1VUdHMEU4V0Y1cUs0WV9zd0xXWUJNd1czYXdjWFZDWG4&amp;file=Rick+and+Morty+%2F+S7E1-9+of+10+(Wesley+Archer)+%5B2023%2C+WEB-DL+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaZ2tuZWRxTDNrR3lxbS14Wl93Qm0yM2JxWjhnUmRvTkJoQ1MtVVUxWHQ4Z2R5dVItblNMbUhWNWFtUHVWRDAzaHNhaldqdzhQVDFnNlh5VHNxRG9pNC1yTkVMU0EyMHp6NEZFMmUyT2M1QXM4NnBocm5rTjk1VUdHMEU4V0Y1cUs0WV9zd0xXWUJNd1czYXdjWFZDWG4&amp;file=Rick+and+Morty+%2F+S7E1-9+of+10+(Wesley+Archer)+%5B2023%2C+WEB-DL+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaZ2tuZWRxTDNrR3lxbS14Wl93Qm0yM2JxWjhnUmRvTkJoQ1MtVVUxWHQ4Z2R5dVItblNMbUhWNWFtUHVWRDAzaHNhaldqdzhQVDFnNlh5VHNxRG9pNC1yTkVMU0EyMHp6NEZFMmUyT2M1QXM4NnBocm5rTjk1VUdHMEU4V0Y1cUs0WV9zd0xXWUJNd1czYXdjWFZDWG4&amp;file=Rick+and+Morty+%2F+S7E1-9+of+10+(Wesley+Archer)+%5B2023%2C+WEB-DL+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Eng)" length="13472209920" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaZ2tuZWRxTDNrR3lxbS14Wl93Qm0yM2JxWjhnUmRvTkJoQ1MtVVUxWHQ4Z2R5dVItblNMbUhWNWFtUHVWRDAzaHNhaldqdzhQVDFnNlh5VHNxRG9pNC1yTkVMU0EyMHp6NEZFMmUyT2M1QXM4NnBocm5rTjk1VUdHMEU4V0Y1cUs0WV9zd0xXWUJNd1czYXdjWFZDWG4&amp;file=Rick+and+Morty+%2F+S7E1-9+of+10+(Wesley+Archer)+%5B2023%2C+WEB-DL+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Eng)" length="13472209920" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="16" />
@@ -619,10 +619,10 @@
       <description>Uploader: 
 			karta
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 1, 2 / Серии: 1-21 из 21 (Пит Мишелс, Брайан Ньютон, Джон Райс) [2013-2015, США, комедия, фантастика, HDRip] VO (Сыендук) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhN0VObEd2QUZxbVBzeC02RDh1UHVrNF83NVVTMnNiQTV0QlJzUDV1NG8tbnlxYzJSVU41MERTc1d3NkhmNlVPZEJsQkJkZm1talRXMXVqTFVYRno0NG1qMFUtTU9WakxsNWNDNHdUV0sxLUJJQUx1dDgwcWk5VHNIQW9yVHA4dTRRclNVZEJ4Zy0tNEtBcFNPUVduWEc&amp;file=Rick+and+Morty+%2F+S1E1-21+of+21+%5B2013-2015%2C+HDRip%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhN0VObEd2QUZxbVBzeC02RDh1UHVrNF83NVVTMnNiQTV0QlJzUDV1NG8tbnlxYzJSVU41MERTc1d3NkhmNlVPZEJsQkJkZm1talRXMXVqTFVYRno0NG1qMFUtTU9WakxsNWNDNHdUV0sxLUJJQUx1dDgwcWk5VHNIQW9yVHA4dTRRclNVZEJ4Zy0tNEtBcFNPUVduWEc&amp;file=Rick+and+Morty+%2F+S1E1-21+of+21+%5B2013-2015%2C+HDRip%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5030</category>
       <category>100815</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhN0VObEd2QUZxbVBzeC02RDh1UHVrNF83NVVTMnNiQTV0QlJzUDV1NG8tbnlxYzJSVU41MERTc1d3NkhmNlVPZEJsQkJkZm1talRXMXVqTFVYRno0NG1qMFUtTU9WakxsNWNDNHdUV0sxLUJJQUx1dDgwcWk5VHNIQW9yVHA4dTRRclNVZEJ4Zy0tNEtBcFNPUVduWEc&amp;file=Rick+and+Morty+%2F+S1E1-21+of+21+%5B2013-2015%2C+HDRip%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="9754926080" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhN0VObEd2QUZxbVBzeC02RDh1UHVrNF83NVVTMnNiQTV0QlJzUDV1NG8tbnlxYzJSVU41MERTc1d3NkhmNlVPZEJsQkJkZm1talRXMXVqTFVYRno0NG1qMFUtTU9WakxsNWNDNHdUV0sxLUJJQUx1dDgwcWk5VHNIQW9yVHA4dTRRclNVZEJ4Zy0tNEtBcFNPUVduWEc&amp;file=Rick+and+Morty+%2F+S1E1-21+of+21+%5B2013-2015%2C+HDRip%5D+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="9754926080" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5030" />
       <torznab:attr name="category" value="100815" />
       <torznab:attr name="seeders" value="19" />
@@ -644,10 +644,10 @@
       <description>Uploader: 
 			kogesan
 		&lt;br&gt;Рик и Морти: Аниме / Rick and Morty: The Anime / Сезон: 1 / Серии: 1-10 из 10 (Такаси Сано / Takashi Sano) [2024, США, Япония, фантастика, приключения, WEB-DL 1080p] MVO (TVShows, HDrezka, WStudio) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaVUlsenpvN05wZXNlUjM3Zkl4ekN5SkljNl8xdUMyT0NfY0JncWV3ZE9FbDVnZUJjZGJDVmhHc0w5bFFNRzNUano2UXBJUzgtM0xIWjV4ZnNFclZnMEdBQkFjcXU5bV9qRFVmMGhBT2UyLWg2cG9IZ19iNF9vOVVfdV9JMkgyX3V0Q3phQ2g0VVhsbmV6Z0FuMTQzcXg&amp;file=Rick+and+Morty%3A+The+Anime+%2F+S1E1-10+of+10+(Takashi+Sano)+%5B2024%2C+WEB-DL+1080p%5D+MVO+(TVShows%2C+HDrezka%2C+WStudio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaVUlsenpvN05wZXNlUjM3Zkl4ekN5SkljNl8xdUMyT0NfY0JncWV3ZE9FbDVnZUJjZGJDVmhHc0w5bFFNRzNUano2UXBJUzgtM0xIWjV4ZnNFclZnMEdBQkFjcXU5bV9qRFVmMGhBT2UyLWg2cG9IZ19iNF9vOVVfdV9JMkgyX3V0Q3phQ2g0VVhsbmV6Z0FuMTQzcXg&amp;file=Rick+and+Morty%3A+The+Anime+%2F+S1E1-10+of+10+(Takashi+Sano)+%5B2024%2C+WEB-DL+1080p%5D+MVO+(TVShows%2C+HDrezka%2C+WStudio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaVUlsenpvN05wZXNlUjM3Zkl4ekN5SkljNl8xdUMyT0NfY0JncWV3ZE9FbDVnZUJjZGJDVmhHc0w5bFFNRzNUano2UXBJUzgtM0xIWjV4ZnNFclZnMEdBQkFjcXU5bV9qRFVmMGhBT2UyLWg2cG9IZ19iNF9vOVVfdV9JMkgyX3V0Q3phQ2g0VVhsbmV6Z0FuMTQzcXg&amp;file=Rick+and+Morty%3A+The+Anime+%2F+S1E1-10+of+10+(Takashi+Sano)+%5B2024%2C+WEB-DL+1080p%5D+MVO+(TVShows%2C+HDrezka%2C+WStudio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="6836160000" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaVUlsenpvN05wZXNlUjM3Zkl4ekN5SkljNl8xdUMyT0NfY0JncWV3ZE9FbDVnZUJjZGJDVmhHc0w5bFFNRzNUano2UXBJUzgtM0xIWjV4ZnNFclZnMEdBQkFjcXU5bV9qRFVmMGhBT2UyLWg2cG9IZ19iNF9vOVVfdV9JMkgyX3V0Q3phQ2g0VVhsbmV6Z0FuMTQzcXg&amp;file=Rick+and+Morty%3A+The+Anime+%2F+S1E1-10+of+10+(Takashi+Sano)+%5B2024%2C+WEB-DL+1080p%5D+MVO+(TVShows%2C+HDrezka%2C+WStudio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="6836160000" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="22" />
@@ -669,10 +669,10 @@
       <description>Uploader: 
 			whip93
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 1 / Серии: 1-11 из 11 (Джастин Ройланд, Дэн Хармон) [2013, США, комедия, приключения, фантастика, BDRip 1080p] VO (Сыендук) + Original + Com + Sub (Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViaEhUY25WOGVjUXFZVzEybDlCQkNSdmxSN1lpMm44NXJTUTU4TVFUeUVXY0ZhU2dMX0E5Qzlndnh4aXhMdG5nVzBpeDNuNmlpX18tVlBxbERSanpTMEpYU0M2d1k2MGg4QWUtYkl5Z2lEOVZXajBJY3VDYWtuUWpDQ2NLWHRXQkhEcjNka00yZVFyRG5Tb0VsdXBYRWc&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Com+%2B+Sub+(Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViaEhUY25WOGVjUXFZVzEybDlCQkNSdmxSN1lpMm44NXJTUTU4TVFUeUVXY0ZhU2dMX0E5Qzlndnh4aXhMdG5nVzBpeDNuNmlpX18tVlBxbERSanpTMEpYU0M2d1k2MGg4QWUtYkl5Z2lEOVZXajBJY3VDYWtuUWpDQ2NLWHRXQkhEcjNka00yZVFyRG5Tb0VsdXBYRWc&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Com+%2B+Sub+(Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViaEhUY25WOGVjUXFZVzEybDlCQkNSdmxSN1lpMm44NXJTUTU4TVFUeUVXY0ZhU2dMX0E5Qzlndnh4aXhMdG5nVzBpeDNuNmlpX18tVlBxbERSanpTMEpYU0M2d1k2MGg4QWUtYkl5Z2lEOVZXajBJY3VDYWtuUWpDQ2NLWHRXQkhEcjNka00yZVFyRG5Tb0VsdXBYRWc&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Com+%2B+Sub+(Eng)" length="8553838592" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViaEhUY25WOGVjUXFZVzEybDlCQkNSdmxSN1lpMm44NXJTUTU4TVFUeUVXY0ZhU2dMX0E5Qzlndnh4aXhMdG5nVzBpeDNuNmlpX18tVlBxbERSanpTMEpYU0M2d1k2MGg4QWUtYkl5Z2lEOVZXajBJY3VDYWtuUWpDQ2NLWHRXQkhEcjNka00yZVFyRG5Tb0VsdXBYRWc&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+BDRip+1080p%5D+VO+%2B+Original+%2B+Com+%2B+Sub+(Eng)" length="8553838592" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="17" />
@@ -694,10 +694,10 @@
       <description>Uploader: 
 			multibear
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 1 / Серии: 1-11 из 11 (Джастин Ройланд) [2013, США, комедия, приключения, фантастика, WEB-DL 720p] VO (Сыендук) + Original</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaQUdqQmhoeHBXODRuc0wzYlpMbm9sZkR1b2tETGJTNC1HQkF4TDNGTVJBOWpoT09JRDNJVXBkbWpVaFI2TnBNT1IzSVJRODBYbEh3QXRKald5U0VXTUFTQkYxSkhkRmVSeWFIanJEYlJlRURuTFgyUmlCeldXU0V3UHVDNDRIMVRWTEh5OUJLckNnbWp4R1d3eG0xTXk&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+WEB-DL+720p%5D+VO+%2B+Original</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaQUdqQmhoeHBXODRuc0wzYlpMbm9sZkR1b2tETGJTNC1HQkF4TDNGTVJBOWpoT09JRDNJVXBkbWpVaFI2TnBNT1IzSVJRODBYbEh3QXRKald5U0VXTUFTQkYxSkhkRmVSeWFIanJEYlJlRURuTFgyUmlCeldXU0V3UHVDNDRIMVRWTEh5OUJLckNnbWp4R1d3eG0xTXk&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+WEB-DL+720p%5D+VO+%2B+Original</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaQUdqQmhoeHBXODRuc0wzYlpMbm9sZkR1b2tETGJTNC1HQkF4TDNGTVJBOWpoT09JRDNJVXBkbWpVaFI2TnBNT1IzSVJRODBYbEh3QXRKald5U0VXTUFTQkYxSkhkRmVSeWFIanJEYlJlRURuTFgyUmlCeldXU0V3UHVDNDRIMVRWTEh5OUJLckNnbWp4R1d3eG0xTXk&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+WEB-DL+720p%5D+VO+%2B+Original" length="6485928960" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaQUdqQmhoeHBXODRuc0wzYlpMbm9sZkR1b2tETGJTNC1HQkF4TDNGTVJBOWpoT09JRDNJVXBkbWpVaFI2TnBNT1IzSVJRODBYbEh3QXRKald5U0VXTUFTQkYxSkhkRmVSeWFIanJEYlJlRURuTFgyUmlCeldXU0V3UHVDNDRIMVRWTEh5OUJLckNnbWp4R1d3eG0xTXk&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+WEB-DL+720p%5D+VO+%2B+Original" length="6485928960" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="21" />
@@ -719,10 +719,10 @@
       <description>Uploader: 
 			ZheGalua
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 4 / Серии: 1-10 из 10 (Пит Мишелс, Брайан Ньютон, Джон Райс) [2019, США, Мультфильм, комедия, фантастика, WEBRip 720p] VO (Сыендук) + Original</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaS05UX0swWnJ1ZTRUcVpkeWFFaFZ3VGRvUXd6Q0VnX3FHMEZCRjF2dGR0WXFHcVJIZ2FpVnp4dk1qcG5KSWtyLW85RFluZURiV2p5QlJpZXZseUpzMFJBeVdsQXNyTDlJYUttX0k3alFhUGR4NU9IcFRwWUxWeVNfdTVUNy15OE1MQmpuSW5FSklObFRaeUlBS3pIY00&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2019%2C+WEBRip+720p%5D+VO+%2B+Original</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaS05UX0swWnJ1ZTRUcVpkeWFFaFZ3VGRvUXd6Q0VnX3FHMEZCRjF2dGR0WXFHcVJIZ2FpVnp4dk1qcG5KSWtyLW85RFluZURiV2p5QlJpZXZseUpzMFJBeVdsQXNyTDlJYUttX0k3alFhUGR4NU9IcFRwWUxWeVNfdTVUNy15OE1MQmpuSW5FSklObFRaeUlBS3pIY00&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2019%2C+WEBRip+720p%5D+VO+%2B+Original</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaS05UX0swWnJ1ZTRUcVpkeWFFaFZ3VGRvUXd6Q0VnX3FHMEZCRjF2dGR0WXFHcVJIZ2FpVnp4dk1qcG5KSWtyLW85RFluZURiV2p5QlJpZXZseUpzMFJBeVdsQXNyTDlJYUttX0k3alFhUGR4NU9IcFRwWUxWeVNfdTVUNy15OE1MQmpuSW5FSklObFRaeUlBS3pIY00&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2019%2C+WEBRip+720p%5D+VO+%2B+Original" length="4110999808" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaS05UX0swWnJ1ZTRUcVpkeWFFaFZ3VGRvUXd6Q0VnX3FHMEZCRjF2dGR0WXFHcVJIZ2FpVnp4dk1qcG5KSWtyLW85RFluZURiV2p5QlJpZXZseUpzMFJBeVdsQXNyTDlJYUttX0k3alFhUGR4NU9IcFRwWUxWeVNfdTVUNy15OE1MQmpuSW5FSklObFRaeUlBS3pIY00&amp;file=Rick+and+Morty+%2F+S4E1-10+of+10+%5B2019%2C+WEBRip+720p%5D+VO+%2B+Original" length="4110999808" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="33" />
@@ -744,10 +744,10 @@
       <description>Uploader: 
 			gremlincom
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 1 / Серии: 1-11 из 11 (Пит Мишелс, Брайан Ньютон, Джон Райс) [2013-2015, США, комедия, фантастика, BDRip 1080p] MVO (Gremlin Creative Studio) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaVENjc0E3cHRnNmlyaHZ1OU02MDQ2dHV2M3kyd3FZWWpVM1RwamszUzgzQ0tsOHA5WmhmaG96allBWDRwY2k2cldRc2RtZGFDN2I3Z0hwbnF5bWpOUmpDdlczWWVTN3gzVmttWV8xVE00b0hxckF3eWFqM0FXQTczQXpXYUtMMXpnLUxNMHBkZnQ1dGc3YVNqb3hEano&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013-2015%2C+BDRip+1080p%5D+MVO+(Gremlin+Creative+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaVENjc0E3cHRnNmlyaHZ1OU02MDQ2dHV2M3kyd3FZWWpVM1RwamszUzgzQ0tsOHA5WmhmaG96allBWDRwY2k2cldRc2RtZGFDN2I3Z0hwbnF5bWpOUmpDdlczWWVTN3gzVmttWV8xVE00b0hxckF3eWFqM0FXQTczQXpXYUtMMXpnLUxNMHBkZnQ1dGc3YVNqb3hEano&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013-2015%2C+BDRip+1080p%5D+MVO+(Gremlin+Creative+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaVENjc0E3cHRnNmlyaHZ1OU02MDQ2dHV2M3kyd3FZWWpVM1RwamszUzgzQ0tsOHA5WmhmaG96allBWDRwY2k2cldRc2RtZGFDN2I3Z0hwbnF5bWpOUmpDdlczWWVTN3gzVmttWV8xVE00b0hxckF3eWFqM0FXQTczQXpXYUtMMXpnLUxNMHBkZnQ1dGc3YVNqb3hEano&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013-2015%2C+BDRip+1080p%5D+MVO+(Gremlin+Creative+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="8922580992" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaVENjc0E3cHRnNmlyaHZ1OU02MDQ2dHV2M3kyd3FZWWpVM1RwamszUzgzQ0tsOHA5WmhmaG96allBWDRwY2k2cldRc2RtZGFDN2I3Z0hwbnF5bWpOUmpDdlczWWVTN3gzVmttWV8xVE00b0hxckF3eWFqM0FXQTczQXpXYUtMMXpnLUxNMHBkZnQ1dGc3YVNqb3hEano&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013-2015%2C+BDRip+1080p%5D+MVO+(Gremlin+Creative+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="8922580992" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="10" />
@@ -769,10 +769,10 @@
       <description>Uploader: 
 			Wog39
 		&lt;br&gt;[Oni Press] Rick and Morty / Рик и Морти (Выпуски 1-60 + Bonus) [2015-2023, ongoing, CBR, ENG] обновление 11.12.2023</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZYzZoYmlzMFlqU3lwWEpIWDRmUklKRUU4UDJOLUUxV3pSZFZqN3VXODFwZnVIVTIzWE1yZFQ2dURFa09zRDU1c3YtNXpBa2FpLTc2aXpBX3JEbGVBTUVuTVdfMGxHbGpvOUJ4OC1BWkxnQ1RvQjlCVzQ5bm9VeFA0WGRPNnFmVlhHV1MzWmhDNkI5NkU5U05oU0RoNUY&amp;file=%5BOni+Press%5D+Rick+and+Morty+%2F+(+1-60+%2B+Bonus)+%5B2015-2023%2C+ongoing%2C+CBR%2C+ENG%5D+11.12.2023</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZYzZoYmlzMFlqU3lwWEpIWDRmUklKRUU4UDJOLUUxV3pSZFZqN3VXODFwZnVIVTIzWE1yZFQ2dURFa09zRDU1c3YtNXpBa2FpLTc2aXpBX3JEbGVBTUVuTVdfMGxHbGpvOUJ4OC1BWkxnQ1RvQjlCVzQ5bm9VeFA0WGRPNnFmVlhHV1MzWmhDNkI5NkU5U05oU0RoNUY&amp;file=%5BOni+Press%5D+Rick+and+Morty+%2F+(+1-60+%2B+Bonus)+%5B2015-2023%2C+ongoing%2C+CBR%2C+ENG%5D+11.12.2023</link>
       <category>7030</category>
       <category>102464</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZYzZoYmlzMFlqU3lwWEpIWDRmUklKRUU4UDJOLUUxV3pSZFZqN3VXODFwZnVIVTIzWE1yZFQ2dURFa09zRDU1c3YtNXpBa2FpLTc2aXpBX3JEbGVBTUVuTVdfMGxHbGpvOUJ4OC1BWkxnQ1RvQjlCVzQ5bm9VeFA0WGRPNnFmVlhHV1MzWmhDNkI5NkU5U05oU0RoNUY&amp;file=%5BOni+Press%5D+Rick+and+Morty+%2F+(+1-60+%2B+Bonus)+%5B2015-2023%2C+ongoing%2C+CBR%2C+ENG%5D+11.12.2023" length="6106480640" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZYzZoYmlzMFlqU3lwWEpIWDRmUklKRUU4UDJOLUUxV3pSZFZqN3VXODFwZnVIVTIzWE1yZFQ2dURFa09zRDU1c3YtNXpBa2FpLTc2aXpBX3JEbGVBTUVuTVdfMGxHbGpvOUJ4OC1BWkxnQ1RvQjlCVzQ5bm9VeFA0WGRPNnFmVlhHV1MzWmhDNkI5NkU5U05oU0RoNUY&amp;file=%5BOni+Press%5D+Rick+and+Morty+%2F+(+1-60+%2B+Bonus)+%5B2015-2023%2C+ongoing%2C+CBR%2C+ENG%5D+11.12.2023" length="6106480640" type="application/x-bittorrent" />
       <torznab:attr name="category" value="7030" />
       <torznab:attr name="category" value="102464" />
       <torznab:attr name="seeders" value="10" />
@@ -794,10 +794,10 @@
       <description>Uploader: 
 			Eefrit
 		&lt;br&gt;[DL] Rick and Morty: Virtual Rick-ality [P] [ENG / ENG] (2017, Arcade, VR Only) [Portable]</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaMjVYSUJoM3VCY3dFWHZmZUwxa1hLRjhGNDZNa0dRT0J6Vk5jcVljNy1BRVVvb3dGbDdyRmdZaUlUbUJtdjV6b29sdlVNTWtKODI2bktnUFNidFpjclpVcFhnSTFFSmRPM1E1UFUzUkNQcDJ0VWVvNU92XzlWbS01RTVJbFR2OWtfaHZOMWE2c3J1MVA0dm9SczQ2Z1Q&amp;file=%5BDL%5D+Rick+and+Morty%3A+Virtual+Rick-ality+%5BP%5D+%5BENG+%2F+ENG%5D+(2017%2C+Arcade%2C+VR+Only)+%5BPortable%5D</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaMjVYSUJoM3VCY3dFWHZmZUwxa1hLRjhGNDZNa0dRT0J6Vk5jcVljNy1BRVVvb3dGbDdyRmdZaUlUbUJtdjV6b29sdlVNTWtKODI2bktnUFNidFpjclpVcFhnSTFFSmRPM1E1UFUzUkNQcDJ0VWVvNU92XzlWbS01RTVJbFR2OWtfaHZOMWE2c3J1MVA0dm9SczQ2Z1Q&amp;file=%5BDL%5D+Rick+and+Morty%3A+Virtual+Rick-ality+%5BP%5D+%5BENG+%2F+ENG%5D+(2017%2C+Arcade%2C+VR+Only)+%5BPortable%5D</link>
       <category>4050</category>
       <category>100127</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaMjVYSUJoM3VCY3dFWHZmZUwxa1hLRjhGNDZNa0dRT0J6Vk5jcVljNy1BRVVvb3dGbDdyRmdZaUlUbUJtdjV6b29sdlVNTWtKODI2bktnUFNidFpjclpVcFhnSTFFSmRPM1E1UFUzUkNQcDJ0VWVvNU92XzlWbS01RTVJbFR2OWtfaHZOMWE2c3J1MVA0dm9SczQ2Z1Q&amp;file=%5BDL%5D+Rick+and+Morty%3A+Virtual+Rick-ality+%5BP%5D+%5BENG+%2F+ENG%5D+(2017%2C+Arcade%2C+VR+Only)+%5BPortable%5D" length="2042904320" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaMjVYSUJoM3VCY3dFWHZmZUwxa1hLRjhGNDZNa0dRT0J6Vk5jcVljNy1BRVVvb3dGbDdyRmdZaUlUbUJtdjV6b29sdlVNTWtKODI2bktnUFNidFpjclpVcFhnSTFFSmRPM1E1UFUzUkNQcDJ0VWVvNU92XzlWbS01RTVJbFR2OWtfaHZOMWE2c3J1MVA0dm9SczQ2Z1Q&amp;file=%5BDL%5D+Rick+and+Morty%3A+Virtual+Rick-ality+%5BP%5D+%5BENG+%2F+ENG%5D+(2017%2C+Arcade%2C+VR+Only)+%5BPortable%5D" length="2042904320" type="application/x-bittorrent" />
       <torznab:attr name="category" value="4050" />
       <torznab:attr name="category" value="100127" />
       <torznab:attr name="seeders" value="20" />
@@ -819,10 +819,10 @@
       <description>Uploader: 
 			NerdPride
 		&lt;br&gt;[Oni Press / Комильфо] Rick and Morty / Рик и Морти комиксы (60 номеров основной серии + 28 номеров лимиток) [2015-2021, CBR, RUS] - обновлено 12.02.2022</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhZ1BNc1hrTV9PeW1RRVkxRUdxZ2JaaGRScHF2dGNuZ2hxdVd3VV9aUTlqN2hpb29lTWtDcExMSGQyRk5xZS1xd0UzMEtCWFRJV0l2N3NxemdpX0s0VWljUXlidWpkZGpWenkzTGJvMzhWWXQxNkFzNXJIV21VTDRWblI2SlVlZllZanBoNUd4VDBVaFdIQ2c4OHctLTQ&amp;file=%5BOni+Press+%2F+%5D+Rick+and+Morty+%2F+(60+%2B+28+)+%5B2015-2021%2C+CBR%2C+RUS%5D+-+12.02.2022</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhZ1BNc1hrTV9PeW1RRVkxRUdxZ2JaaGRScHF2dGNuZ2hxdVd3VV9aUTlqN2hpb29lTWtDcExMSGQyRk5xZS1xd0UzMEtCWFRJV0l2N3NxemdpX0s0VWljUXlidWpkZGpWenkzTGJvMzhWWXQxNkFzNXJIV21VTDRWblI2SlVlZllZanBoNUd4VDBVaFdIQ2c4OHctLTQ&amp;file=%5BOni+Press+%2F+%5D+Rick+and+Morty+%2F+(60+%2B+28+)+%5B2015-2021%2C+CBR%2C+RUS%5D+-+12.02.2022</link>
       <category>7030</category>
       <category>102461</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhZ1BNc1hrTV9PeW1RRVkxRUdxZ2JaaGRScHF2dGNuZ2hxdVd3VV9aUTlqN2hpb29lTWtDcExMSGQyRk5xZS1xd0UzMEtCWFRJV0l2N3NxemdpX0s0VWljUXlidWpkZGpWenkzTGJvMzhWWXQxNkFzNXJIV21VTDRWblI2SlVlZllZanBoNUd4VDBVaFdIQ2c4OHctLTQ&amp;file=%5BOni+Press+%2F+%5D+Rick+and+Morty+%2F+(60+%2B+28+)+%5B2015-2021%2C+CBR%2C+RUS%5D+-+12.02.2022" length="2108919552" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhZ1BNc1hrTV9PeW1RRVkxRUdxZ2JaaGRScHF2dGNuZ2hxdVd3VV9aUTlqN2hpb29lTWtDcExMSGQyRk5xZS1xd0UzMEtCWFRJV0l2N3NxemdpX0s0VWljUXlidWpkZGpWenkzTGJvMzhWWXQxNkFzNXJIV21VTDRWblI2SlVlZllZanBoNUd4VDBVaFdIQ2c4OHctLTQ&amp;file=%5BOni+Press+%2F+%5D+Rick+and+Morty+%2F+(60+%2B+28+)+%5B2015-2021%2C+CBR%2C+RUS%5D+-+12.02.2022" length="2108919552" type="application/x-bittorrent" />
       <torznab:attr name="category" value="7030" />
       <torznab:attr name="category" value="102461" />
       <torznab:attr name="seeders" value="17" />
@@ -844,10 +844,10 @@
       <description>Uploader: 
 			radonas
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 1 / Серии: 1-11 из 11 [2013, США, Комедия, приключения, фантастика, WEBRip] VO (den904) + Original Eng</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZakZ3bXhVWnN0cVhMOFZYTVlYUXBiUERETW1Vb3oyVHFoaDAwdm9FX0stbndGYzRqU0Z6ZnJwU2pTWFZsZEF4c0lyX0RXN3Rfb0FaRl9JSFNPcjVZVUJJZFl5enZFOVA3MWd6cVA1VWxqNHJVNFo0NDhFOHRJQmwteXcwcG5Mblk2bmI0a2RIci15MXlNcWZaaFVqYm8&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+WEBRip%5D+VO+(den904)+%2B+Original+Eng</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZakZ3bXhVWnN0cVhMOFZYTVlYUXBiUERETW1Vb3oyVHFoaDAwdm9FX0stbndGYzRqU0Z6ZnJwU2pTWFZsZEF4c0lyX0RXN3Rfb0FaRl9JSFNPcjVZVUJJZFl5enZFOVA3MWd6cVA1VWxqNHJVNFo0NDhFOHRJQmwteXcwcG5Mblk2bmI0a2RIci15MXlNcWZaaFVqYm8&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+WEBRip%5D+VO+(den904)+%2B+Original+Eng</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZakZ3bXhVWnN0cVhMOFZYTVlYUXBiUERETW1Vb3oyVHFoaDAwdm9FX0stbndGYzRqU0Z6ZnJwU2pTWFZsZEF4c0lyX0RXN3Rfb0FaRl9JSFNPcjVZVUJJZFl5enZFOVA3MWd6cVA1VWxqNHJVNFo0NDhFOHRJQmwteXcwcG5Mblk2bmI0a2RIci15MXlNcWZaaFVqYm8&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+WEBRip%5D+VO+(den904)+%2B+Original+Eng" length="8056802304" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZakZ3bXhVWnN0cVhMOFZYTVlYUXBiUERETW1Vb3oyVHFoaDAwdm9FX0stbndGYzRqU0Z6ZnJwU2pTWFZsZEF4c0lyX0RXN3Rfb0FaRl9JSFNPcjVZVUJJZFl5enZFOVA3MWd6cVA1VWxqNHJVNFo0NDhFOHRJQmwteXcwcG5Mblk2bmI0a2RIci15MXlNcWZaaFVqYm8&amp;file=Rick+and+Morty+%2F+S1E1-11+of+11+%5B2013%2C+WEBRip%5D+VO+(den904)+%2B+Original+Eng" length="8056802304" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="4" />
@@ -869,10 +869,10 @@
       <description>Uploader: 
 			The Boom_box
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 3 / Серии: 1-10 из 10 (Пит Мишелс, Брайан Ньютон, Джон Райс) [2017, США, комедия, фантастика, HDTVRip 720p] Rus Sub</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViVkhlbnJkSzFmQXlQMm5xZkZiZGdBeTY3ZTZiUlRlSjExaWZBLUg2dFFVd2VwdU1oYlptOGNnemZ6ZFNxSkk2b3pta3BPUjVnQnFrdjV5R3B3bmFDU3N6eHFGTnZrVlF0eU1nZTczQjR2YU9FbHlINFU5QjhfM0Z2a21XeEo2UVhIVExMVFkxdWNfb2hacUZDUmRjQlM&amp;file=Rick+and+Morty+%2F+S3E1-10+of+10+%5B2017%2C+HDTV+720p%5D+Rus+Sub</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViVkhlbnJkSzFmQXlQMm5xZkZiZGdBeTY3ZTZiUlRlSjExaWZBLUg2dFFVd2VwdU1oYlptOGNnemZ6ZFNxSkk2b3pta3BPUjVnQnFrdjV5R3B3bmFDU3N6eHFGTnZrVlF0eU1nZTczQjR2YU9FbHlINFU5QjhfM0Z2a21XeEo2UVhIVExMVFkxdWNfb2hacUZDUmRjQlM&amp;file=Rick+and+Morty+%2F+S3E1-10+of+10+%5B2017%2C+HDTV+720p%5D+Rus+Sub</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViVkhlbnJkSzFmQXlQMm5xZkZiZGdBeTY3ZTZiUlRlSjExaWZBLUg2dFFVd2VwdU1oYlptOGNnemZ6ZFNxSkk2b3pta3BPUjVnQnFrdjV5R3B3bmFDU3N6eHFGTnZrVlF0eU1nZTczQjR2YU9FbHlINFU5QjhfM0Z2a21XeEo2UVhIVExMVFkxdWNfb2hacUZDUmRjQlM&amp;file=Rick+and+Morty+%2F+S3E1-10+of+10+%5B2017%2C+HDTV+720p%5D+Rus+Sub" length="4867619840" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViVkhlbnJkSzFmQXlQMm5xZkZiZGdBeTY3ZTZiUlRlSjExaWZBLUg2dFFVd2VwdU1oYlptOGNnemZ6ZFNxSkk2b3pta3BPUjVnQnFrdjV5R3B3bmFDU3N6eHFGTnZrVlF0eU1nZTczQjR2YU9FbHlINFU5QjhfM0Z2a21XeEo2UVhIVExMVFkxdWNfb2hacUZDUmRjQlM&amp;file=Rick+and+Morty+%2F+S3E1-10+of+10+%5B2017%2C+HDTV+720p%5D+Rus+Sub" length="4867619840" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="6" />
@@ -894,10 +894,10 @@
       <description>Uploader: 
 			Фурия и Фавн
 		&lt;br&gt;Рик и Морти: Аниме / Rick and Morty: The Anime / Сезон: 1 / Серии: 1-10 из 10 (Такаси Сано / Takashi Sano) [2024, США, Япония, фантастика, приключения, WEB-DLRip] MVO (TVShows)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaQjNzc3Y1OVBaX2NzTGcyd003U05BdmNPUzhYZWNjem1fb0lrYWhIb09vdXluRWZZZnphdFdyRnlOTzVySGNHTzhQazhKRDYydTEwanBIVUgwaHhGd3piWURTSjZXWGswdVhXNmdkSDBxRE9DS3VnRnZGekdqUUJGZ2wtOVg4Z3hOWUFvbnhfYXdwM2pyLTdXQ3hjSE4&amp;file=Rick+and+Morty%3A+The+Anime+%2F+S1E1-10+of+10+(Takashi+Sano)+%5B2024%2C+WEB-DL%5D+MVO+(TVShows)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaQjNzc3Y1OVBaX2NzTGcyd003U05BdmNPUzhYZWNjem1fb0lrYWhIb09vdXluRWZZZnphdFdyRnlOTzVySGNHTzhQazhKRDYydTEwanBIVUgwaHhGd3piWURTSjZXWGswdVhXNmdkSDBxRE9DS3VnRnZGekdqUUJGZ2wtOVg4Z3hOWUFvbnhfYXdwM2pyLTdXQ3hjSE4&amp;file=Rick+and+Morty%3A+The+Anime+%2F+S1E1-10+of+10+(Takashi+Sano)+%5B2024%2C+WEB-DL%5D+MVO+(TVShows)</link>
       <category>5030</category>
       <category>100815</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaQjNzc3Y1OVBaX2NzTGcyd003U05BdmNPUzhYZWNjem1fb0lrYWhIb09vdXluRWZZZnphdFdyRnlOTzVySGNHTzhQazhKRDYydTEwanBIVUgwaHhGd3piWURTSjZXWGswdVhXNmdkSDBxRE9DS3VnRnZGekdqUUJGZ2wtOVg4Z3hOWUFvbnhfYXdwM2pyLTdXQ3hjSE4&amp;file=Rick+and+Morty%3A+The+Anime+%2F+S1E1-10+of+10+(Takashi+Sano)+%5B2024%2C+WEB-DL%5D+MVO+(TVShows)" length="2140184576" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaQjNzc3Y1OVBaX2NzTGcyd003U05BdmNPUzhYZWNjem1fb0lrYWhIb09vdXluRWZZZnphdFdyRnlOTzVySGNHTzhQazhKRDYydTEwanBIVUgwaHhGd3piWURTSjZXWGswdVhXNmdkSDBxRE9DS3VnRnZGekdqUUJGZ2wtOVg4Z3hOWUFvbnhfYXdwM2pyLTdXQ3hjSE4&amp;file=Rick+and+Morty%3A+The+Anime+%2F+S1E1-10+of+10+(Takashi+Sano)+%5B2024%2C+WEB-DL%5D+MVO+(TVShows)" length="2140184576" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5030" />
       <torznab:attr name="category" value="100815" />
       <torznab:attr name="seeders" value="8" />
@@ -919,10 +919,10 @@
       <description>Uploader: 
 			gremlincom
 		&lt;br&gt;Рик и Морти / Rick And Morty / Сезон: 4 / Серии: 1-5 из 10 (Пит Мишелс, Брайан Ньютон, Джон Райс) [2019, США, Мультфильм, комедия, фантастика, WEB-DLRip 1080p] MVO (Gremlin Creative Studio) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVadzYtQ2I1TUJoRU1rbkM4MTNJOXp4c1daQTVxTFhrT1YzS2g5V2x1TUZvMWE5b1VkMWVlak9oelpUSWpvd3VKS0tMMVE3Z1JyS1B5QllBQUNENk9MaThNdFNnTFhwU3lzMW8tMHl0cTJwLVM1TlpsOXBwV0tHVzFUejZKd1pCVlZKUV84WGhtNFU4dnMtSHpxYk9pdTQ&amp;file=Rick+And+Morty+%2F+S4E1-5+of+10+%5B2019%2C+WEB-DL+1080p%5D+MVO+(Gremlin+Creative+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVadzYtQ2I1TUJoRU1rbkM4MTNJOXp4c1daQTVxTFhrT1YzS2g5V2x1TUZvMWE5b1VkMWVlak9oelpUSWpvd3VKS0tMMVE3Z1JyS1B5QllBQUNENk9MaThNdFNnTFhwU3lzMW8tMHl0cTJwLVM1TlpsOXBwV0tHVzFUejZKd1pCVlZKUV84WGhtNFU4dnMtSHpxYk9pdTQ&amp;file=Rick+And+Morty+%2F+S4E1-5+of+10+%5B2019%2C+WEB-DL+1080p%5D+MVO+(Gremlin+Creative+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVadzYtQ2I1TUJoRU1rbkM4MTNJOXp4c1daQTVxTFhrT1YzS2g5V2x1TUZvMWE5b1VkMWVlak9oelpUSWpvd3VKS0tMMVE3Z1JyS1B5QllBQUNENk9MaThNdFNnTFhwU3lzMW8tMHl0cTJwLVM1TlpsOXBwV0tHVzFUejZKd1pCVlZKUV84WGhtNFU4dnMtSHpxYk9pdTQ&amp;file=Rick+And+Morty+%2F+S4E1-5+of+10+%5B2019%2C+WEB-DL+1080p%5D+MVO+(Gremlin+Creative+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="3218882304" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVadzYtQ2I1TUJoRU1rbkM4MTNJOXp4c1daQTVxTFhrT1YzS2g5V2x1TUZvMWE5b1VkMWVlak9oelpUSWpvd3VKS0tMMVE3Z1JyS1B5QllBQUNENk9MaThNdFNnTFhwU3lzMW8tMHl0cTJwLVM1TlpsOXBwV0tHVzFUejZKd1pCVlZKUV84WGhtNFU4dnMtSHpxYk9pdTQ&amp;file=Rick+And+Morty+%2F+S4E1-5+of+10+%5B2019%2C+WEB-DL+1080p%5D+MVO+(Gremlin+Creative+Studio)+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="3218882304" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="4" />
@@ -944,10 +944,10 @@
       <description>Uploader: 
 			Flanker18
 		&lt;br&gt;[Skillshare / EduCraft Ideas] Blender Beginner Basics: Rick and Morty Spaceship [2021, ENG]</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhOXppNC1pR1JRdWl6MlNWUXRvalV0TEl1Nzhaa3NvaTRneHNWTFNjck9TbFlPZE12N2FEd2ZVM200S2xGcVNDYjVXMWFRU21pOTFDVlhGa3RUT1FuZUFmcTRFNXBMWUp5V1dPNEJRMlhCZ1E0MGNNQmZxa1J5blhIUzZhbUU3Q3dPLVZxQlVqaDlOdjc3V3lFc1dLakM&amp;file=%5BSkillshare+%2F+EduCraft+Ideas%5D+Blender+Beginner+Basics%3A+Rick+and+Morty+Spaceship+%5B2021%2C+ENG%5D</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhOXppNC1pR1JRdWl6MlNWUXRvalV0TEl1Nzhaa3NvaTRneHNWTFNjck9TbFlPZE12N2FEd2ZVM200S2xGcVNDYjVXMWFRU21pOTFDVlhGa3RUT1FuZUFmcTRFNXBMWUp5V1dPNEJRMlhCZ1E0MGNNQmZxa1J5blhIUzZhbUU3Q3dPLVZxQlVqaDlOdjc3V3lFc1dLakM&amp;file=%5BSkillshare+%2F+EduCraft+Ideas%5D+Blender+Beginner+Basics%3A+Rick+and+Morty+Spaceship+%5B2021%2C+ENG%5D</link>
       <category>7040</category>
       <category>101563</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhOXppNC1pR1JRdWl6MlNWUXRvalV0TEl1Nzhaa3NvaTRneHNWTFNjck9TbFlPZE12N2FEd2ZVM200S2xGcVNDYjVXMWFRU21pOTFDVlhGa3RUT1FuZUFmcTRFNXBMWUp5V1dPNEJRMlhCZ1E0MGNNQmZxa1J5blhIUzZhbUU3Q3dPLVZxQlVqaDlOdjc3V3lFc1dLakM&amp;file=%5BSkillshare+%2F+EduCraft+Ideas%5D+Blender+Beginner+Basics%3A+Rick+and+Morty+Spaceship+%5B2021%2C+ENG%5D" length="2889256960" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhOXppNC1pR1JRdWl6MlNWUXRvalV0TEl1Nzhaa3NvaTRneHNWTFNjck9TbFlPZE12N2FEd2ZVM200S2xGcVNDYjVXMWFRU21pOTFDVlhGa3RUT1FuZUFmcTRFNXBMWUp5V1dPNEJRMlhCZ1E0MGNNQmZxa1J5blhIUzZhbUU3Q3dPLVZxQlVqaDlOdjc3V3lFc1dLakM&amp;file=%5BSkillshare+%2F+EduCraft+Ideas%5D+Blender+Beginner+Basics%3A+Rick+and+Morty+Spaceship+%5B2021%2C+ENG%5D" length="2889256960" type="application/x-bittorrent" />
       <torznab:attr name="category" value="7040" />
       <torznab:attr name="category" value="101563" />
       <torznab:attr name="seeders" value="3" />
@@ -969,10 +969,10 @@
       <description>Uploader: 
 			Renesаns
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 4 / Серии: 1-5 из 10 (Пит Мишелс, Уэсли Арчер, Брайан Ньютон) [2019, США, Мультфильм, приключения, фантастика, комедия, WEB-DL 1080p] MVO (TVShows) + Original + Sub (Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhYWR6d0Y3bUpzU0pmcThBVkhmV1JaRFB0LTlSbTFwTVBGQlhtYjM4WXZ6emxmQVBXMlhFeDREck1hNDhOb0NmcHFzQko1Y0tyRk5wRjBtOFpOWDZTN3Z5bXdoakdlN2R6M0pNSWdkb085T01idWF5bjVybi16SWpOYzczZ2tZd0g0WkhiWVJtd3FXUWx5QnRoS1FNYVk&amp;file=Rick+and+Morty+%2F+S4E1-5+of+10+%5B2019%2C+WEB-DL+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhYWR6d0Y3bUpzU0pmcThBVkhmV1JaRFB0LTlSbTFwTVBGQlhtYjM4WXZ6emxmQVBXMlhFeDREck1hNDhOb0NmcHFzQko1Y0tyRk5wRjBtOFpOWDZTN3Z5bXdoakdlN2R6M0pNSWdkb085T01idWF5bjVybi16SWpOYzczZ2tZd0g0WkhiWVJtd3FXUWx5QnRoS1FNYVk&amp;file=Rick+and+Morty+%2F+S4E1-5+of+10+%5B2019%2C+WEB-DL+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhYWR6d0Y3bUpzU0pmcThBVkhmV1JaRFB0LTlSbTFwTVBGQlhtYjM4WXZ6emxmQVBXMlhFeDREck1hNDhOb0NmcHFzQko1Y0tyRk5wRjBtOFpOWDZTN3Z5bXdoakdlN2R6M0pNSWdkb085T01idWF5bjVybi16SWpOYzczZ2tZd0g0WkhiWVJtd3FXUWx5QnRoS1FNYVk&amp;file=Rick+and+Morty+%2F+S4E1-5+of+10+%5B2019%2C+WEB-DL+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Eng)" length="3381192448" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhYWR6d0Y3bUpzU0pmcThBVkhmV1JaRFB0LTlSbTFwTVBGQlhtYjM4WXZ6emxmQVBXMlhFeDREck1hNDhOb0NmcHFzQko1Y0tyRk5wRjBtOFpOWDZTN3Z5bXdoakdlN2R6M0pNSWdkb085T01idWF5bjVybi16SWpOYzczZ2tZd0g0WkhiWVJtd3FXUWx5QnRoS1FNYVk&amp;file=Rick+and+Morty+%2F+S4E1-5+of+10+%5B2019%2C+WEB-DL+1080p%5D+MVO+(TVShows)+%2B+Original+%2B+Sub+(Eng)" length="3381192448" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="2" />
@@ -994,10 +994,10 @@
       <description>Uploader: 
 			Flanker18
 		&lt;br&gt;[Skillshare / Zerina Bandzovic] Learn How to Create 3D Rick And Morty Character [2021, ENG]</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhbU0tWFVUZUhSQlVqTnhPQzBhbDk0R2F0WnpLLTRnUG9TRU9SbzVPS3IzbGVpdFJuWlllZG1WVGt2cG92Rmt1cDV2SXkzaXJQUUU4SjlwQzR4SGI1OEZtQ3hwZF9Ody1DNFlmdVhqWlVLVThTS0VOd3dGcklhVmppRGt1ckZxMFN4cGdYNWFadWRvNkJoeFp5UWg0MW8&amp;file=%5BSkillshare+%2F+Zerina+Bandzovic%5D+Learn+How+to+Create+3D+Rick+And+Morty+Character+%5B2021%2C+ENG%5D</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhbU0tWFVUZUhSQlVqTnhPQzBhbDk0R2F0WnpLLTRnUG9TRU9SbzVPS3IzbGVpdFJuWlllZG1WVGt2cG92Rmt1cDV2SXkzaXJQUUU4SjlwQzR4SGI1OEZtQ3hwZF9Ody1DNFlmdVhqWlVLVThTS0VOd3dGcklhVmppRGt1ckZxMFN4cGdYNWFadWRvNkJoeFp5UWg0MW8&amp;file=%5BSkillshare+%2F+Zerina+Bandzovic%5D+Learn+How+to+Create+3D+Rick+And+Morty+Character+%5B2021%2C+ENG%5D</link>
       <category>7040</category>
       <category>101563</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhbU0tWFVUZUhSQlVqTnhPQzBhbDk0R2F0WnpLLTRnUG9TRU9SbzVPS3IzbGVpdFJuWlllZG1WVGt2cG92Rmt1cDV2SXkzaXJQUUU4SjlwQzR4SGI1OEZtQ3hwZF9Ody1DNFlmdVhqWlVLVThTS0VOd3dGcklhVmppRGt1ckZxMFN4cGdYNWFadWRvNkJoeFp5UWg0MW8&amp;file=%5BSkillshare+%2F+Zerina+Bandzovic%5D+Learn+How+to+Create+3D+Rick+And+Morty+Character+%5B2021%2C+ENG%5D" length="1291288064" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhbU0tWFVUZUhSQlVqTnhPQzBhbDk0R2F0WnpLLTRnUG9TRU9SbzVPS3IzbGVpdFJuWlllZG1WVGt2cG92Rmt1cDV2SXkzaXJQUUU4SjlwQzR4SGI1OEZtQ3hwZF9Ody1DNFlmdVhqWlVLVThTS0VOd3dGcklhVmppRGt1ckZxMFN4cGdYNWFadWRvNkJoeFp5UWg0MW8&amp;file=%5BSkillshare+%2F+Zerina+Bandzovic%5D+Learn+How+to+Create+3D+Rick+And+Morty+Character+%5B2021%2C+ENG%5D" length="1291288064" type="application/x-bittorrent" />
       <torznab:attr name="category" value="7040" />
       <torznab:attr name="category" value="101563" />
       <torznab:attr name="seeders" value="4" />
@@ -1019,10 +1019,10 @@
       <description>Uploader: 
 			trollz
 		&lt;br&gt;[Oni Press/Комильфо] Rick and Morty / Рик и Морти (30 выпусков+BONUS+Обложки) [2015-2017, JPEG, RUS]</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVidDYzLWNIdEpWS1B5Z3RDQkZQT081OVZvZ0tMaURvS09LSTItX0tYWTRLUGFoTVhJNHlRQ1VQMUZUaUVhNFNZLWhQYU11aFZVVHloTzc3Sll1ZmhQcE45QzRaNEF0OVpJbmo3VU16VnhLR3ZJVU53eE5UVjVZRUUyOWxwMExGb0FKcXZxRUdSM0NpZVplRkRMX3NrRWo&amp;file=%5BOni+Press%2F%5D+Rick+and+Morty+%2F+(30+%2BBONUS%2B)+%5B2015-2017%2C+JPEG%2C+RUS%5D</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVidDYzLWNIdEpWS1B5Z3RDQkZQT081OVZvZ0tMaURvS09LSTItX0tYWTRLUGFoTVhJNHlRQ1VQMUZUaUVhNFNZLWhQYU11aFZVVHloTzc3Sll1ZmhQcE45QzRaNEF0OVpJbmo3VU16VnhLR3ZJVU53eE5UVjVZRUUyOWxwMExGb0FKcXZxRUdSM0NpZVplRkRMX3NrRWo&amp;file=%5BOni+Press%2F%5D+Rick+and+Morty+%2F+(30+%2BBONUS%2B)+%5B2015-2017%2C+JPEG%2C+RUS%5D</link>
       <category>7030</category>
       <category>102461</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVidDYzLWNIdEpWS1B5Z3RDQkZQT081OVZvZ0tMaURvS09LSTItX0tYWTRLUGFoTVhJNHlRQ1VQMUZUaUVhNFNZLWhQYU11aFZVVHloTzc3Sll1ZmhQcE45QzRaNEF0OVpJbmo3VU16VnhLR3ZJVU53eE5UVjVZRUUyOWxwMExGb0FKcXZxRUdSM0NpZVplRkRMX3NrRWo&amp;file=%5BOni+Press%2F%5D+Rick+and+Morty+%2F+(30+%2BBONUS%2B)+%5B2015-2017%2C+JPEG%2C+RUS%5D" length="848759168" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVidDYzLWNIdEpWS1B5Z3RDQkZQT081OVZvZ0tMaURvS09LSTItX0tYWTRLUGFoTVhJNHlRQ1VQMUZUaUVhNFNZLWhQYU11aFZVVHloTzc3Sll1ZmhQcE45QzRaNEF0OVpJbmo3VU16VnhLR3ZJVU53eE5UVjVZRUUyOWxwMExGb0FKcXZxRUdSM0NpZVplRkRMX3NrRWo&amp;file=%5BOni+Press%2F%5D+Rick+and+Morty+%2F+(30+%2BBONUS%2B)+%5B2015-2017%2C+JPEG%2C+RUS%5D" length="848759168" type="application/x-bittorrent" />
       <torznab:attr name="category" value="7030" />
       <torznab:attr name="category" value="102461" />
       <torznab:attr name="seeders" value="6" />
@@ -1044,10 +1044,10 @@
       <description>Uploader: 
 			Flanker18
 		&lt;br&gt;[Skillshare / EduCraft Ideas] Blender Beginner Character Basics: Rick from Rick and Morty [2021, ENG]</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViUEthQzZxblF6SWEtWWU2VDBmMTJ3YmJyT2hwaTNuVWlCSnZ6b3gyWXJtcUplVF9JbHN1aGwzRnZXY3RkYmZBYlBlSDVXTVQxd0lKMUZqcm5sODAyUXdscGxoVFg5QnhqQjBvc1I2UElSZDNHR3RlZlRsejI5MkVpazNxMkg5QXQ3bTRxX1FSVEpLSjFHcHdwY2ZUd28&amp;file=%5BSkillshare+%2F+EduCraft+Ideas%5D+Blender+Beginner+Character+Basics%3A+Rick+from+Rick+and+Morty+%5B2021%2C+ENG%5D</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViUEthQzZxblF6SWEtWWU2VDBmMTJ3YmJyT2hwaTNuVWlCSnZ6b3gyWXJtcUplVF9JbHN1aGwzRnZXY3RkYmZBYlBlSDVXTVQxd0lKMUZqcm5sODAyUXdscGxoVFg5QnhqQjBvc1I2UElSZDNHR3RlZlRsejI5MkVpazNxMkg5QXQ3bTRxX1FSVEpLSjFHcHdwY2ZUd28&amp;file=%5BSkillshare+%2F+EduCraft+Ideas%5D+Blender+Beginner+Character+Basics%3A+Rick+from+Rick+and+Morty+%5B2021%2C+ENG%5D</link>
       <category>7040</category>
       <category>101563</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViUEthQzZxblF6SWEtWWU2VDBmMTJ3YmJyT2hwaTNuVWlCSnZ6b3gyWXJtcUplVF9JbHN1aGwzRnZXY3RkYmZBYlBlSDVXTVQxd0lKMUZqcm5sODAyUXdscGxoVFg5QnhqQjBvc1I2UElSZDNHR3RlZlRsejI5MkVpazNxMkg5QXQ3bTRxX1FSVEpLSjFHcHdwY2ZUd28&amp;file=%5BSkillshare+%2F+EduCraft+Ideas%5D+Blender+Beginner+Character+Basics%3A+Rick+from+Rick+and+Morty+%5B2021%2C+ENG%5D" length="2327244544" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViUEthQzZxblF6SWEtWWU2VDBmMTJ3YmJyT2hwaTNuVWlCSnZ6b3gyWXJtcUplVF9JbHN1aGwzRnZXY3RkYmZBYlBlSDVXTVQxd0lKMUZqcm5sODAyUXdscGxoVFg5QnhqQjBvc1I2UElSZDNHR3RlZlRsejI5MkVpazNxMkg5QXQ3bTRxX1FSVEpLSjFHcHdwY2ZUd28&amp;file=%5BSkillshare+%2F+EduCraft+Ideas%5D+Blender+Beginner+Character+Basics%3A+Rick+from+Rick+and+Morty+%5B2021%2C+ENG%5D" length="2327244544" type="application/x-bittorrent" />
       <torznab:attr name="category" value="7040" />
       <torznab:attr name="category" value="101563" />
       <torznab:attr name="seeders" value="2" />
@@ -1069,10 +1069,10 @@
       <description>Uploader: 
 			Flanker18
 		&lt;br&gt;[Skillshare / EduCraft Ideas] Blender Beginner Character Sculpting Quick and Easy: Rick, Morty, and Jerry [2022, ENG]</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZNFp3MXRINWRzWFB3dnRMWGZxSWtBcXl4c2FTaGhfTjJQYXpsakpDYzY0MV9ZOFdzWEhTQkdiNlR4b0duZDZCR1JmVTJxeHdGU1VheGVwNXRCNG96RXpfZ0RzWFpnYlRsUTlnaTE2V29LUWNqbnhwLVZnaVRCcllNM0llUl9UZGtNR1dnTV9jeUhsRFJGMEUzOVVHbmg&amp;file=%5BSkillshare+%2F+EduCraft+Ideas%5D+Blender+Beginner+Character+Sculpting+Quick+and+Easy%3A+Rick%2C+Morty%2C+and+Jerry+%5B2022%2C+ENG%5D</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZNFp3MXRINWRzWFB3dnRMWGZxSWtBcXl4c2FTaGhfTjJQYXpsakpDYzY0MV9ZOFdzWEhTQkdiNlR4b0duZDZCR1JmVTJxeHdGU1VheGVwNXRCNG96RXpfZ0RzWFpnYlRsUTlnaTE2V29LUWNqbnhwLVZnaVRCcllNM0llUl9UZGtNR1dnTV9jeUhsRFJGMEUzOVVHbmg&amp;file=%5BSkillshare+%2F+EduCraft+Ideas%5D+Blender+Beginner+Character+Sculpting+Quick+and+Easy%3A+Rick%2C+Morty%2C+and+Jerry+%5B2022%2C+ENG%5D</link>
       <category>7040</category>
       <category>101563</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZNFp3MXRINWRzWFB3dnRMWGZxSWtBcXl4c2FTaGhfTjJQYXpsakpDYzY0MV9ZOFdzWEhTQkdiNlR4b0duZDZCR1JmVTJxeHdGU1VheGVwNXRCNG96RXpfZ0RzWFpnYlRsUTlnaTE2V29LUWNqbnhwLVZnaVRCcllNM0llUl9UZGtNR1dnTV9jeUhsRFJGMEUzOVVHbmg&amp;file=%5BSkillshare+%2F+EduCraft+Ideas%5D+Blender+Beginner+Character+Sculpting+Quick+and+Easy%3A+Rick%2C+Morty%2C+and+Jerry+%5B2022%2C+ENG%5D" length="1233881472" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZNFp3MXRINWRzWFB3dnRMWGZxSWtBcXl4c2FTaGhfTjJQYXpsakpDYzY0MV9ZOFdzWEhTQkdiNlR4b0duZDZCR1JmVTJxeHdGU1VheGVwNXRCNG96RXpfZ0RzWFpnYlRsUTlnaTE2V29LUWNqbnhwLVZnaVRCcllNM0llUl9UZGtNR1dnTV9jeUhsRFJGMEUzOVVHbmg&amp;file=%5BSkillshare+%2F+EduCraft+Ideas%5D+Blender+Beginner+Character+Sculpting+Quick+and+Easy%3A+Rick%2C+Morty%2C+and+Jerry+%5B2022%2C+ENG%5D" length="1233881472" type="application/x-bittorrent" />
       <torznab:attr name="category" value="7040" />
       <torznab:attr name="category" value="101563" />
       <torznab:attr name="seeders" value="3" />
@@ -1094,10 +1094,10 @@
       <description>Uploader: 
 			Morpheus Games
 		&lt;br&gt;[PS4 VR Only] Rick and Morty Virtual Rick-ality [EUR/ENG] (v1.00)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaWlBOaE9JUkFFSktwdF9TU2hNcG93dFVyYl9ONnRTcXQyS1RsSEMxTTZ5aWJtWTNHX2U3eWpMSTdYU1hOaGl6ODVUY1NEcTFHa3ZCQ0oxTUg3bHIxdktXS1F3MWdVdmctWjJjZjFWNTU2c1ZjZDNnekt2UXJuZy1kX1Q1RUwzVVJNSkp5VkdUX1A2R05tQlJnQUJqbVE&amp;file=%5BPS4+VR+Only%5D+Rick+and+Morty+Virtual+Rick-ality+%5BEUR%2FENG%5D+(v1.00)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaWlBOaE9JUkFFSktwdF9TU2hNcG93dFVyYl9ONnRTcXQyS1RsSEMxTTZ5aWJtWTNHX2U3eWpMSTdYU1hOaGl6ODVUY1NEcTFHa3ZCQ0oxTUg3bHIxdktXS1F3MWdVdmctWjJjZjFWNTU2c1ZjZDNnekt2UXJuZy1kX1Q1RUwzVVJNSkp5VkdUX1A2R05tQlJnQUJqbVE&amp;file=%5BPS4+VR+Only%5D+Rick+and+Morty+Virtual+Rick-ality+%5BEUR%2FENG%5D+(v1.00)</link>
       <category>1180</category>
       <category>100973</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaWlBOaE9JUkFFSktwdF9TU2hNcG93dFVyYl9ONnRTcXQyS1RsSEMxTTZ5aWJtWTNHX2U3eWpMSTdYU1hOaGl6ODVUY1NEcTFHa3ZCQ0oxTUg3bHIxdktXS1F3MWdVdmctWjJjZjFWNTU2c1ZjZDNnekt2UXJuZy1kX1Q1RUwzVVJNSkp5VkdUX1A2R05tQlJnQUJqbVE&amp;file=%5BPS4+VR+Only%5D+Rick+and+Morty+Virtual+Rick-ality+%5BEUR%2FENG%5D+(v1.00)" length="494469120" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVaWlBOaE9JUkFFSktwdF9TU2hNcG93dFVyYl9ONnRTcXQyS1RsSEMxTTZ5aWJtWTNHX2U3eWpMSTdYU1hOaGl6ODVUY1NEcTFHa3ZCQ0oxTUg3bHIxdktXS1F3MWdVdmctWjJjZjFWNTU2c1ZjZDNnekt2UXJuZy1kX1Q1RUwzVVJNSkp5VkdUX1A2R05tQlJnQUJqbVE&amp;file=%5BPS4+VR+Only%5D+Rick+and+Morty+Virtual+Rick-ality+%5BEUR%2FENG%5D+(v1.00)" length="494469120" type="application/x-bittorrent" />
       <torznab:attr name="category" value="1180" />
       <torznab:attr name="category" value="100973" />
       <torznab:attr name="seeders" value="6" />
@@ -1119,10 +1119,10 @@
       <description>Uploader: 
 			cruten
 		&lt;br&gt;[MULTSERIAL] Рик и Морти / Rick and Morty / Сезон: 1 (Джастин Ройланд) [11 из 11] [2013-2014, комедия, приключения, фантастика, adult swim, WEB-DLRip] VO [Сыендук]</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViV2hHTmlaMmg4R3B6SGp1YmQ4LUJWVlo5TjROVm02S0dOSXFTMTMxS3doTWk5SmZsb0lUX1VOcXlkVE9hNkRvZXRzWXBVaVpPX0tZNjBnNnM2WVlXelo1cGJuZXB2ckUyeS1EQTdzeEJnRE9xaDQ3V3g3cnJydFFtX2Y0NGZhRXlxUTRNQlFMVHNYR2VjdjRfMk1lajA&amp;file=%5BMULTSERIAL%5D+%2F+Rick+and+Morty+%2F+%3A+1+%5B11+11%5D+%5B2013-2014%2C+adult+swim%2C+WEB-DL%5D+VO</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViV2hHTmlaMmg4R3B6SGp1YmQ4LUJWVlo5TjROVm02S0dOSXFTMTMxS3doTWk5SmZsb0lUX1VOcXlkVE9hNkRvZXRzWXBVaVpPX0tZNjBnNnM2WVlXelo1cGJuZXB2ckUyeS1EQTdzeEJnRE9xaDQ3V3g3cnJydFFtX2Y0NGZhRXlxUTRNQlFMVHNYR2VjdjRfMk1lajA&amp;file=%5BMULTSERIAL%5D+%2F+Rick+and+Morty+%2F+%3A+1+%5B11+11%5D+%5B2013-2014%2C+adult+swim%2C+WEB-DL%5D+VO</link>
       <category>1090</category>
       <category>102180</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViV2hHTmlaMmg4R3B6SGp1YmQ4LUJWVlo5TjROVm02S0dOSXFTMTMxS3doTWk5SmZsb0lUX1VOcXlkVE9hNkRvZXRzWXBVaVpPX0tZNjBnNnM2WVlXelo1cGJuZXB2ckUyeS1EQTdzeEJnRE9xaDQ3V3g3cnJydFFtX2Y0NGZhRXlxUTRNQlFMVHNYR2VjdjRfMk1lajA&amp;file=%5BMULTSERIAL%5D+%2F+Rick+and+Morty+%2F+%3A+1+%5B11+11%5D+%5B2013-2014%2C+adult+swim%2C+WEB-DL%5D+VO" length="963748544" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzViV2hHTmlaMmg4R3B6SGp1YmQ4LUJWVlo5TjROVm02S0dOSXFTMTMxS3doTWk5SmZsb0lUX1VOcXlkVE9hNkRvZXRzWXBVaVpPX0tZNjBnNnM2WVlXelo1cGJuZXB2ckUyeS1EQTdzeEJnRE9xaDQ3V3g3cnJydFFtX2Y0NGZhRXlxUTRNQlFMVHNYR2VjdjRfMk1lajA&amp;file=%5BMULTSERIAL%5D+%2F+Rick+and+Morty+%2F+%3A+1+%5B11+11%5D+%5B2013-2014%2C+adult+swim%2C+WEB-DL%5D+VO" length="963748544" type="application/x-bittorrent" />
       <torznab:attr name="category" value="1090" />
       <torznab:attr name="category" value="102180" />
       <torznab:attr name="seeders" value="3" />
@@ -1144,10 +1144,10 @@
       <description>Uploader: 
 			RG Soundtracks
 		&lt;br&gt;(Soundtrack) [CD] Рик и Морти / The Rick And Morty Soundtrack (by VA) - 2018 (2013), FLAC (tracks+.cue), lossless</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZRWpPY2tuVGxzZkk4bEZEUVdNaWFXUHR3RkhxOWxKYnVJQ3N4enVqajlna3dweHl2WXZGeWZwdDcyMTlweHNtd29TYWdyVm5kVU1PdjNRX3lRcTVqNnZTUFlrTjZ1dHFUdUJCdl9GakR5RnQ3VC0tajQ0NlFkUW81OFRBSFZCcnlFeDVNVU84eU5DekNaTENZQTM0dFY&amp;file=(Soundtrack)+%5BCD%5D+%2F+The+Rick+And+Morty+Soundtrack+(by+VA)+-+2018+(2013)%2C+FLAC+(tracks%2B.cue)%2C+lossless</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZRWpPY2tuVGxzZkk4bEZEUVdNaWFXUHR3RkhxOWxKYnVJQ3N4enVqajlna3dweHl2WXZGeWZwdDcyMTlweHNtd29TYWdyVm5kVU1PdjNRX3lRcTVqNnZTUFlrTjZ1dHFUdUJCdl9GakR5RnQ3VC0tajQ0NlFkUW81OFRBSFZCcnlFeDVNVU84eU5DekNaTENZQTM0dFY&amp;file=(Soundtrack)+%5BCD%5D+%2F+The+Rick+And+Morty+Soundtrack+(by+VA)+-+2018+(2013)%2C+FLAC+(tracks%2B.cue)%2C+lossless</link>
       <category>3000</category>
       <category>100715</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZRWpPY2tuVGxzZkk4bEZEUVdNaWFXUHR3RkhxOWxKYnVJQ3N4enVqajlna3dweHl2WXZGeWZwdDcyMTlweHNtd29TYWdyVm5kVU1PdjNRX3lRcTVqNnZTUFlrTjZ1dHFUdUJCdl9GakR5RnQ3VC0tajQ0NlFkUW81OFRBSFZCcnlFeDVNVU84eU5DekNaTENZQTM0dFY&amp;file=(Soundtrack)+%5BCD%5D+%2F+The+Rick+And+Morty+Soundtrack+(by+VA)+-+2018+(2013)%2C+FLAC+(tracks%2B.cue)%2C+lossless" length="359275648" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZRWpPY2tuVGxzZkk4bEZEUVdNaWFXUHR3RkhxOWxKYnVJQ3N4enVqajlna3dweHl2WXZGeWZwdDcyMTlweHNtd29TYWdyVm5kVU1PdjNRX3lRcTVqNnZTUFlrTjZ1dHFUdUJCdl9GakR5RnQ3VC0tajQ0NlFkUW81OFRBSFZCcnlFeDVNVU84eU5DekNaTENZQTM0dFY&amp;file=(Soundtrack)+%5BCD%5D+%2F+The+Rick+And+Morty+Soundtrack+(by+VA)+-+2018+(2013)%2C+FLAC+(tracks%2B.cue)%2C+lossless" length="359275648" type="application/x-bittorrent" />
       <torznab:attr name="category" value="3000" />
       <torznab:attr name="category" value="100715" />
       <torznab:attr name="seeders" value="8" />
@@ -1169,10 +1169,10 @@
       <description>Uploader: 
 			apollion2007
 		&lt;br&gt;Рик и Морти / Rick and Morty / Сезон: 3 / Серии: 1 из 10 (Пит Мишелс, Брайан Ньютон, Джон Райс) [2017, США, комедия, фантастика, WEB-DL 720p] 2x MVO (АБыГДе, NewComers) + VO (Сыендук) + Original + Sub (Rus, Eng)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhODFHX0JyRHJUZVJyVF9kVEpTVHJucUc4d2tWVVM4YjZjQk16VVhNdUJHVGlJaTEwOGRRZlJqcDdLZC1JMldxVHdfMFRiaTRMR2hxaUhoQ0o5S3VIUGsxbHZRRUdKN0pScEFLM3dDYmF6dWVhM3lZbkw0anhUWXJObGFEaWd3VmJ2bjJzQkFxRWZkd05NVjlvMHJva24&amp;file=Rick+and+Morty+%2F+S3E1+of+10+%5B2017%2C+WEB-DL+720p%5D+2x+MVO+(+NewComers)+%2B+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhODFHX0JyRHJUZVJyVF9kVEpTVHJucUc4d2tWVVM4YjZjQk16VVhNdUJHVGlJaTEwOGRRZlJqcDdLZC1JMldxVHdfMFRiaTRMR2hxaUhoQ0o5S3VIUGsxbHZRRUdKN0pScEFLM3dDYmF6dWVhM3lZbkw0anhUWXJObGFEaWd3VmJ2bjJzQkFxRWZkd05NVjlvMHJva24&amp;file=Rick+and+Morty+%2F+S3E1+of+10+%5B2017%2C+WEB-DL+720p%5D+2x+MVO+(+NewComers)+%2B+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)</link>
       <category>5040</category>
       <category>101460</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhODFHX0JyRHJUZVJyVF9kVEpTVHJucUc4d2tWVVM4YjZjQk16VVhNdUJHVGlJaTEwOGRRZlJqcDdLZC1JMldxVHdfMFRiaTRMR2hxaUhoQ0o5S3VIUGsxbHZRRUdKN0pScEFLM3dDYmF6dWVhM3lZbkw0anhUWXJObGFEaWd3VmJ2bjJzQkFxRWZkd05NVjlvMHJva24&amp;file=Rick+and+Morty+%2F+S3E1+of+10+%5B2017%2C+WEB-DL+720p%5D+2x+MVO+(+NewComers)+%2B+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="899148096" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhODFHX0JyRHJUZVJyVF9kVEpTVHJucUc4d2tWVVM4YjZjQk16VVhNdUJHVGlJaTEwOGRRZlJqcDdLZC1JMldxVHdfMFRiaTRMR2hxaUhoQ0o5S3VIUGsxbHZRRUdKN0pScEFLM3dDYmF6dWVhM3lZbkw0anhUWXJObGFEaWd3VmJ2bjJzQkFxRWZkd05NVjlvMHJva24&amp;file=Rick+and+Morty+%2F+S3E1+of+10+%5B2017%2C+WEB-DL+720p%5D+2x+MVO+(+NewComers)+%2B+VO+%2B+Original+%2B+Sub+(Rus%2C+Eng)" length="899148096" type="application/x-bittorrent" />
       <torznab:attr name="category" value="5040" />
       <torznab:attr name="category" value="101460" />
       <torznab:attr name="seeders" value="3" />
@@ -1194,10 +1194,10 @@
       <description>Uploader: 
 			gemi_ni
 		&lt;br&gt;(8-bit) [WEB] 8 Bit Universe - 8 Bit Universe Performs the Rick and Morty Soundtrack - 2018, FLAC (tracks), lossless</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZSi1waXBoNnJwb0V3WGdfcFBvUVlVZEY1a0xIbG9Na3N3Wk1IUy1POEFWalFyVVlZQ1J1M083a3hnMGZDdTBZa2Y2bzA3R2Nic1g4VUVhd2MwVzNCZTBobnZnOGVNS3pNelVBZzMzVTF6bDBaWE1QWkRVY0JCMHFjVWFVaHBZeUUwdHJpSXlLS3c3SW1QelV3bkRjM28&amp;file=(8-bit)+%5BWEB%5D+8+Bit+Universe+-+8+Bit+Universe+Performs+the+Rick+and+Morty+Soundtrack+-+2018%2C+FLAC+(tracks)%2C+lossless</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZSi1waXBoNnJwb0V3WGdfcFBvUVlVZEY1a0xIbG9Na3N3Wk1IUy1POEFWalFyVVlZQ1J1M083a3hnMGZDdTBZa2Y2bzA3R2Nic1g4VUVhd2MwVzNCZTBobnZnOGVNS3pNelVBZzMzVTF6bDBaWE1QWkRVY0JCMHFjVWFVaHBZeUUwdHJpSXlLS3c3SW1QelV3bkRjM28&amp;file=(8-bit)+%5BWEB%5D+8+Bit+Universe+-+8+Bit+Universe+Performs+the+Rick+and+Morty+Soundtrack+-+2018%2C+FLAC+(tracks)%2C+lossless</link>
       <category>3000</category>
       <category>101907</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZSi1waXBoNnJwb0V3WGdfcFBvUVlVZEY1a0xIbG9Na3N3Wk1IUy1POEFWalFyVVlZQ1J1M083a3hnMGZDdTBZa2Y2bzA3R2Nic1g4VUVhd2MwVzNCZTBobnZnOGVNS3pNelVBZzMzVTF6bDBaWE1QWkRVY0JCMHFjVWFVaHBZeUUwdHJpSXlLS3c3SW1QelV3bkRjM28&amp;file=(8-bit)+%5BWEB%5D+8+Bit+Universe+-+8+Bit+Universe+Performs+the+Rick+and+Morty+Soundtrack+-+2018%2C+FLAC+(tracks)%2C+lossless" length="443560480" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZSi1waXBoNnJwb0V3WGdfcFBvUVlVZEY1a0xIbG9Na3N3Wk1IUy1POEFWalFyVVlZQ1J1M083a3hnMGZDdTBZa2Y2bzA3R2Nic1g4VUVhd2MwVzNCZTBobnZnOGVNS3pNelVBZzMzVTF6bDBaWE1QWkRVY0JCMHFjVWFVaHBZeUUwdHJpSXlLS3c3SW1QelV3bkRjM28&amp;file=(8-bit)+%5BWEB%5D+8+Bit+Universe+-+8+Bit+Universe+Performs+the+Rick+and+Morty+Soundtrack+-+2018%2C+FLAC+(tracks)%2C+lossless" length="443560480" type="application/x-bittorrent" />
       <torznab:attr name="category" value="3000" />
       <torznab:attr name="category" value="101907" />
       <torznab:attr name="seeders" value="3" />
@@ -1219,10 +1219,10 @@
       <description>Uploader: 
 			cruten
 		&lt;br&gt;[MULTSERIAL] Рик и Морти / Rick and Morty / 2 Сезон / 04 из 11 (Джастин Ройланд) [2015, комедия, приключения, фантастика, adult swim, WEBRip/WEB-DLRip] VO (Сыендук)</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhQnZKMWp4ZHNfXzdUYlJsdDFpSVZRN3RtYjdJVzAxcTJTeDJ5R2FJcXZ4dHl5Y0hjZjd5UlRNMVljX1dVeTJ6S0taR2ZzOHRGbkdFTklGTDNWVlBSTFA0SllKdlFqYmlqVmhEZVhmc09XVmN3R191M3MtTXJvT2RlRTI4WE1DSnZRbklXOVdxN3RkSVNnR21BeUxCNFY&amp;file=%5BMULTSERIAL%5D+%2F+Rick+and+Morty+%2F+2+%2F+04+11+%5B2015%2C+adult+swim%2C+WEBRip%2FWEB-DL%5D+VO</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhQnZKMWp4ZHNfXzdUYlJsdDFpSVZRN3RtYjdJVzAxcTJTeDJ5R2FJcXZ4dHl5Y0hjZjd5UlRNMVljX1dVeTJ6S0taR2ZzOHRGbkdFTklGTDNWVlBSTFA0SllKdlFqYmlqVmhEZVhmc09XVmN3R191M3MtTXJvT2RlRTI4WE1DSnZRbklXOVdxN3RkSVNnR21BeUxCNFY&amp;file=%5BMULTSERIAL%5D+%2F+Rick+and+Morty+%2F+2+%2F+04+11+%5B2015%2C+adult+swim%2C+WEBRip%2FWEB-DL%5D+VO</link>
       <category>1090</category>
       <category>102180</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhQnZKMWp4ZHNfXzdUYlJsdDFpSVZRN3RtYjdJVzAxcTJTeDJ5R2FJcXZ4dHl5Y0hjZjd5UlRNMVljX1dVeTJ6S0taR2ZzOHRGbkdFTklGTDNWVlBSTFA0SllKdlFqYmlqVmhEZVhmc09XVmN3R191M3MtTXJvT2RlRTI4WE1DSnZRbklXOVdxN3RkSVNnR21BeUxCNFY&amp;file=%5BMULTSERIAL%5D+%2F+Rick+and+Morty+%2F+2+%2F+04+11+%5B2015%2C+adult+swim%2C+WEBRip%2FWEB-DL%5D+VO" length="366033824" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVhQnZKMWp4ZHNfXzdUYlJsdDFpSVZRN3RtYjdJVzAxcTJTeDJ5R2FJcXZ4dHl5Y0hjZjd5UlRNMVljX1dVeTJ6S0taR2ZzOHRGbkdFTklGTDNWVlBSTFA0SllKdlFqYmlqVmhEZVhmc09XVmN3R191M3MtTXJvT2RlRTI4WE1DSnZRbklXOVdxN3RkSVNnR21BeUxCNFY&amp;file=%5BMULTSERIAL%5D+%2F+Rick+and+Morty+%2F+2+%2F+04+11+%5B2015%2C+adult+swim%2C+WEBRip%2FWEB-DL%5D+VO" length="366033824" type="application/x-bittorrent" />
       <torznab:attr name="category" value="1090" />
       <torznab:attr name="category" value="102180" />
       <torznab:attr name="seeders" value="3" />
@@ -1244,10 +1244,10 @@
       <description>Uploader: 
 			Soloid
 		&lt;br&gt;(Soundtrack) Рик и Морти / The Rick And Morty (by Various Artists) - 2018 (2013), MP3 (tracks) 320 kbps</description>
-      <link>http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZSjRIdlo1WnBoZXhyMncyY2JKSnhIVUVlUXNNSmMzVTRWUjA4VzhxNzJZc3Y4M1ZPU29zOEdqVmhHTi1uSi0zRFZwTGU5Wmc3ZC1HYmY4WkxBcXgxdHRkbXVzTk5Gb0Y4LTBMdGxBNUllYzFHSDBqQThSM3dmekVTc0lhVGVrazdIQWdvTHE1R19DNFg0UWh0WnU0SUY&amp;file=(Soundtrack)+%2F+The+Rick+And+Morty+(by+Various+Artists)+-+2018+(2013)%2C+MP3+(tracks)+320+kbps</link>
+      <link>http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZSjRIdlo1WnBoZXhyMncyY2JKSnhIVUVlUXNNSmMzVTRWUjA4VzhxNzJZc3Y4M1ZPU29zOEdqVmhHTi1uSi0zRFZwTGU5Wmc3ZC1HYmY4WkxBcXgxdHRkbXVzTk5Gb0Y4LTBMdGxBNUllYzFHSDBqQThSM3dmekVTc0lhVGVrazdIQWdvTHE1R19DNFg0UWh0WnU0SUY&amp;file=(Soundtrack)+%2F+The+Rick+And+Morty+(by+Various+Artists)+-+2018+(2013)%2C+MP3+(tracks)+320+kbps</link>
       <category>3000</category>
       <category>100715</category>
-      <enclosure url="http://192.168.1.50:9117/dl/rutracker/?jackett_apikey=3jwn1pz5wmje9qgc0bgdulc74wbvw5hk&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZSjRIdlo1WnBoZXhyMncyY2JKSnhIVUVlUXNNSmMzVTRWUjA4VzhxNzJZc3Y4M1ZPU29zOEdqVmhHTi1uSi0zRFZwTGU5Wmc3ZC1HYmY4WkxBcXgxdHRkbXVzTk5Gb0Y4LTBMdGxBNUllYzFHSDBqQThSM3dmekVTc0lhVGVrazdIQWdvTHE1R19DNFg0UWh0WnU0SUY&amp;file=(Soundtrack)+%2F+The+Rick+And+Morty+(by+Various+Artists)+-+2018+(2013)%2C+MP3+(tracks)+320+kbps" length="142902640" type="application/x-bittorrent" />
+      <enclosure url="http://jackett.local:9117/dl/rutracker/?jackett_apikey=REDACTEDREDACTEDREDACTEDREDACTED&amp;path=Q2ZESjhBRkhMbTRHRzhsQ2doMzNUQ0JPZzVZSjRIdlo1WnBoZXhyMncyY2JKSnhIVUVlUXNNSmMzVTRWUjA4VzhxNzJZc3Y4M1ZPU29zOEdqVmhHTi1uSi0zRFZwTGU5Wmc3ZC1HYmY4WkxBcXgxdHRkbXVzTk5Gb0Y4LTBMdGxBNUllYzFHSDBqQThSM3dmekVTc0lhVGVrazdIQWdvTHE1R19DNFg0UWh0WnU0SUY&amp;file=(Soundtrack)+%2F+The+Rick+And+Morty+(by+Various+Artists)+-+2018+(2013)%2C+MP3+(tracks)+320+kbps" length="142902640" type="application/x-bittorrent" />
       <torznab:attr name="category" value="3000" />
       <torznab:attr name="category" value="100715" />
       <torznab:attr name="seeders" value="7" />
