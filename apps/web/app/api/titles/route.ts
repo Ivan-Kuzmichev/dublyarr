@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   addTitle,
+  deleteTitle,
   getPreset,
   getSetting,
   getTitleByTmdb,
@@ -59,11 +60,22 @@ export async function POST(req: Request) {
       monitorRule,
     });
     if (type === "tv" && details.seasons) {
-      const eps: TmdbEpisode[] = [];
-      for (let s = 1; s <= details.seasons; s++) {
-        eps.push(...(await getSeasonEpisodes(tmdbId, s, apiKey)));
+      try {
+        const eps: TmdbEpisode[] = [];
+        for (let s = 1; s <= details.seasons; s++) {
+          try {
+            eps.push(...(await getSeasonEpisodes(tmdbId, s, apiKey)));
+          } catch (e) {
+            // Пропуски в нумерации сезонов TMDb — не ошибка
+            if (e instanceof TmdbError && e.status === 404) continue;
+            throw e;
+          }
+        }
+        syncEpisodes(db, title.id, eps, monitorRule);
+      } catch (e) {
+        deleteTitle(db, title.id);
+        throw e;
       }
-      syncEpisodes(db, title.id, eps, monitorRule);
     }
     return NextResponse.json(title, { status: 201 });
   } catch (e) {
