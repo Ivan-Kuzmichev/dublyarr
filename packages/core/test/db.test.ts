@@ -34,3 +34,33 @@ describe("settings", () => {
     expect(all.jackett_url).toBeNull();
   });
 });
+
+describe("миграция 0001_tracking", () => {
+  test("foreign_keys включён", () => {
+    expect(sqlite.pragma("foreign_keys", { simple: true })).toBe(1);
+  });
+
+  test("таблицы созданы, пресеты засеяны", () => {
+    const names = (
+      sqlite
+        .prepare(`SELECT name FROM sqlite_master WHERE type='table'`)
+        .all() as { name: string }[]
+    ).map((r) => r.name);
+    expect(names).toEqual(
+      expect.arrayContaining(["quality_presets", "titles", "episodes"]),
+    );
+    const presets = sqlite
+      .prepare(`SELECT name FROM quality_presets ORDER BY id`)
+      .all() as { name: string }[];
+    expect(presets.map((p) => p.name)).toEqual(["FullHD", "4K"]);
+  });
+
+  test("повторное открытие БД идемпотентно", () => {
+    const second = openDb(join(dir, "test.db"));
+    const presets = second.sqlite
+      .prepare(`SELECT count(*) AS n FROM quality_presets`)
+      .get() as { n: number };
+    expect(presets.n).toBe(2);
+    second.sqlite.close();
+  });
+});
