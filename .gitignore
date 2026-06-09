@@ -5,3 +5,8 @@ reports/
 .DS_Store
 
 .superpowers/
+data/
+.e2e-data/
+.next/
+test-results/
+playwright-report/

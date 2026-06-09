@@ -1,0 +1,27 @@
+{
+  "name": "@dublyarr/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./parser": "./src/parser.ts",
+    "./jackett": "./src/jackett.ts",
+    "./tmdb": "./src/tmdb.ts",
+    "./db": "./src/db/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.2.0",
+    "drizzle-orm": "^0.44.2",
+    "fast-xml-parser": "^5.2.5"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^24.0.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  }
+}
