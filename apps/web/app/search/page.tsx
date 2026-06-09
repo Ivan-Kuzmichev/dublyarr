@@ -1,4 +1,4 @@
-import { getSetting } from "@dublyarr/core/db";
+import { getSetting, listTrackedTmdbKeys } from "@dublyarr/core/db";
 import { posterUrl, searchMulti } from "@dublyarr/core/tmdb";
 import { getDb } from "@/server/db";
 import { PosterCard } from "@/components/PosterCard";
@@ -13,6 +13,7 @@ export default async function SearchPage({
 }) {
   const { q } = await searchParams;
   const apiKey = getSetting(getDb(), "tmdb_api_key");
+  const trackedKeys = listTrackedTmdbKeys(getDb());
 
   let results = null;
   let error = null;
@@ -51,6 +52,11 @@ export default async function SearchPage({
               subtitle={`${r.year} · ${r.type === "tv" ? "сериал" : "фильм"}`}
               posterUrl={posterUrl(r.posterPath)}
               topLeft={{ text: r.type === "tv" ? "TV" : "Фильм", color: "var(--accent)" }}
+              topRight={
+                trackedKeys.has(`${r.type}:${r.id}`)
+                  ? { text: "✓ отслеживается", color: "var(--ok)" }
+                  : null
+              }
               bottomRight={r.rating ? { text: `★ ${r.rating.toFixed(1)}` } : null}
             />
           ))}
