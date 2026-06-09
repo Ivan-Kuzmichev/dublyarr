@@ -2,14 +2,31 @@ import Image from "next/image";
 import Link from "next/link";
 import styles from "./PosterCard.module.css";
 
+export interface Badge {
+  text: string;
+  color?: string; // фон; по умолчанию полупрозрачный чёрный
+}
+
 export interface PosterCardProps {
   href: string;
   title: string;
   subtitle: string;
   posterUrl: string | null;
-  typeBadge?: string;       // "TV" | "Фильм"
-  ratingBadge?: string;     // "8.7"
-  cornerBadge?: { text: string; color: string } | null;
+  topLeft?: Badge | null;
+  topRight?: Badge | null;
+  bottomLeft?: Badge | null;
+  bottomRight?: Badge | null;
+}
+
+function BadgeSpan({ badge, className }: { badge: Badge; className: string }) {
+  return (
+    <span
+      className={`${styles.badge} ${className}`}
+      style={badge.color ? { background: badge.color } : undefined}
+    >
+      {badge.text}
+    </span>
+  );
 }
 
 export function PosterCard(p: PosterCardProps) {
@@ -22,13 +39,10 @@ export function PosterCard(p: PosterCardProps) {
         ) : (
           <div className={styles.noPoster}>нет постера</div>
         )}
-        {p.typeBadge && <span className={styles.type}>{p.typeBadge}</span>}
-        {p.ratingBadge && <span className={styles.rating}>{p.ratingBadge}</span>}
-        {p.cornerBadge && (
-          <span className={styles.corner} style={{ background: p.cornerBadge.color }}>
-            {p.cornerBadge.text}
-          </span>
-        )}
+        {p.topLeft && <BadgeSpan badge={p.topLeft} className={styles.tl} />}
+        {p.topRight && <BadgeSpan badge={p.topRight} className={styles.tr} />}
+        {p.bottomLeft && <BadgeSpan badge={p.bottomLeft} className={styles.bl} />}
+        {p.bottomRight && <BadgeSpan badge={p.bottomRight} className={styles.br} />}
       </div>
       <div className={styles.title}>{p.title}</div>
       <div className={styles.subtitle}>{p.subtitle}</div>

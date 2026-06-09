@@ -50,8 +50,8 @@ export default async function SearchPage({
               title={r.title}
               subtitle={`${r.year} · ${r.type === "tv" ? "сериал" : "фильм"}`}
               posterUrl={posterUrl(r.posterPath)}
-              typeBadge={r.type === "tv" ? "TV" : "Фильм"}
-              ratingBadge={r.rating ? r.rating.toFixed(1) : undefined}
+              topLeft={{ text: r.type === "tv" ? "TV" : "Фильм", color: "var(--accent)" }}
+              bottomRight={r.rating ? { text: `★ ${r.rating.toFixed(1)}` } : null}
             />
           ))}
         </div>
