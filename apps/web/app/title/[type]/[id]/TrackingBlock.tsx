@@ -53,18 +53,24 @@ export function TrackingBlock({
   async function call(input: RequestInfo, init: RequestInit) {
     setBusy(true);
     setError(null);
-    const res = await fetch(input, {
-      ...init,
-      headers: { "Content-Type": "application/json" },
-    });
-    setBusy(false);
-    if (!res.ok) {
-      const data = (await res.json().catch(() => ({}))) as { error?: string };
-      setError(data.error ?? `Ошибка ${res.status}`);
+    try {
+      const res = await fetch(input, {
+        ...init,
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(data.error ?? `Ошибка ${res.status}`);
+        return false;
+      }
+      router.refresh();
+      return true;
+    } catch {
+      setError("Сеть недоступна");
       return false;
+    } finally {
+      setBusy(false);
     }
-    router.refresh();
-    return true;
   }
 
   function add() {
@@ -75,8 +81,8 @@ export function TrackingBlock({
   }
 
   function patch(body: Record<string, unknown>) {
-    if (!tracked) return;
-    void call(`/api/titles/${tracked.id}`, { method: "PATCH", body: JSON.stringify(body) });
+    if (!tracked) return Promise.resolve(false);
+    return call(`/api/titles/${tracked.id}`, { method: "PATCH", body: JSON.stringify(body) });
   }
 
   function remove() {
@@ -99,8 +105,10 @@ export function TrackingBlock({
             value={voiceover}
             disabled={busy}
             onChange={(e) => {
-              setVoiceover(e.target.value);
-              if (tracked) patch({ voiceover: e.target.value });
+              const next = e.target.value;
+              const prev = voiceover;
+              setVoiceover(next);
+              if (tracked) void patch({ voiceover: next }).then((ok) => { if (!ok) setVoiceover(prev); });
             }}
           >
             <option value="any">Любая русская</option>
@@ -116,8 +124,10 @@ export function TrackingBlock({
             value={presetId}
             disabled={busy}
             onChange={(e) => {
-              setPresetId(Number(e.target.value));
-              if (tracked) patch({ qualityPresetId: Number(e.target.value) });
+              const next = Number(e.target.value);
+              const prev = presetId;
+              setPresetId(next);
+              if (tracked) void patch({ qualityPresetId: next }).then((ok) => { if (!ok) setPresetId(prev); });
             }}
           >
             {presets.map((p) => (
@@ -133,9 +143,10 @@ export function TrackingBlock({
               value={rule}
               disabled={busy}
               onChange={(e) => {
-                const v = e.target.value as TrackedState["monitorRule"];
-                setRule(v);
-                if (tracked) patch({ monitorRule: v });
+                const next = e.target.value as TrackedState["monitorRule"];
+                const prev = rule;
+                setRule(next);
+                if (tracked) void patch({ monitorRule: next }).then((ok) => { if (!ok) setRule(prev); });
               }}
             >
               {RULES.map((r) => (

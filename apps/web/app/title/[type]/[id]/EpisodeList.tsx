@@ -34,16 +34,28 @@ export function EpisodeList({
 }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function patch(body: Record<string, unknown>) {
     setBusy(true);
-    await fetch(`/api/titles/${titleId}/episodes`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    setBusy(false);
-    router.refresh();
+    setError(null);
+    try {
+      const res = await fetch(`/api/titles/${titleId}/episodes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(data.error ?? `Ошибка ${res.status}`);
+        return;
+      }
+      router.refresh();
+    } catch {
+      setError("Сеть недоступна");
+    } finally {
+      setBusy(false);
+    }
   }
 
   const seasons = [...new Set(episodes.map((e) => e.season))].sort((a, b) => a - b);
@@ -51,6 +63,7 @@ export function EpisodeList({
   return (
     <div data-testid="episode-list">
       <h2>Серии</h2>
+      {error && <p className={styles.error}>{error}</p>}
       {seasons.map((season) => {
         const eps = episodes.filter((e) => e.season === season);
         const allWanted = eps.every((e) => e.wanted);
