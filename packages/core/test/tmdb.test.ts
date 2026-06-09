@@ -3,6 +3,7 @@ import {
   TmdbError,
   normalizeDetails,
   normalizeSearchResults,
+  normalizeSeasonEpisodes,
   searchMulti,
 } from "../src/tmdb.js";
 
@@ -57,6 +58,26 @@ describe("normalizeDetails", () => {
       genres: ["Анимация", "Комедия"], imdbId: "tt2861424", tvdbId: 275274,
       posterPath: "/poster.jpg", rating: 8.7,
     });
+  });
+});
+
+describe("normalizeSeasonEpisodes", () => {
+  test("маппит эпизоды сезона", () => {
+    const out = normalizeSeasonEpisodes({
+      season_number: 1,
+      episodes: [
+        { season_number: 1, episode_number: 1, air_date: "2013-12-02", name: "Пилот" },
+        { season_number: 1, episode_number: 2, air_date: null, name: "" },
+      ],
+    });
+    expect(out).toEqual([
+      { season: 1, episode: 1, airDate: "2013-12-02", name: "Пилот" },
+      { season: 1, episode: 2, airDate: null, name: "" },
+    ]);
+  });
+
+  test("нет episodes → пустой массив", () => {
+    expect(normalizeSeasonEpisodes({})).toEqual([]);
   });
 });
 

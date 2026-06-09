@@ -111,3 +111,28 @@ export async function getDetails(type: TmdbType, id: number, apiKey: string): Pr
 export function posterUrl(path: string | null, width: 342 | 500 = 342): string | null {
   return path ? `https://image.tmdb.org/t/p/w${width}${path}` : null;
 }
+
+export interface TmdbEpisode {
+  season: number;
+  episode: number;
+  airDate: string | null;
+  name: string;
+}
+
+export function normalizeSeasonEpisodes(data: any): TmdbEpisode[] {
+  return ((data.episodes ?? []) as any[]).map((e) => ({
+    season: e.season_number,
+    episode: e.episode_number,
+    airDate: e.air_date || null,
+    name: e.name || "",
+  }));
+}
+
+export async function getSeasonEpisodes(
+  tvId: number,
+  season: number,
+  apiKey: string,
+): Promise<TmdbEpisode[]> {
+  const data = await tmdbGet(`/tv/${tvId}/season/${season}`, {}, apiKey);
+  return normalizeSeasonEpisodes(data);
+}
