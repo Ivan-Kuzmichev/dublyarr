@@ -1,0 +1,36 @@
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  max-width: 520px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--text-2); }
+
+.field input {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 9px 12px;
+  font-size: 14px;
+}
+
+.actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+.actions button {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.actions button:first-child { background: var(--accent); border-color: var(--accent); }
+
+.ok { color: var(--ok); font-size: 13px; margin: 0; }
+.muted { color: var(--text-muted); font-size: 13px; margin: 0; }
