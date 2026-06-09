@@ -1,6 +1,7 @@
 import { describe, expect, test } from "vitest";
 import {
   compressSeasons,
+  groupBySeason,
   parseRelease,
   summarizeStudioAvailability,
 } from "../src/parser.js";
@@ -103,4 +104,19 @@ test("compressSeasons", () => {
   expect(compressSeasons([1, 2, 3, 7, 8])).toBe("1–3, 7–8");
   expect(compressSeasons([5])).toBe("5");
   expect(compressSeasons([])).toBe("—");
+});
+
+describe("groupBySeason", () => {
+  test("группирует по сезонам, без сезона — в «—» последним", () => {
+    const mk = (description: string) =>
+      parseRelease({ title: "x", description, indexer: "RuTracker.org" });
+    const releases = [
+      mk("Тайтл [Сезон: 2] WEB-DL 1080p VO (Сыендук)"),
+      mk("Тайтл [Сезон: 1] WEB-DL 1080p VO (Сыендук)"),
+      mk("Фильм (2026) WEB-DL 1080p VO (Сыендук)"),
+    ];
+    const groups = groupBySeason(releases);
+    expect(groups.map(([season]) => season)).toEqual(["1", "2", "—"]);
+    expect(groups[0][1]).toHaveLength(1);
+  });
 });
