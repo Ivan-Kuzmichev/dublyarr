@@ -1,10 +1,12 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getSetting } from "@dublyarr/core/db";
+import { getSetting, getTitleByTmdb, listEpisodes, listPresets } from "@dublyarr/core/db";
 import { TmdbError, getDetails, posterUrl, type TmdbType } from "@dublyarr/core/tmdb";
 import { getDb } from "@/server/db";
 import { Availability } from "./Availability";
+import { TrackingBlock } from "./TrackingBlock";
+import { EpisodeList } from "./EpisodeList";
 import styles from "./title.module.css";
 
 export const dynamic = "force-dynamic";
@@ -32,6 +34,19 @@ export default async function TitlePage({
     throw e;
   }
   const poster = posterUrl(details.posterPath, 500);
+
+  const trackedTitle = getTitleByTmdb(db, type as TmdbType, numId);
+  const presets = listPresets(db).map((p) => ({ id: p.id, name: p.name }));
+  const episodeRows = trackedTitle
+    ? listEpisodes(db, trackedTitle.id).map((e) => ({
+        id: e.id,
+        season: e.season,
+        episode: e.episode,
+        airDate: e.airDate,
+        nameRu: e.nameRu,
+        wanted: e.wanted,
+      }))
+    : [];
 
   return (
     <>
@@ -61,10 +76,31 @@ export default async function TitlePage({
         </div>
       </div>
 
+      <TrackingBlock
+        type={type as TmdbType}
+        tmdbId={numId}
+        tracked={
+          trackedTitle
+            ? {
+                id: trackedTitle.id,
+                voiceover: trackedTitle.voiceover,
+                qualityPresetId: trackedTitle.qualityPresetId,
+                monitorRule: trackedTitle.monitorRule,
+              }
+            : null
+        }
+        presets={presets}
+        searchQuery={details.originalTitle || details.title}
+      />
+
       <h2>Доступные озвучки</h2>
       <Suspense fallback={<p className={styles.muted}>Ищу раздачи в Jackett…</p>}>
         <Availability query={details.originalTitle || details.title} />
       </Suspense>
+
+      {trackedTitle && type === "tv" && episodeRows.length > 0 && (
+        <EpisodeList titleId={trackedTitle.id} episodes={episodeRows} />
+      )}
     </>
   );
 }
