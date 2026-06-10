@@ -1,7 +1,7 @@
-import { mkdtempSync } from "node:fs";
+import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { describe, expect, test } from "vitest";
+import { afterAll, describe, expect, test } from "vitest";
 import {
   addFile,
   addTitle,
@@ -14,7 +14,12 @@ import {
 } from "../src/db/index.js";
 
 const dir = mkdtempSync(join(tmpdir(), "dublyarr-files-"));
-const { db } = openDb(join(dir, "files.db"));
+const { db, sqlite } = openDb(join(dir, "files.db"));
+
+afterAll(() => {
+  sqlite.close();
+  rmSync(dir, { recursive: true, force: true });
+});
 
 const title = addTitle(db, {
   tmdbId: 60625,
