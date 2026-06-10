@@ -122,6 +122,22 @@ describe("groupBySeason", () => {
   });
 });
 
+describe("parseVoiceovers: источник — picked source, без дублей из title", () => {
+  test("VO-токен в title и description не удваивает count", () => {
+    const r = parseRelease({
+      title: "Show S01 1080p WEB-DL VO (Сыендук)",
+      description:
+        "Шоу / Show / Сезон: 1 / Серии: 1-10 [2020, WEB-DL, 1080p] VO (Сыендук) + Original / много текста для перевеса",
+      indexer: "RuTracker",
+    });
+    const studioBlocks = r.parsed.voiceovers.filter((v) => v.studios.includes("Сыендук"));
+    expect(studioBlocks).toHaveLength(1);
+    const summary = summarizeStudioAvailability([r]);
+    const syenduk = summary.find((s) => s.studio === "Сыендук");
+    expect(syenduk?.count).toBe(1);
+  });
+});
+
 describe("parseEpisodeTag", () => {
   test("SxxEyy в имени файла", () => {
     expect(parseEpisodeTag("Rick.and.Morty.S01E03.1080p.WEB-DL.mkv")).toEqual({

@@ -95,8 +95,17 @@ describe("runTitle", () => {
     syncEpisodes(db, tv.id, [{ season: 1, episode: 1, airDate: "2020-01-01", name: "" }], "all", TODAY);
 
     const search = vi.fn().mockResolvedValue([
-      rawRel({ title: "Run S01 1080p WEB-DL", description: "VO (Сыендук)", guid: "ok", seeders: 20 }),
-      rawRel({ title: "Run S01 1080p WEB-DL", description: "VO (HDrezka)", guid: "wrong" }),
+      rawRel({
+        title: "Run.S01.1080p.WEB-DL",
+        description: "Ран / Run / Сезон: 1 / Серии: 1-10 из 10 [2020, WEB-DL, 1080p] VO (Сыендук) + Original",
+        guid: "ok",
+        seeders: 20,
+      }),
+      rawRel({
+        title: "Run.S01.1080p.WEB-DL",
+        description: "Ран / Run / Сезон: 1 / Серии: 1-10 из 10 [2020, WEB-DL, 1080p] VO (HDrezka)",
+        guid: "wrong",
+      }),
     ].map(parseRelease));
     const grab = vi.fn().mockResolvedValue(undefined);
 
@@ -121,7 +130,11 @@ describe("runTitle", () => {
     });
     syncEpisodes(db, tv.id, [{ season: 1, episode: 1, airDate: "2020-01-01", name: "" }], "all", TODAY);
     const search = vi.fn().mockResolvedValue([
-      parseRelease(rawRel({ title: "Empty S01 1080p WEB-DL", description: "VO (HDrezka)", guid: "x" })),
+      parseRelease(rawRel({
+        title: "Empty.S01.1080p.WEB-DL",
+        description: "Пусто / Empty / Сезон: 1 [2020, WEB-DL, 1080p] VO (HDrezka)",
+        guid: "x",
+      })),
     ]);
     const grab = vi.fn();
     const cand = selectCandidates(db, TODAY).find((x) => x.title.id === tv.id)!;
