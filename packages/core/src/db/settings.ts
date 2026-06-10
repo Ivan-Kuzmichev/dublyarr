@@ -17,6 +17,8 @@ export const SETTING_KEYS = [
   "monitor_interval_min",
   "monitor_min_seeders",
   "monitor_stall_hours",
+  "auth_password_hash",
+  "auth_lan_bypass",
 ] as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[number];

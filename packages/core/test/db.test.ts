@@ -229,3 +229,19 @@ describe("ключи настроек мониторинга", () => {
     expect(getMonitorNumber(monDb, "monitor_min_seeders")).toBe(0); // 0 валиден
   });
 });
+
+describe("ключи настроек auth", () => {
+  const authDir = mkdtempSync(join(tmpdir(), "dublyarr-auth-keys-"));
+  const { db: authDb, sqlite: authSqlite } = openDb(join(authDir, "auth.db"));
+
+  afterAll(() => {
+    authSqlite.close();
+    rmSync(authDir, { recursive: true, force: true });
+  });
+
+  test("getAllSettings отдаёт auth-ключи", () => {
+    const all = getAllSettings(authDb);
+    expect(all).toHaveProperty("auth_password_hash", null);
+    expect(all).toHaveProperty("auth_lan_bypass", null);
+  });
+});

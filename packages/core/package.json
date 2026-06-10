@@ -16,7 +16,8 @@
     "./grab": "./src/grab.ts",
     "./poll": "./src/poll.ts",
     "./pipeline": "./src/pipeline.ts",
-    "./tick": "./src/tick.ts"
+    "./tick": "./src/tick.ts",
+    "./auth": "./src/auth.ts"
   },
   "scripts": {
     "test": "vitest run",
