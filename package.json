@@ -12,8 +12,5 @@
     "test": "npm run test --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "worker": "npm run start -w @dublyarr/worker"
-  },
-  "dependencies": {
-    "@esbuild/darwin-arm64": "^0.28.0"
   }
 }
