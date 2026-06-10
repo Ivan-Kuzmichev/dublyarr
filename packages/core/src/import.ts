@@ -5,16 +5,17 @@ import {
   mkdirSync,
   readdirSync,
   statSync,
+  unlinkSync,
 } from "node:fs";
 import { basename, dirname, extname, join } from "node:path";
-import { addFile, type LibFile } from "./db/files.js";
+import { addFile, deleteFileRecord, getFile, listFiles, type LibFile } from "./db/files.js";
 import type { Download } from "./db/downloads.js";
 import { updateDownload } from "./db/downloads.js";
 import type { Db } from "./db/index.js";
 import { listEpisodes, type Title } from "./db/titles.js";
 import { renderTemplate } from "./naming.js";
 import { parseEpisodeTag } from "./parser.js";
-import { qualityKeyFor, qualityLabel } from "./quality.js";
+import { qualityKeyFor, qualityLabel, qualityRank } from "./quality.js";
 
 const VIDEO_EXT = new Set([".mkv", ".mp4", ".avi", ".m4v"]);
 
@@ -26,7 +27,7 @@ export interface ImportOptions {
 }
 
 export type ImportResult =
-  | { ok: true; files: LibFile[] }
+  | { ok: true; files: LibFile[]; replaced: number }
   | { ok: false; error: string };
 
 export function hardlinkOrCopy(src: string, dest: string): void {
@@ -54,13 +55,31 @@ function listVideoFiles(root: string): { path: string; size: number }[] {
   return out;
 }
 
+/** Ранг качества записи файла (или -1, если не распознан). */
+function rankOf(source: string | null, resolution: string | null): number {
+  const k = qualityKeyFor(source, resolution);
+  return k ? qualityRank(k) : -1;
+}
+
+/** Удаляет старую запись файла и unlink с диска (если путь отличается от нового). */
+function dropOldFile(db: Db, oldId: number, newDest: string): void {
+  const removed = deleteFileRecord(db, oldId);
+  if (removed && removed.path !== newDest) {
+    try {
+      unlinkSync(removed.path);
+    } catch {
+      // файла уже нет — запись всё равно удалена
+    }
+  }
+}
+
 /**
- * Раскладывает завершённую загрузку в библиотеку: сериалы — по SxxEyy
- * из имён файлов, фильмы — самый большой видеофайл. При успехе пишет
- * files, проставляет episodes.file_id и переводит download в imported.
- * Ранние ошибки (нет файлов/нет видео/не сопоставлено) БД не мутируют;
- * при падении посреди цикла уже импортированные серии остаются записанными —
- * повторный импорт безопасен (эпизоды с file_id пропускаются).
+ * Раскладывает завершённую загрузку в библиотеку: сериалы — по SxxEyy из имён,
+ * фильмы — самый большой видеофайл. Если у эпизода/фильма уже есть файл, новый
+ * заменяет старый ТОЛЬКО при строго более высоком качестве (апгрейд): старый файл
+ * удаляется с диска и из БД; иначе видео пропускается. Переводит download в imported.
+ * Ранние ошибки (нет файлов/видео/не сопоставлено) БД не мутируют; повторный импорт
+ * безопасен (равное/худшее качество не трогает существующие файлы).
  */
 export function importDownload(
   db: Db,
@@ -78,6 +97,7 @@ export function importDownload(
   }
   const link = opts.linkFile ?? hardlinkOrCopy;
   const qKey = qualityKeyFor(download.qualitySource, download.qualityResolution);
+  const newRank = qKey ? qualityRank(qKey) : -1;
   const vars = {
     show: title.titleOriginal || title.titleRu,
     year: title.year,
@@ -85,28 +105,43 @@ export function importDownload(
     vo: download.voiceoverStudio ?? "",
   };
   const imported: LibFile[] = [];
+  let replaced = 0;
 
-  if (title.type === "movie") {
-    const best = [...videos].sort((a, b) => b.size - a.size)[0];
-    const rendered = renderTemplate(opts.template, vars);
-    if (!rendered) {
-      return { ok: false, error: "Шаблон имени дал пустой путь" };
-    }
-    const dest = join(opts.libraryDir, rendered + extname(best.path).toLowerCase());
+  function place(dest: string, srcPath: string, episodeId: number | null, size: number): void {
     mkdirSync(dirname(dest), { recursive: true });
-    link(best.path, dest);
+    link(srcPath, dest);
     imported.push(
       addFile(db, {
         titleId: title.id,
-        episodeId: null,
+        episodeId,
         path: dest,
-        size: best.size,
+        size,
         qualitySource: download.qualitySource,
         qualityResolution: download.qualityResolution,
         voiceoverStudio: download.voiceoverStudio,
         releaseGuid: download.releaseGuid,
       }),
     );
+  }
+
+  if (title.type === "movie") {
+    const existing = listFiles(db, title.id);
+    const bestExistingRank = existing.length
+      ? Math.max(...existing.map((f) => rankOf(f.qualitySource, f.qualityResolution)))
+      : -1;
+    if (existing.length > 0 && newRank <= bestExistingRank) {
+      updateDownload(db, download.id, { status: "imported", progress: 1, error: null });
+      return { ok: true, files: [], replaced: 0 };
+    }
+    const best = [...videos].sort((a, b) => b.size - a.size)[0];
+    const rendered = renderTemplate(opts.template, vars);
+    if (!rendered) return { ok: false, error: "Шаблон имени дал пустой путь" };
+    const dest = join(opts.libraryDir, rendered + extname(best.path).toLowerCase());
+    place(dest, best.path, null, best.size);
+    for (const old of existing) {
+      dropOldFile(db, old.id, dest);
+      replaced += 1;
+    }
   } else {
     const byKey = new Map(
       listEpisodes(db, title.id).map((e) => [`${e.season}:${e.episode}`, e]),
@@ -118,45 +153,35 @@ export function importDownload(
       const key = `${tag.season}:${tag.episode}`;
       const ep = byKey.get(key);
       if (!ep) continue;
+      matched += 1;
+
+      let oldFileId: number | null = null;
       if (ep.fileId != null) {
-        // Эпизод уже импортирован — засчитываем как matched, но не трогаем
-        matched += 1;
-        continue;
+        const oldFile = getFile(db, ep.fileId);
+        const oldRank = oldFile ? rankOf(oldFile.qualitySource, oldFile.qualityResolution) : -1;
+        if (newRank <= oldRank) continue;
+        oldFileId = ep.fileId;
       }
+
       const rendered = renderTemplate(opts.template, {
         ...vars,
         season: tag.season,
         episode: tag.episode,
       });
-      if (!rendered) {
-        return { ok: false, error: "Шаблон имени дал пустой путь" };
-      }
+      if (!rendered) return { ok: false, error: "Шаблон имени дал пустой путь" };
       const dest = join(opts.libraryDir, rendered + extname(v.path).toLowerCase());
-      mkdirSync(dirname(dest), { recursive: true });
-      link(v.path, dest);
-      imported.push(
-        addFile(db, {
-          titleId: title.id,
-          episodeId: ep.id,
-          path: dest,
-          size: v.size,
-          qualitySource: download.qualitySource,
-          qualityResolution: download.qualityResolution,
-          voiceoverStudio: download.voiceoverStudio,
-          releaseGuid: download.releaseGuid,
-        }),
-      );
-      matched += 1;
-      // Удаляем из map: следующий файл с той же меткой (PROPER и т.п.) не пройдёт
+      place(dest, v.path, ep.id, v.size);
+      if (oldFileId != null) {
+        dropOldFile(db, oldFileId, dest);
+        replaced += 1;
+      }
       byKey.delete(key);
     }
     if (imported.length === 0 && matched === 0) {
       return { ok: false, error: "Не удалось сопоставить файлы с сериями" };
     }
-    // imported.length === 0 && matched > 0: все эпизоды уже импортированы —
-    // повторный импорт безопасен, возвращаем успех с пустым списком
   }
 
   updateDownload(db, download.id, { status: "imported", progress: 1, error: null });
-  return { ok: true, files: imported };
+  return { ok: true, files: imported, replaced };
 }

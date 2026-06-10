@@ -242,7 +242,7 @@ describe("importDownload: Duplicate Show (tmdbId 60626) — регрессии",
       libraryDir,
       template: DEFAULT_NAMING_TV,
     });
-    expect(result).toEqual({ ok: true, files: [] });
+    expect(result).toMatchObject({ ok: true, files: [] });
     expect(getDownload(db, d2.id)?.status).toBe("imported");
 
     // Количество файлов не изменилось — всё ещё 2
