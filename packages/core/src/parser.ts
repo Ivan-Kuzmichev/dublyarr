@@ -237,7 +237,8 @@ function trackerStudio(
 
 export function parseRelease<T extends ReleaseInput>(item: T): ParsedRelease<T> {
   const { text, source } = pickSource(item);
-  const voiceovers = parseVoiceovers(text);
+  const combinedText = stripHtml(item.description || "") + " " + (item.title || "");
+  const voiceovers = parseVoiceovers(combinedText);
   if (voiceovers.length === 0) {
     const ts = trackerStudio(item.indexer);
     if (ts) voiceovers.push({ kind: ts.kind, studios: [ts.studio] });

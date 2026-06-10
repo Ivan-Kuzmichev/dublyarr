@@ -14,7 +14,8 @@
     "./import": "./src/import.ts",
     "./scoring": "./src/scoring.ts",
     "./grab": "./src/grab.ts",
-    "./poll": "./src/poll.ts"
+    "./poll": "./src/poll.ts",
+    "./pipeline": "./src/pipeline.ts"
   },
   "scripts": {
     "test": "vitest run",
