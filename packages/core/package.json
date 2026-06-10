@@ -13,7 +13,8 @@
     "./qbittorrent": "./src/qbittorrent.ts",
     "./import": "./src/import.ts",
     "./scoring": "./src/scoring.ts",
-    "./grab": "./src/grab.ts"
+    "./grab": "./src/grab.ts",
+    "./poll": "./src/poll.ts"
   },
   "scripts": {
     "test": "vitest run",

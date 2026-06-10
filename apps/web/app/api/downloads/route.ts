@@ -1,101 +1,15 @@
 import { NextResponse } from "next/server";
 import {
-  getDownload,
   getSetting,
   getTitle,
   listDownloadsForTitle,
   listEpisodes,
-  updateDownload,
-  REFRESHABLE_STATUSES,
-  type Download,
 } from "@dublyarr/core/db";
 import { grabRelease } from "@dublyarr/core/grab";
-import { importDownload } from "@dublyarr/core/import";
-import {
-  DEFAULT_NAMING_MOVIE,
-  DEFAULT_NAMING_TV,
-} from "@dublyarr/core/naming";
-import { QbtError, qbtStateToStatus, type QbtClient } from "@dublyarr/core/qbittorrent";
+import { QbtError } from "@dublyarr/core/qbittorrent";
+import { pollTitle } from "@dublyarr/core/poll";
 import { getDb } from "@/server/db";
 import { qbtFromSettings } from "@/server/qbt";
-
-async function refreshOne(
-  db: ReturnType<typeof getDb>,
-  qbt: QbtClient,
-  d: Download,
-): Promise<void> {
-  const torrent = (await qbt.listTorrents({ tag: d.tag }))[0];
-
-  // после await статус мог измениться конкурентным запросом — перечитываем
-  const fresh = getDownload(db, d.id);
-  if (!fresh || !REFRESHABLE_STATUSES.includes(fresh.status)) return;
-  d = fresh;
-
-  if (d.status === "queued") {
-    if (!torrent) return; // ещё не появился в qBittorrent
-    d = updateDownload(db, d.id, {
-      qbitHash: torrent.hash,
-      status: "downloading",
-      progress: torrent.progress,
-    })!;
-  }
-
-  if (d.status === "downloading") {
-    if (!torrent) {
-      updateDownload(db, d.id, {
-        status: "failed",
-        error: "Раздача пропала из qBittorrent",
-      });
-      return;
-    }
-    const next = qbtStateToStatus(torrent.state, torrent.progress);
-    if (next === "failed") {
-      updateDownload(db, d.id, {
-        status: "failed",
-        error: `qBittorrent: ${torrent.state}`,
-      });
-      return;
-    }
-    d = updateDownload(db, d.id, { status: next, progress: torrent.progress })!;
-  }
-
-  if (d.status === "completed") {
-    if (!torrent) {
-      updateDownload(db, d.id, {
-        status: "failed",
-        error: "Раздача пропала из qBittorrent — импорт невозможен",
-      });
-      return;
-    }
-    if (!torrent.contentPath) return; // qbt ещё не отдал content_path
-    const title = getTitle(db, d.titleId);
-    if (!title) return;
-    const libraryDir = getSetting(
-      db,
-      title.type === "tv" ? "library_tv" : "library_movies",
-    );
-    if (!libraryDir) {
-      updateDownload(db, d.id, {
-        error: "Не настроена папка библиотеки (Настройки → Папки и имена)",
-      });
-      return;
-    }
-    const template =
-      getSetting(db, title.type === "tv" ? "naming_tv" : "naming_movie") ||
-      (title.type === "tv" ? DEFAULT_NAMING_TV : DEFAULT_NAMING_MOVIE);
-    try {
-      const result = importDownload(db, d, title, torrent.contentPath, {
-        libraryDir,
-        template,
-      });
-      if (!result.ok) updateDownload(db, d.id, { error: result.error });
-    } catch (e) {
-      updateDownload(db, d.id, {
-        error: `Ошибка импорта: ${e instanceof Error ? e.message : String(e)}`,
-      });
-    }
-  }
-}
 
 export async function GET(req: Request) {
   const titleId = Number(new URL(req.url).searchParams.get("titleId"));
@@ -104,26 +18,11 @@ export async function GET(req: Request) {
   }
   const db = getDb();
   const qbt = qbtFromSettings(db);
-  let qbtError: string | null = null;
-
-  if (qbt) {
-    const refreshable = listDownloadsForTitle(db, titleId).filter((d) =>
-      REFRESHABLE_STATUSES.includes(d.status),
-    );
-    for (const d of refreshable) {
-      try {
-        await refreshOne(db, qbt, d);
-      } catch (e) {
-        qbtError = e instanceof QbtError ? e.message : "qBittorrent недоступен";
-        break;
-      }
-    }
+  if (!qbt) {
+    return NextResponse.json({ downloads: listDownloadsForTitle(db, titleId), qbtError: null });
   }
-
-  return NextResponse.json({
-    downloads: listDownloadsForTitle(db, titleId),
-    qbtError,
-  });
+  const { downloads, qbtError } = await pollTitle(db, qbt, titleId);
+  return NextResponse.json({ downloads, qbtError });
 }
 
 export async function POST(req: Request) {
