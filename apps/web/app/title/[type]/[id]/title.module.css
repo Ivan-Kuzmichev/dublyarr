@@ -40,6 +40,13 @@
 .table td { padding: 8px 14px; border-bottom: 1px solid var(--border); }
 .table tr:last-child td { border-bottom: none; }
 
+.releaseTitle {
+  max-width: 380px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 @media (min-width: 768px) {
   .hero { flex-direction: row; }
 }

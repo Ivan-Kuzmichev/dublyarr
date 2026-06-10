@@ -59,3 +59,9 @@
 .episode code { color: var(--text-muted); font-size: 12px; }
 
 .epDate { margin-left: auto; color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+
+.grab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
