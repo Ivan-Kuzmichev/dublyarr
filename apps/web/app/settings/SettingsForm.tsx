@@ -29,23 +29,32 @@ export function SettingsForm({ initial }: { initial: Values }) {
 
   async function save() {
     setStatus(null);
-    const res = await fetch("/api/settings", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
-    setStatus(res.ok ? "Сохранено" : "Ошибка сохранения");
+    try {
+      const payload = Object.fromEntries(FIELDS.map((f) => [f.key, values[f.key]]));
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      setStatus(res.ok ? "Сохранено" : "Ошибка сохранения");
+    } catch {
+      setStatus("Сеть недоступна");
+    }
   }
 
   async function testConnection(service: "tmdb" | "jackett" | "qbit") {
     setTestResult(`${service}: проверяю…`);
-    const res = await fetch("/api/settings/test", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ service }),
-    });
-    const data = await res.json();
-    setTestResult(data.ok ? `${service}: ✓ работает` : `${service}: ✗ ${data.error}`);
+    try {
+      const res = await fetch("/api/settings/test", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ service }),
+      });
+      const data = await res.json();
+      setTestResult(data.ok ? `${service}: ✓ работает` : `${service}: ✗ ${data.error}`);
+    } catch {
+      setTestResult(`${service}: ✗ сеть недоступна`);
+    }
   }
 
   return (
@@ -66,7 +75,7 @@ export function SettingsForm({ initial }: { initial: Values }) {
         <button onClick={() => testConnection("jackett")}>Проверить Jackett</button>
         <button onClick={() => testConnection("qbit")}>Проверить qBittorrent</button>
       </div>
-      {status && <p className={styles.ok}>{status}</p>}
+      {status && <p className={status === "Сохранено" ? styles.ok : styles.err}>{status}</p>}
       {testResult && <p className={styles.muted}>{testResult}</p>}
     </div>
   );

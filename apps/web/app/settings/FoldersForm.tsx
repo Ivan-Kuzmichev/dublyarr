@@ -28,10 +28,11 @@ export function FoldersForm({ initial }: { initial: Values }) {
   async function save() {
     setStatus(null);
     try {
+      const payload = Object.fromEntries(FIELDS.map((f) => [f.key, values[f.key]]));
       const res = await fetch("/api/settings", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(values),
+        body: JSON.stringify(payload),
       });
       setStatus(res.ok ? "Сохранено" : "Ошибка сохранения");
     } catch {
@@ -59,7 +60,7 @@ export function FoldersForm({ initial }: { initial: Values }) {
       <div className={styles.actions}>
         <button onClick={save}>Сохранить</button>
       </div>
-      {status && <p className={styles.ok}>{status}</p>}
+      {status && <p className={status === "Сохранено" ? styles.ok : styles.err}>{status}</p>}
     </div>
   );
 }
