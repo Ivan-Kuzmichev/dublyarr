@@ -1,4 +1,4 @@
-import { listPresets, listTrackedTitles } from "@dublyarr/core/db";
+import { listPresets, listTrackedTitles, titleFileStats } from "@dublyarr/core/db";
 import { qualityLabel } from "@dublyarr/core/quality";
 import { posterUrl } from "@dublyarr/core/tmdb";
 import { getDb } from "@/server/db";
@@ -23,6 +23,16 @@ export default function TrackedPage() {
   const presetLabel = new Map(
     listPresets(db).map((p) => [p.id, qualityLabel(p.preferred)]),
   );
+  const stats = titleFileStats(db);
+
+  function downloadBadge(t: { id: number; type: string }) {
+    const st = stats.get(t.id);
+    const hasFiles = (st?.files ?? 0) > 0;
+    const done =
+      t.type === "movie" ? hasFiles : hasFiles && (st?.missingWanted ?? 0) === 0;
+    return done ? { text: "✓", color: "var(--ok)" } : { text: "⏳" };
+  }
+
   const tv = titles.filter((t) => t.type === "tv");
   const movies = titles.filter((t) => t.type === "movie");
 
@@ -52,7 +62,7 @@ export default function TrackedPage() {
             text: t.voiceover === "any" ? "Любая" : t.voiceover,
             color: "var(--ok)",
           }}
-          bottomRight={{ text: "⏳" }}
+          bottomRight={downloadBadge(t)}
         />
       ))}
     </div>
