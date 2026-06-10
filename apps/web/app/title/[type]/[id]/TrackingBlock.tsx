@@ -42,6 +42,7 @@ export function TrackingBlock({
   const [rule, setRule] = useState<TrackedState["monitorRule"]>(tracked?.monitorRule ?? "all");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [searchMsg, setSearchMsg] = useState<string | null>(null);
 
   useEffect(() => {
     fetch(`/api/studios?query=${encodeURIComponent(searchQuery)}`)
@@ -89,6 +90,23 @@ export function TrackingBlock({
     if (!tracked) return;
     if (!window.confirm("Убрать из отслеживания? Список серий будет удалён.")) return;
     void call(`/api/titles/${tracked.id}`, { method: "DELETE" });
+  }
+
+  async function searchNow() {
+    if (!tracked) return;
+    setSearchMsg("Ищу…");
+    try {
+      const res = await fetch(`/api/titles/${tracked.id}/search`, { method: "POST" });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as { error?: string };
+        setSearchMsg(data.error ?? `Ошибка ${res.status}`);
+        return;
+      }
+      setSearchMsg("Поиск запущен — смотрите «Загрузки» ниже");
+      router.refresh();
+    } catch {
+      setSearchMsg("Сеть недоступна");
+    }
   }
 
   // выбранная ранее озвучка может отсутствовать в текущей выдаче Jackett
@@ -162,12 +180,18 @@ export function TrackingBlock({
             {busy ? "Добавляю…" : "Добавить в отслеживание"}
           </button>
         ) : (
-          <button className={styles.danger} data-testid="tracking-remove" disabled={busy} onClick={remove}>
-            Убрать из отслеживания
-          </button>
+          <>
+            <button type="button" className={styles.primary} disabled={busy} onClick={searchNow} data-testid="search-now">
+              Искать сейчас
+            </button>
+            <button className={styles.danger} data-testid="tracking-remove" disabled={busy} onClick={remove}>
+              Убрать из отслеживания
+            </button>
+          </>
         )}
       </div>
       {error && <p className={styles.error}>{error}</p>}
+      {searchMsg && <p className={styles.searchMsg}>{searchMsg}</p>}
     </div>
   );
 }
