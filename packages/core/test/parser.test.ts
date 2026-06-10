@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 import {
   compressSeasons,
   groupBySeason,
+  parseEpisodeTag,
   parseRelease,
   summarizeStudioAvailability,
 } from "../src/parser.js";
@@ -118,5 +119,22 @@ describe("groupBySeason", () => {
     const groups = groupBySeason(releases);
     expect(groups.map(([season]) => season)).toEqual(["1", "2", "—"]);
     expect(groups[0][1]).toHaveLength(1);
+  });
+});
+
+describe("parseEpisodeTag", () => {
+  test("SxxEyy в имени файла", () => {
+    expect(parseEpisodeTag("Rick.and.Morty.S01E03.1080p.WEB-DL.mkv")).toEqual({
+      season: 1,
+      episode: 3,
+    });
+  });
+
+  test("формат 1x05", () => {
+    expect(parseEpisodeTag("show.1x05.hdtv.avi")).toEqual({ season: 1, episode: 5 });
+  });
+
+  test("без метки — null", () => {
+    expect(parseEpisodeTag("Dune.2021.BDRemux.mkv")).toBeNull();
   });
 });

@@ -8,7 +8,8 @@
     "./quality": "./src/quality.ts",
     "./jackett": "./src/jackett.ts",
     "./tmdb": "./src/tmdb.ts",
-    "./db": "./src/db/index.ts"
+    "./db": "./src/db/index.ts",
+    "./naming": "./src/naming.ts"
   },
   "scripts": {
     "test": "vitest run",
