@@ -60,3 +60,17 @@
   .mobileHead { display: none; }
   .tabBar { display: none; }
 }
+
+.badge {
+  display: inline-block;
+  margin-left: 6px;
+  min-width: 16px;
+  padding: 0 5px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 10px;
+  font-weight: bold;
+  text-align: center;
+  line-height: 16px;
+}

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import styles from "./Nav.module.css";
 
 const items = [
@@ -16,6 +17,27 @@ export function Nav() {
   const isActive = (href: string) =>
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
+  const [activeCount, setActiveCount] = useState(0);
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const res = await fetch("/api/activity/count");
+        if (!res.ok) return;
+        const data = (await res.json()) as { count: number };
+        if (alive) setActiveCount(data.count);
+      } catch {
+        // молча — бейдж не критичен
+      }
+    };
+    void load();
+    const timer = setInterval(load, 15000);
+    return () => {
+      alive = false;
+      clearInterval(timer);
+    };
+  }, []);
+
   return (
     <>
       <header className={styles.top} data-testid="top-nav">
@@ -25,6 +47,9 @@ export function Nav() {
             <Link key={i.href} href={i.href}
               className={isActive(i.href) ? styles.active : ""}>
               {i.label}
+              {i.href === "/activity" && activeCount > 0 && (
+                <span className={styles.badge} data-testid="activity-badge">{activeCount}</span>
+              )}
             </Link>
           ))}
         </nav>
@@ -40,6 +65,9 @@ export function Nav() {
             className={isActive(i.href) ? styles.active : ""}>
             <span className={styles.tabIcon}>{i.icon}</span>
             <span className={styles.tabLabel}>{i.label}</span>
+            {i.href === "/activity" && activeCount > 0 && (
+              <span className={styles.badge} data-testid="activity-badge-mobile">{activeCount}</span>
+            )}
           </Link>
         ))}
       </nav>
