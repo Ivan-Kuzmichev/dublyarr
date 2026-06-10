@@ -11,7 +11,8 @@
     "./db": "./src/db/index.ts",
     "./naming": "./src/naming.ts",
     "./qbittorrent": "./src/qbittorrent.ts",
-    "./import": "./src/import.ts"
+    "./import": "./src/import.ts",
+    "./scoring": "./src/scoring.ts"
   },
   "scripts": {
     "test": "vitest run",
