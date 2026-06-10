@@ -124,9 +124,14 @@ export class QbtClient {
     tags?: string;
   }): Promise<void> {
     const form = new FormData();
+    // ArrayBuffer — валидный BlobPart и в Node-, и в DOM-lib (Uint8Array<ArrayBufferLike> — нет)
+    const bytes = opts.file.buffer.slice(
+      opts.file.byteOffset,
+      opts.file.byteOffset + opts.file.byteLength,
+    ) as ArrayBuffer;
     form.append(
       "torrents",
-      new Blob([opts.file], { type: "application/x-bittorrent" }),
+      new Blob([bytes], { type: "application/x-bittorrent" }),
       opts.filename,
     );
     if (opts.savePath) form.append("savepath", opts.savePath);
