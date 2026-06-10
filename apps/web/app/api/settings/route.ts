@@ -3,7 +3,9 @@ import { getAllSettings, setSetting, SETTING_KEYS, type SettingKey } from "@dubl
 import { getDb } from "@/server/db";
 
 export async function GET() {
-  return NextResponse.json(getAllSettings(getDb()));
+  const { auth_password_hash: _omit, ...safe } = getAllSettings(getDb());
+  void _omit;
+  return NextResponse.json(safe);
 }
 
 export async function PUT(req: Request) {
