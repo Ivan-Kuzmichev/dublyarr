@@ -15,7 +15,8 @@
     "./scoring": "./src/scoring.ts",
     "./grab": "./src/grab.ts",
     "./poll": "./src/poll.ts",
-    "./pipeline": "./src/pipeline.ts"
+    "./pipeline": "./src/pipeline.ts",
+    "./tick": "./src/tick.ts"
   },
   "scripts": {
     "test": "vitest run",
