@@ -58,7 +58,10 @@ export class QbtClient {
       signal: AbortSignal.timeout(15_000),
     });
     const text = await res.text().catch(() => "");
-    if (!res.ok || text.trim() !== "Ok.") {
+    if (!res.ok) {
+      throw new QbtError(`qBittorrent: ${res.status} ${res.statusText}`);
+    }
+    if (text.trim() !== "Ok.") {
       throw new QbtError("Неверный логин или пароль qBittorrent");
     }
     const m = (res.headers.get("set-cookie") ?? "").match(/SID=[^;]+/);

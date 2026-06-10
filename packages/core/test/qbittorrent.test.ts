@@ -37,6 +37,16 @@ describe("QbtClient", () => {
     expect((err as QbtError).message).toBe("Неверный логин или пароль qBittorrent");
   });
 
+  test("не-ok ответ на логин → QbtError со статусом", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("Bad Gateway", { status: 502, statusText: "Bad Gateway" })),
+    );
+    const err = await new QbtClient(CFG).version().catch((e) => e);
+    expect(err).toBeInstanceOf(QbtError);
+    expect((err as QbtError).message).toBe("qBittorrent: 502 Bad Gateway");
+  });
+
   test("403 → перелогин и повтор запроса", async () => {
     const fetchMock = vi
       .fn()
