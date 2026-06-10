@@ -1,10 +1,11 @@
 import Link from "next/link";
-import { getAllSettings, listPresets } from "@dublyarr/core/db";
+import { getAllSettings, getSetting, listPresets } from "@dublyarr/core/db";
 import { getDb } from "@/server/db";
 import { PresetsEditor } from "./PresetsEditor";
 import { SettingsForm } from "./SettingsForm";
 import { FoldersForm } from "./FoldersForm";
 import { MonitoringForm } from "./MonitoringForm";
+import { SecurityForm } from "./SecurityForm";
 import styles from "./settings.module.css";
 
 export const dynamic = "force-dynamic";
@@ -14,6 +15,7 @@ const TABS = [
   { key: "integrations", label: "Интеграции" },
   { key: "folders", label: "Папки и имена" },
   { key: "monitoring", label: "Мониторинг" },
+  { key: "security", label: "Безопасность" },
 ] as const;
 
 export default async function SettingsPage({
@@ -29,7 +31,9 @@ export default async function SettingsPage({
         ? "folders"
         : tab === "monitoring"
           ? "monitoring"
-          : "quality";
+          : tab === "security"
+            ? "security"
+            : "quality";
   const db = getDb();
 
   return (
@@ -52,6 +56,11 @@ export default async function SettingsPage({
         <FoldersForm initial={getAllSettings(db)} />
       ) : active === "monitoring" ? (
         <MonitoringForm initial={getAllSettings(db)} />
+      ) : active === "security" ? (
+        <SecurityForm
+          initialHasPassword={Boolean(getSetting(db, "auth_password_hash"))}
+          initialLanBypass={getSetting(db, "auth_lan_bypass") !== "0"}
+        />
       ) : (
         <SettingsForm initial={getAllSettings(db)} />
       )}
