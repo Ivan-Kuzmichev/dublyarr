@@ -198,3 +198,20 @@ describe("миграция 0003: history и blacklist", () => {
     ).toThrow();
   });
 });
+
+describe("ключи настроек мониторинга", () => {
+  const monDir = mkdtempSync(join(tmpdir(), "dublyarr-mon-"));
+  const { db: monDb, sqlite: monSqlite } = openDb(join(monDir, "mon.db"));
+
+  afterAll(() => {
+    monSqlite.close();
+    rmSync(monDir, { recursive: true, force: true });
+  });
+
+  test("getAllSettings отдаёт ключи мониторинга", () => {
+    const all = getAllSettings(monDb);
+    for (const k of ["monitor_interval_min", "monitor_min_seeders", "monitor_stall_hours"]) {
+      expect(all).toHaveProperty(k, null);
+    }
+  });
+});

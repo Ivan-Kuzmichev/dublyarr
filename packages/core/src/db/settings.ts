@@ -14,6 +14,9 @@ export const SETTING_KEYS = [
   "staging_dir",
   "naming_tv",
   "naming_movie",
+  "monitor_interval_min",
+  "monitor_min_seeders",
+  "monitor_stall_hours",
 ] as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[number];
@@ -34,4 +37,20 @@ export function getAllSettings(db: Db): Record<SettingKey, string | null> {
   const out = {} as Record<SettingKey, string | null>;
   for (const k of SETTING_KEYS) out[k] = getSetting(db, k);
   return out;
+}
+
+export const MONITOR_DEFAULTS = {
+  monitor_interval_min: 15,
+  monitor_min_seeders: 1,
+  monitor_stall_hours: 6,
+} as const;
+
+/** Число из настроек с дефолтом и нижней границей 0; нечисло → дефолт. */
+export function getMonitorNumber(
+  db: Db,
+  key: keyof typeof MONITOR_DEFAULTS,
+): number {
+  const raw = getSetting(db, key);
+  const n = raw == null ? NaN : Number(raw);
+  return Number.isFinite(n) && n >= 0 ? n : MONITOR_DEFAULTS[key];
 }
