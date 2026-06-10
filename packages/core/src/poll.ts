@@ -108,8 +108,11 @@ export async function refreshDownload(
       } else {
         addHistory(db, {
           titleId: title.id,
-          kind: "import",
-          message: `Импортировано: ${d.releaseTitle || d.tag}`,
+          kind: result.replaced > 0 ? "upgrade" : "import",
+          message:
+            result.replaced > 0
+              ? `Апгрейд: ${d.releaseTitle || d.tag}`
+              : `Импортировано: ${d.releaseTitle || d.tag}`,
         });
       }
     } catch (e) {
