@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getAllSettings, getSetting, listPresets } from "@dublyarr/core/db";
+import { getAllSettings, getSetting, listPresets, type SettingKey } from "@dublyarr/core/db";
 import { getDb } from "@/server/db";
 import { PresetsEditor } from "./PresetsEditor";
 import { SettingsForm } from "./SettingsForm";
@@ -36,6 +36,13 @@ export default async function SettingsPage({
             : "quality";
   const db = getDb();
 
+  // Хеш пароля — ключ подписи сессий: нельзя отдавать его в RSC-payload форм.
+  // Остальные секреты (api-ключи/пароли интеграций) формы намеренно показывают.
+  const formSettings = (): Record<SettingKey, string | null> => {
+    const all = getAllSettings(db);
+    return { ...all, auth_password_hash: null };
+  };
+
   return (
     <>
       <h1>Настройки</h1>
@@ -53,16 +60,16 @@ export default async function SettingsPage({
       {active === "quality" ? (
         <PresetsEditor initial={listPresets(db)} />
       ) : active === "folders" ? (
-        <FoldersForm initial={getAllSettings(db)} />
+        <FoldersForm initial={formSettings()} />
       ) : active === "monitoring" ? (
-        <MonitoringForm initial={getAllSettings(db)} />
+        <MonitoringForm initial={formSettings()} />
       ) : active === "security" ? (
         <SecurityForm
           initialHasPassword={Boolean(getSetting(db, "auth_password_hash"))}
           initialLanBypass={getSetting(db, "auth_lan_bypass") !== "0"}
         />
       ) : (
-        <SettingsForm initial={getAllSettings(db)} />
+        <SettingsForm initial={formSettings()} />
       )}
     </>
   );
