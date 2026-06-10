@@ -5,7 +5,12 @@ reports/
 .DS_Store
 
 .superpowers/
+.claude/
+promt.md
 data/
+.auth-smoke/
+.mw-test/
+.mw-leak/
 .e2e-data/
 .worker-smoke/
 .next/
