@@ -58,7 +58,9 @@ function listVideoFiles(root: string): { path: string; size: number }[] {
  * Раскладывает завершённую загрузку в библиотеку: сериалы — по SxxEyy
  * из имён файлов, фильмы — самый большой видеофайл. При успехе пишет
  * files, проставляет episodes.file_id и переводит download в imported.
- * При ошибке БД не трогает — вызывающий решает, что писать в error.
+ * Ранние ошибки (нет файлов/нет видео/не сопоставлено) БД не мутируют;
+ * при падении посреди цикла уже импортированные серии остаются записанными —
+ * повторный импорт безопасен (эпизоды с file_id пропускаются).
  */
 export function importDownload(
   db: Db,
@@ -86,10 +88,11 @@ export function importDownload(
 
   if (title.type === "movie") {
     const best = [...videos].sort((a, b) => b.size - a.size)[0];
-    const dest = join(
-      opts.libraryDir,
-      renderTemplate(opts.template, vars) + extname(best.path).toLowerCase(),
-    );
+    const rendered = renderTemplate(opts.template, vars);
+    if (!rendered) {
+      return { ok: false, error: "Шаблон имени дал пустой путь" };
+    }
+    const dest = join(opts.libraryDir, rendered + extname(best.path).toLowerCase());
     mkdirSync(dirname(dest), { recursive: true });
     link(best.path, dest);
     imported.push(
@@ -108,19 +111,27 @@ export function importDownload(
     const byKey = new Map(
       listEpisodes(db, title.id).map((e) => [`${e.season}:${e.episode}`, e]),
     );
+    let matched = 0;
     for (const v of videos) {
       const tag = parseEpisodeTag(basename(v.path));
       if (!tag) continue;
-      const ep = byKey.get(`${tag.season}:${tag.episode}`);
-      if (!ep || ep.fileId != null) continue;
-      const dest = join(
-        opts.libraryDir,
-        renderTemplate(opts.template, {
-          ...vars,
-          season: tag.season,
-          episode: tag.episode,
-        }) + extname(v.path).toLowerCase(),
-      );
+      const key = `${tag.season}:${tag.episode}`;
+      const ep = byKey.get(key);
+      if (!ep) continue;
+      if (ep.fileId != null) {
+        // Эпизод уже импортирован — засчитываем как matched, но не трогаем
+        matched += 1;
+        continue;
+      }
+      const rendered = renderTemplate(opts.template, {
+        ...vars,
+        season: tag.season,
+        episode: tag.episode,
+      });
+      if (!rendered) {
+        return { ok: false, error: "Шаблон имени дал пустой путь" };
+      }
+      const dest = join(opts.libraryDir, rendered + extname(v.path).toLowerCase());
       mkdirSync(dirname(dest), { recursive: true });
       link(v.path, dest);
       imported.push(
@@ -135,10 +146,15 @@ export function importDownload(
           releaseGuid: download.releaseGuid,
         }),
       );
+      matched += 1;
+      // Удаляем из map: следующий файл с той же меткой (PROPER и т.п.) не пройдёт
+      byKey.delete(key);
     }
-    if (imported.length === 0) {
+    if (imported.length === 0 && matched === 0) {
       return { ok: false, error: "Не удалось сопоставить файлы с сериями" };
     }
+    // imported.length === 0 && matched > 0: все эпизоды уже импортированы —
+    // повторный импорт безопасен, возвращаем успех с пустым списком
   }
 
   updateDownload(db, download.id, { status: "imported", progress: 1, error: null });

@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, test } from "vitest";
@@ -170,5 +170,125 @@ describe("importDownload: фильм", () => {
       template: DEFAULT_NAMING_MOVIE,
     });
     expect(result).toEqual({ ok: false, error: "Файлы загрузки не найдены на диске" });
+  });
+});
+
+describe("importDownload: Duplicate Show (tmdbId 60626) — регрессии", () => {
+  const dupTitle = addTitle(db, {
+    tmdbId: 60626,
+    type: "tv",
+    titleRu: "Дубликат",
+    titleOriginal: "Dup",
+    year: "2020",
+    posterPath: null,
+    overview: "",
+    tmdbStatus: null,
+    qualityPresetId: 1,
+    voiceover: "any",
+    monitorRule: "all",
+  });
+  syncEpisodes(
+    db,
+    dupTitle.id,
+    [
+      { season: 1, episode: 1, airDate: "2020-01-01", name: "E1" },
+      { season: 1, episode: 2, airDate: "2020-01-08", name: "E2" },
+    ],
+    "all",
+  );
+
+  function makeDupDownload() {
+    return createDownload(db, {
+      titleId: dupTitle.id,
+      releaseGuid: `guid-dup-${Date.now()}-${Math.random()}`,
+      releaseTitle: "Dup S01",
+      episodesCovered: [],
+      voiceoverStudio: null,
+      qualitySource: "WEB-DL",
+      qualityResolution: "1080p",
+    });
+  }
+
+  test("дубликаты метки: два файла S01E01 — импортируется только первый, файлов в библиотеке 2", () => {
+    const content = join(dir, "staging", "dup-label");
+    mkdirSync(content, { recursive: true });
+    writeFileSync(join(content, "Dup.S01E01.1080p.mkv"), "first");
+    writeFileSync(join(content, "Dup.S01E01.PROPER.1080p.mkv"), "second");
+    writeFileSync(join(content, "Dup.S01E02.1080p.mkv"), "e2");
+
+    const d = makeDupDownload();
+    const result = importDownload(db, d, dupTitle, content, {
+      libraryDir,
+      template: DEFAULT_NAMING_TV,
+    });
+    expect(result.ok).toBe(true);
+
+    const files = listFiles(db, dupTitle.id);
+    // Только 2 файла: S01E01 (первый) и S01E02 — не 3
+    expect(files).toHaveLength(2);
+
+    // Контент файла E01 в библиотеке === "first" (не перезаписан)
+    const e01Path = files.find((f) => f.path.includes("E01"))?.path;
+    expect(e01Path).toBeDefined();
+    expect(readFileSync(e01Path!, "utf8")).toBe("first");
+  });
+
+  test("повторный импорт: уже импортированный контент → ok true, files [], статус imported", () => {
+    // Создаём второй download того же тайтла с тем же контентом
+    const content = join(dir, "staging", "dup-label"); // тот же content что в прошлом тесте
+
+    const d2 = makeDupDownload();
+    const result = importDownload(db, d2, dupTitle, content, {
+      libraryDir,
+      template: DEFAULT_NAMING_TV,
+    });
+    expect(result).toEqual({ ok: true, files: [] });
+    expect(getDownload(db, d2.id)?.status).toBe("imported");
+
+    // Количество файлов не изменилось — всё ещё 2
+    expect(listFiles(db, dupTitle.id)).toHaveLength(2);
+  });
+
+  test("пустой шаблон: {VO} при vo='' → ошибка пустого пути", () => {
+    // Нужен тайтл с незаполненными fileId (отдельный, чтобы не зависеть от
+    // состояния dupTitle после предыдущих тестов)
+    const tmplTitle = addTitle(db, {
+      tmdbId: 60627,
+      type: "tv",
+      titleRu: "Шаблон тест",
+      titleOriginal: "TmplTest",
+      year: "2021",
+      posterPath: null,
+      overview: "",
+      tmdbStatus: null,
+      qualityPresetId: 1,
+      voiceover: "any",
+      monitorRule: "all",
+    });
+    syncEpisodes(
+      db,
+      tmplTitle.id,
+      [{ season: 1, episode: 1, airDate: "2021-01-01", name: "E1" }],
+      "all",
+    );
+
+    const content = join(dir, "staging", "dup-empty-tmpl");
+    mkdirSync(content, { recursive: true });
+    writeFileSync(join(content, "TmplTest.S01E01.1080p.mkv"), "x");
+
+    const d = createDownload(db, {
+      titleId: tmplTitle.id,
+      releaseGuid: `guid-empty-tmpl-${Date.now()}`,
+      releaseTitle: "TmplTest empty",
+      episodesCovered: [],
+      voiceoverStudio: null, // vo будет ""
+      qualitySource: "WEB-DL",
+      qualityResolution: "1080p",
+    });
+    const result = importDownload(db, d, tmplTitle, content, {
+      libraryDir,
+      template: "{VO}", // при vo="" → renderTemplate вернёт ""
+    });
+    expect(result).toEqual({ ok: false, error: "Шаблон имени дал пустой путь" });
   });
 });
