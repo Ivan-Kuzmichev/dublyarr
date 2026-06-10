@@ -31,8 +31,15 @@ export function DownloadsBlock({
 }) {
   const router = useRouter();
   const [rows, setRows] = useState(initial);
+  const [prevInitial, setPrevInitial] = useState(initial);
+  if (initial !== prevInitial) {
+    setPrevInitial(initial);
+    setRows(initial);
+  }
   const [qbtError, setQbtError] = useState<string | null>(null);
+  const [removingId, setRemovingId] = useState<number | null>(null);
   const importedIds = useRef(new Set(initial.filter((d) => d.status === "imported").map((d) => d.id)));
+  const deletedIds = useRef(new Set<number>());
 
   useEffect(() => {
     if (!rows.some((d) => ACTIVE.has(d.status))) return;
@@ -44,7 +51,7 @@ export function DownloadsBlock({
           downloads: DownloadView[];
           qbtError: string | null;
         };
-        setRows(data.downloads);
+        setRows(data.downloads.filter((d) => !deletedIds.current.has(d.id)));
         setQbtError(data.qbtError);
         const newlyImported = data.downloads.some(
           (d) => d.status === "imported" && !importedIds.current.has(d.id),
@@ -60,16 +67,28 @@ export function DownloadsBlock({
     return () => clearInterval(timer);
   }, [rows, titleId, router]);
 
-  async function remove(id: number) {
-    if (!window.confirm("Удалить загрузку? Раздача будет удалена из qBittorrent.")) return;
+  async function remove(d: DownloadView) {
+    const msg =
+      d.status === "imported"
+        ? "Удалить запись о загрузке?"
+        : "Удалить загрузку? Раздача и её файлы будут удалены из qBittorrent.";
+    if (!window.confirm(msg)) return;
+    setQbtError(null);
+    setRemovingId(d.id);
     try {
-      const res = await fetch(`/api/downloads/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/downloads/${d.id}`, { method: "DELETE" });
       if (res.ok) {
-        setRows((prev) => prev.filter((d) => d.id !== id));
+        deletedIds.current.add(d.id);
+        setRows((prev) => prev.filter((r) => r.id !== d.id));
         router.refresh();
+      } else {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setQbtError(body.error ?? `Ошибка ${res.status}`);
       }
     } catch {
       setQbtError("Сеть недоступна");
+    } finally {
+      setRemovingId(null);
     }
   }
 
@@ -96,7 +115,7 @@ export function DownloadsBlock({
               </span>
             )}
             {d.error && <span className={styles.error}>{d.error}</span>}
-            <button type="button" className={styles.danger} onClick={() => remove(d.id)}>
+            <button type="button" className={styles.danger} disabled={removingId === d.id} onClick={() => remove(d)}>
               Удалить
             </button>
           </li>
