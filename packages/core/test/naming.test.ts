@@ -58,4 +58,17 @@ describe("renderTemplate", () => {
     });
     expect(out).toBe("What If Tales (2024)/What If Tales (2024) - WEB-DL 1080p");
   });
+
+  test("слэши и .. в quality/vo/year не создают сегментов пути", () => {
+    const out = renderTemplate(DEFAULT_NAMING_TV, {
+      show: "Show",
+      year: "2020",
+      season: 1,
+      episode: 2,
+      quality: "WEB-DL/1080p",
+      vo: "../../../etc/passwd",
+    });
+    expect(out).not.toContain("..");
+    expect(out.split("/")).toHaveLength(3);
+  });
 });

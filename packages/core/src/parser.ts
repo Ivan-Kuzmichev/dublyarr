@@ -370,7 +370,7 @@ export function parseEpisodeTag(
 ): { season: number; episode: number } | null {
   const m = name.match(/\bS(\d{1,2})[\s._-]*E(\d{1,3})\b/i);
   if (m) return { season: parseInt(m[1], 10), episode: parseInt(m[2], 10) };
-  const m2 = name.match(/\b(\d{1,2})x(\d{2,3})\b/);
+  const m2 = name.match(/\b(\d{1,2})x(\d{2,3})\b/i);
   if (m2) return { season: parseInt(m2[1], 10), episode: parseInt(m2[2], 10) };
   return null;
 }

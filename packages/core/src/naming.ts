@@ -7,6 +7,7 @@ export const DEFAULT_NAMING_MOVIE =
 export function sanitizeName(s: string): string {
   return s
     .replace(/[/\\:*?"<>|]/g, " ")
+    .replace(/\.\.+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -32,13 +33,13 @@ export function renderTemplate(template: string, vars: NameVars): string {
     .map((segment) =>
       segment
         .replaceAll("{Show}", sanitizeName(vars.show))
-        .replaceAll("{Year}", vars.year)
+        .replaceAll("{Year}", sanitizeName(vars.year))
         .replaceAll("{ss}", pad(vars.season))
         .replaceAll("{ee}", pad(vars.episode))
-        .replaceAll("{Quality}", vars.quality)
-        .replaceAll("{VO}", vars.vo)
+        .replaceAll("{Quality}", sanitizeName(vars.quality))
+        .replaceAll("{VO}", sanitizeName(vars.vo))
         .replace(/\s+/g, " ")
-        .replace(/[\s.\-–]+$/g, "")
+        .replace(/[\s.\-–]+$/, "")
         .trim(),
     )
     .filter((seg) => seg.length > 0)

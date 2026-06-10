@@ -137,4 +137,10 @@ describe("parseEpisodeTag", () => {
   test("без метки — null", () => {
     expect(parseEpisodeTag("Dune.2021.BDRemux.mkv")).toBeNull();
   });
+
+  test("без паддинга и верхний регистр x", () => {
+    expect(parseEpisodeTag("show.S1E1.mkv")).toEqual({ season: 1, episode: 1 });
+    expect(parseEpisodeTag("show.1X05.mkv")).toEqual({ season: 1, episode: 5 });
+    expect(parseEpisodeTag("show.10x100.mkv")).toEqual({ season: 10, episode: 100 });
+  });
 });
