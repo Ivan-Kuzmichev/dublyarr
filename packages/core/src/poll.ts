@@ -1,6 +1,7 @@
 import { blacklistRelease } from "./db/blacklist.js";
 import {
   getDownload,
+  listActiveDownloads,
   listDownloadsForTitle,
   REFRESHABLE_STATUSES,
   updateDownload,
@@ -143,4 +144,22 @@ export async function pollTitle(
     }
   }
   return { downloads: listDownloadsForTitle(db, titleId), qbtError };
+}
+
+/** Рефреш всех активных загрузок (по всем тайтлам); возвращает свежий список + ошибку qbt. */
+export async function pollAll(
+  db: Db,
+  qbt: QbtClient,
+  opts: PollOptions = {},
+): Promise<{ active: Download[]; qbtError: string | null }> {
+  let qbtError: string | null = null;
+  for (const d of listActiveDownloads(db)) {
+    try {
+      await refreshDownload(db, qbt, d, opts);
+    } catch (e) {
+      qbtError = e instanceof QbtError ? e.message : "qBittorrent недоступен";
+      break;
+    }
+  }
+  return { active: listActiveDownloads(db), qbtError };
 }

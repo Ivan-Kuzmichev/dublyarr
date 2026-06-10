@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, inArray, sql } from "drizzle-orm";
 import type { Db } from "./index.js";
 import { downloads } from "./schema.js";
 
@@ -107,4 +107,23 @@ export function updateDownload(
 
 export function deleteDownload(db: Db, id: number): void {
   db.delete(downloads).where(eq(downloads.id, id)).run();
+}
+
+export function listActiveDownloads(db: Db): Download[] {
+  return db
+    .select()
+    .from(downloads)
+    .where(inArray(downloads.status, REFRESHABLE_STATUSES))
+    .orderBy(desc(downloads.id))
+    .all()
+    .map(rowToDownload);
+}
+
+export function countActiveDownloads(db: Db): number {
+  const row = db
+    .select({ c: sql<number>`count(*)` })
+    .from(downloads)
+    .where(inArray(downloads.status, REFRESHABLE_STATUSES))
+    .get();
+  return row?.c ?? 0;
 }
