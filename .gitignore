@@ -6,7 +6,6 @@ reports/
 
 .superpowers/
 .claude/
-promt.md
 data/
 .auth-smoke/
 .mw-test/
