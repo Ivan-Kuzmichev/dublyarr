@@ -117,3 +117,29 @@ describe("миграция 0002: files и downloads", () => {
     ).toThrow();
   });
 });
+
+describe("ключи настроек M2b", () => {
+  const keysDir = mkdtempSync(join(tmpdir(), "dublyarr-keys-"));
+  const { db, sqlite: keysSqlite } = openDb(join(keysDir, "keys.db"));
+
+  afterAll(() => {
+    keysSqlite.close();
+    rmSync(keysDir, { recursive: true, force: true });
+  });
+
+  test("getAllSettings отдаёт новые ключи", () => {
+    const all = getAllSettings(db);
+    for (const k of [
+      "qbit_url",
+      "qbit_username",
+      "qbit_password",
+      "library_movies",
+      "library_tv",
+      "staging_dir",
+      "naming_tv",
+      "naming_movie",
+    ]) {
+      expect(all).toHaveProperty(k, null);
+    }
+  });
+});

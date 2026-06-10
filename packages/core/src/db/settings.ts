@@ -6,6 +6,14 @@ export const SETTING_KEYS = [
   "tmdb_api_key",
   "jackett_url",
   "jackett_api_key",
+  "qbit_url",
+  "qbit_username",
+  "qbit_password",
+  "library_movies",
+  "library_tv",
+  "staging_dir",
+  "naming_tv",
+  "naming_movie",
 ] as const;
 
 export type SettingKey = (typeof SETTING_KEYS)[number];
