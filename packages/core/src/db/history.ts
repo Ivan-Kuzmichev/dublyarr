@@ -1,4 +1,4 @@
-import { and, desc, eq, max } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import type { Db } from "./index.js";
 import { history } from "./schema.js";
 
@@ -46,12 +46,14 @@ export function listHistory(db: Db, limit: number, offset: number): HistoryEvent
     .all() as HistoryEvent[];
 }
 
-/** ISO-время последнего события kind=search для тайтла (для рейт-лимита) или null. */
+/** Время последнего (по id) события kind=search для тайтла (для рейт-лимита) или null. */
 export function recentSearchAt(db: Db, titleId: number): string | null {
   const row = db
-    .select({ t: max(history.createdAt) })
+    .select({ t: history.createdAt })
     .from(history)
     .where(and(eq(history.titleId, titleId), eq(history.kind, "search")))
+    .orderBy(desc(history.id))
+    .limit(1)
     .get();
   return row?.t ?? null;
 }
