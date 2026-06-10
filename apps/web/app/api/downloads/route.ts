@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   createDownload,
+  getDownload,
   getSetting,
   getTitle,
   listDownloadsForTitle,
@@ -24,6 +25,11 @@ async function refreshOne(
   d: Download,
 ): Promise<void> {
   const torrent = (await qbt.listTorrents({ tag: d.tag }))[0];
+
+  // после await статус мог измениться конкурентным запросом — перечитываем
+  const fresh = getDownload(db, d.id);
+  if (!fresh || !REFRESHABLE_STATUSES.includes(fresh.status)) return;
+  d = fresh;
 
   if (d.status === "queued") {
     if (!torrent) return; // ещё не появился в qBittorrent
@@ -54,7 +60,14 @@ async function refreshOne(
   }
 
   if (d.status === "completed") {
-    if (!torrent?.contentPath) return;
+    if (!torrent) {
+      updateDownload(db, d.id, {
+        status: "failed",
+        error: "Раздача пропала из qBittorrent — импорт невозможен",
+      });
+      return;
+    }
+    if (!torrent.contentPath) return; // qbt ещё не отдал content_path
     const title = getTitle(db, d.titleId);
     if (!title) return;
     const libraryDir = getSetting(
@@ -70,11 +83,17 @@ async function refreshOne(
     const template =
       getSetting(db, title.type === "tv" ? "naming_tv" : "naming_movie") ||
       (title.type === "tv" ? DEFAULT_NAMING_TV : DEFAULT_NAMING_MOVIE);
-    const result = importDownload(db, d, title, torrent.contentPath, {
-      libraryDir,
-      template,
-    });
-    if (!result.ok) updateDownload(db, d.id, { error: result.error });
+    try {
+      const result = importDownload(db, d, title, torrent.contentPath, {
+        libraryDir,
+        template,
+      });
+      if (!result.ok) updateDownload(db, d.id, { error: result.error });
+    } catch (e) {
+      updateDownload(db, d.id, {
+        error: `Ошибка импорта: ${e instanceof Error ? e.message : String(e)}`,
+      });
+    }
   }
 }
 
