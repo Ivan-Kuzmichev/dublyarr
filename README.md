@@ -63,3 +63,41 @@ npm run test:e2e -w @dublyarr/web   # e2e (playwright)
 - Страница «Активность» — активные загрузки с прогрессом (поллинг) и лента событий
   (поиск/забрал/импорт/апгрейд/ошибка/не найдено).
 - Бейдж-счётчик активных загрузок в навигации.
+
+## Деплой (Docker)
+
+```bash
+curl -O https://raw.githubusercontent.com/Ivan-Kuzmichev/dublyarr/main/docker-compose.yml
+docker compose up -d
+```
+
+Веб — http://localhost:3000, БД и конфиг — в `./data`. Jackett и qBittorrent — внешние,
+адреса задаются в Настройках → Интеграции. Миграции применяются автоматически на старте.
+
+Обновление: `docker compose pull && docker compose up -d`.
+
+Опционально — полный стек одним compose:
+
+```yaml
+services:
+  dublyarr:
+    image: ghcr.io/ivan-kuzmichev/dublyarr:latest
+    ports: ["3000:3000"]
+    volumes: ["./data:/data"]
+    restart: unless-stopped
+  jackett:
+    image: lscr.io/linuxserver/jackett:latest
+    ports: ["9117:9117"]
+    volumes: ["./jackett:/config"]
+    restart: unless-stopped
+  qbittorrent:
+    image: lscr.io/linuxserver/qbittorrent:latest
+    ports: ["8080:8080"]
+    volumes: ["./qbittorrent:/config", "./downloads:/downloads"]
+    restart: unless-stopped
+```
+
+### Безопасность
+
+Пароль задаётся в Настройках → Безопасность. Опция «LAN без пароля» доверяет
+X-Forwarded-For: за reverse-proxy передавайте реальный IP клиента или отключите опцию.
