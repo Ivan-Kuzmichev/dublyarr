@@ -10,7 +10,8 @@
     "./tmdb": "./src/tmdb.ts",
     "./db": "./src/db/index.ts",
     "./naming": "./src/naming.ts",
-    "./qbittorrent": "./src/qbittorrent.ts"
+    "./qbittorrent": "./src/qbittorrent.ts",
+    "./import": "./src/import.ts"
   },
   "scripts": {
     "test": "vitest run",
