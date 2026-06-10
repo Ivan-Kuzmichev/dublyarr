@@ -41,3 +41,4 @@ export * from "./titles.js";
 export * from "./files.js";
 export * from "./downloads.js";
 export * from "./history.js";
+export * from "./blacklist.js";
