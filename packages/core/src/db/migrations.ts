@@ -48,4 +48,35 @@ export const migrations: { id: string; sql: string }[] = [
       ('FullHD', '["bluray-1080p","bdrip-1080p","webdl-1080p","webrip-1080p","hdtv-1080p"]', 'webdl-1080p', 0),
       ('4K', '["bdremux-2160p","webdl-2160p","bdremux-1080p","webdl-1080p"]', 'bdremux-2160p', 1);`,
   },
+  {
+    id: "0002_downloads",
+    sql: `CREATE TABLE files (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title_id INTEGER NOT NULL REFERENCES titles(id) ON DELETE CASCADE,
+      episode_id INTEGER REFERENCES episodes(id) ON DELETE SET NULL,
+      path TEXT NOT NULL,
+      size INTEGER NOT NULL DEFAULT 0,
+      quality_source TEXT,
+      quality_resolution TEXT,
+      voiceover_studio TEXT,
+      release_guid TEXT,
+      downloaded_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE TABLE downloads (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title_id INTEGER NOT NULL REFERENCES titles(id) ON DELETE CASCADE,
+      release_guid TEXT NOT NULL DEFAULT '',
+      release_title TEXT NOT NULL DEFAULT '',
+      qbit_hash TEXT,
+      tag TEXT NOT NULL UNIQUE,
+      episodes_covered TEXT NOT NULL DEFAULT '[]',
+      voiceover_studio TEXT,
+      quality_source TEXT,
+      quality_resolution TEXT,
+      status TEXT NOT NULL DEFAULT 'queued' CHECK (status IN ('queued','downloading','completed','failed','imported')),
+      progress REAL NOT NULL DEFAULT 0,
+      error TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );`,
+  },
 ];

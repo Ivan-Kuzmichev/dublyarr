@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   integer,
+  real,
   sqliteTable,
   text,
   uniqueIndex,
@@ -63,3 +64,47 @@ export const episodes = sqliteTable(
   },
   (t) => [uniqueIndex("episodes_unique").on(t.titleId, t.season, t.episode)],
 );
+
+export const files = sqliteTable("files", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  titleId: integer("title_id")
+    .notNull()
+    .references(() => titles.id, { onDelete: "cascade" }),
+  episodeId: integer("episode_id").references(() => episodes.id, {
+    onDelete: "set null",
+  }),
+  path: text("path").notNull(),
+  size: integer("size").notNull().default(0),
+  qualitySource: text("quality_source"),
+  qualityResolution: text("quality_resolution"),
+  voiceoverStudio: text("voiceover_studio"),
+  releaseGuid: text("release_guid"),
+  downloadedAt: text("downloaded_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});
+
+export const downloads = sqliteTable("downloads", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  titleId: integer("title_id")
+    .notNull()
+    .references(() => titles.id, { onDelete: "cascade" }),
+  releaseGuid: text("release_guid").notNull().default(""),
+  releaseTitle: text("release_title").notNull().default(""),
+  qbitHash: text("qbit_hash"),
+  tag: text("tag").notNull().unique(),
+  episodesCovered: text("episodes_covered").notNull().default("[]"),
+  voiceoverStudio: text("voiceover_studio"),
+  qualitySource: text("quality_source"),
+  qualityResolution: text("quality_resolution"),
+  status: text("status", {
+    enum: ["queued", "downloading", "completed", "failed", "imported"],
+  })
+    .notNull()
+    .default("queued"),
+  progress: real("progress").notNull().default(0),
+  error: text("error"),
+  createdAt: text("created_at")
+    .notNull()
+    .default(sql`(datetime('now'))`),
+});

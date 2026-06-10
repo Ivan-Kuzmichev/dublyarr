@@ -64,3 +64,56 @@ describe("миграция 0001_tracking", () => {
     second.sqlite.close();
   });
 });
+
+describe("миграция 0002: files и downloads", () => {
+  const m2bDir = mkdtempSync(join(tmpdir(), "dublyarr-m2b-"));
+  const { sqlite: m2bSqlite } = openDb(join(m2bDir, "m2b.db"));
+
+  afterAll(() => {
+    m2bSqlite.close();
+    rmSync(m2bDir, { recursive: true, force: true });
+  });
+
+  test("таблицы созданы", () => {
+    const names = (
+      m2bSqlite
+        .prepare(`SELECT name FROM sqlite_master WHERE type='table' AND name IN ('files','downloads')`)
+        .all() as { name: string }[]
+    ).map((r) => r.name);
+    expect(names.sort()).toEqual(["downloads", "files"]);
+  });
+
+  test("удаление тайтла каскадит downloads и files", () => {
+    m2bSqlite
+      .prepare(
+        `INSERT INTO titles (tmdb_id, type, title_ru, title_original, quality_preset_id)
+         VALUES (1, 'movie', 'Тест', 'Test', 1)`,
+      )
+      .run();
+    const titleId = m2bSqlite.prepare(`SELECT id FROM titles WHERE tmdb_id = 1`).get() as { id: number };
+    m2bSqlite
+      .prepare(`INSERT INTO downloads (title_id, tag) VALUES (?, 'dublyarr-x')`)
+      .run(titleId.id);
+    m2bSqlite
+      .prepare(`INSERT INTO files (title_id, path) VALUES (?, '/lib/a.mkv')`)
+      .run(titleId.id);
+    m2bSqlite.prepare(`DELETE FROM titles WHERE id = ?`).run(titleId.id);
+    expect(m2bSqlite.prepare(`SELECT count(*) AS c FROM downloads`).get()).toEqual({ c: 0 });
+    expect(m2bSqlite.prepare(`SELECT count(*) AS c FROM files`).get()).toEqual({ c: 0 });
+  });
+
+  test("downloads.status ограничен CHECK", () => {
+    m2bSqlite
+      .prepare(
+        `INSERT INTO titles (tmdb_id, type, title_ru, title_original, quality_preset_id)
+         VALUES (2, 'movie', 'Т2', 'T2', 1)`,
+      )
+      .run();
+    const t = m2bSqlite.prepare(`SELECT id FROM titles WHERE tmdb_id = 2`).get() as { id: number };
+    expect(() =>
+      m2bSqlite
+        .prepare(`INSERT INTO downloads (title_id, tag, status) VALUES (?, 'dublyarr-y', 'bogus')`)
+        .run(t.id),
+    ).toThrow();
+  });
+});
