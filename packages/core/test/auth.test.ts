@@ -54,6 +54,11 @@ describe("createSession/verifySession", () => {
     expect(verifySession("", hash)).toBe(false);
     expect(verifySession("abc", hash)).toBe(false);
   });
+
+  test("пустой passwordHash: verifySession→false, createSession бросает", () => {
+    expect(verifySession(createSession(hashPassword("x")), "")).toBe(false);
+    expect(() => createSession("")).toThrow();
+  });
 });
 
 describe("isPrivateIp", () => {
@@ -68,7 +73,7 @@ describe("isPrivateIp", () => {
   });
 
   test("публичные и мусор", () => {
-    for (const ip of ["8.8.8.8", "172.32.0.1", "193.168.1.1", "2a00:1450::1", "", "not-an-ip"]) {
+    for (const ip of ["8.8.8.8", "172.32.0.1", "193.168.1.1", "2a00:1450::1", "", "not-an-ip", "10.999.0.1", "::ffff:8.8.8.8", "256.1.1.1"]) {
       expect(isPrivateIp(ip), ip).toBe(false);
     }
   });

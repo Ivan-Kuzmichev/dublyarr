@@ -33,6 +33,7 @@ export function createSession(
   ttlMs: number = 30 * 24 * 3600 * 1000,
   now: number = Date.now(),
 ): string {
+  if (!passwordHash) throw new Error("createSession: passwordHash обязателен");
   const exp = String(now + ttlMs);
   return `${exp}.${sign(exp, passwordHash)}`;
 }
@@ -42,6 +43,7 @@ export function verifySession(
   passwordHash: string,
   now: number = Date.now(),
 ): boolean {
+  if (!passwordHash) return false;
   const dot = token.lastIndexOf(".");
   if (dot <= 0) return false;
   const exp = token.slice(0, dot);
@@ -59,8 +61,9 @@ export function isPrivateIp(ip: string): boolean {
   const v4 = ip.startsWith("::ffff:") ? ip.slice(7) : ip;
   const m = v4.match(/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
   if (m) {
-    const a = Number(m[1]);
-    const b = Number(m[2]);
+    const oct = m.slice(1, 5).map(Number);
+    if (oct.some((n) => n > 255)) return false; // не валидный IPv4 → не приватный
+    const [a, b] = oct;
     if (a === 10 || a === 127) return true;
     if (a === 172 && b >= 16 && b <= 31) return true;
     if (a === 192 && b === 168) return true;
