@@ -79,4 +79,23 @@ export const migrations: { id: string; sql: string }[] = [
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );`,
   },
+  {
+    id: "0003_history_blacklist",
+    sql: `CREATE TABLE history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title_id INTEGER REFERENCES titles(id) ON DELETE SET NULL,
+      kind TEXT NOT NULL,
+      message TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX history_created_idx ON history (created_at);
+    CREATE TABLE blacklist (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title_id INTEGER NOT NULL REFERENCES titles(id) ON DELETE CASCADE,
+      release_guid TEXT NOT NULL,
+      reason TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE (title_id, release_guid)
+    );`,
+  },
 ];

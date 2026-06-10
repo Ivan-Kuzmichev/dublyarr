@@ -1,5 +1,6 @@
 import { sql } from "drizzle-orm";
 import {
+  index,
   integer,
   real,
   sqliteTable,
@@ -108,3 +109,33 @@ export const downloads = sqliteTable("downloads", {
     .notNull()
     .default(sql`(datetime('now'))`),
 });
+
+export const history = sqliteTable(
+  "history",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    titleId: integer("title_id").references(() => titles.id, { onDelete: "set null" }),
+    kind: text("kind").notNull(),
+    message: text("message").notNull().default(""),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [index("history_created_idx").on(t.createdAt)],
+);
+
+export const blacklist = sqliteTable(
+  "blacklist",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    titleId: integer("title_id")
+      .notNull()
+      .references(() => titles.id, { onDelete: "cascade" }),
+    releaseGuid: text("release_guid").notNull(),
+    reason: text("reason").notNull().default(""),
+    createdAt: text("created_at")
+      .notNull()
+      .default(sql`(datetime('now'))`),
+  },
+  (t) => [uniqueIndex("blacklist_unique").on(t.titleId, t.releaseGuid)],
+);

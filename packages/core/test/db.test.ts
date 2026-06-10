@@ -143,3 +143,58 @@ describe("ключи настроек M2b", () => {
     }
   });
 });
+
+describe("миграция 0003: history и blacklist", () => {
+  const m3dir = mkdtempSync(join(tmpdir(), "dublyarr-m3-"));
+  const { sqlite: m3sqlite } = openDb(join(m3dir, "m3.db"));
+
+  afterAll(() => {
+    m3sqlite.close();
+    rmSync(m3dir, { recursive: true, force: true });
+  });
+
+  test("таблицы созданы", () => {
+    const names = (
+      m3sqlite
+        .prepare(
+          `SELECT name FROM sqlite_master WHERE type='table' AND name IN ('history','blacklist')`,
+        )
+        .all() as { name: string }[]
+    ).map((r) => r.name);
+    expect(names.sort()).toEqual(["blacklist", "history"]);
+  });
+
+  test("history.title_id → SET NULL при удалении тайтла", () => {
+    m3sqlite
+      .prepare(
+        `INSERT INTO titles (tmdb_id, type, title_ru, title_original, quality_preset_id)
+         VALUES (1, 'movie', 'Т', 'T', 1)`,
+      )
+      .run();
+    const t = m3sqlite.prepare(`SELECT id FROM titles WHERE tmdb_id = 1`).get() as { id: number };
+    m3sqlite
+      .prepare(`INSERT INTO history (title_id, kind, message) VALUES (?, 'search', 'x')`)
+      .run(t.id);
+    m3sqlite.prepare(`DELETE FROM titles WHERE id = ?`).run(t.id);
+    const row = m3sqlite.prepare(`SELECT title_id FROM history`).get() as { title_id: number | null };
+    expect(row.title_id).toBeNull();
+  });
+
+  test("blacklist уникален по (title_id, release_guid)", () => {
+    m3sqlite
+      .prepare(
+        `INSERT INTO titles (tmdb_id, type, title_ru, title_original, quality_preset_id)
+         VALUES (2, 'tv', 'Т2', 'T2', 1)`,
+      )
+      .run();
+    const t = m3sqlite.prepare(`SELECT id FROM titles WHERE tmdb_id = 2`).get() as { id: number };
+    m3sqlite
+      .prepare(`INSERT INTO blacklist (title_id, release_guid, reason) VALUES (?, 'g1', 'r')`)
+      .run(t.id);
+    expect(() =>
+      m3sqlite
+        .prepare(`INSERT INTO blacklist (title_id, release_guid, reason) VALUES (?, 'g1', 'r2')`)
+        .run(t.id),
+    ).toThrow();
+  });
+});
