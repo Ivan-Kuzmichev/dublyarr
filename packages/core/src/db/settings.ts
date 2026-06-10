@@ -50,7 +50,7 @@ export function getMonitorNumber(
   db: Db,
   key: keyof typeof MONITOR_DEFAULTS,
 ): number {
-  const raw = getSetting(db, key);
-  const n = raw == null ? NaN : Number(raw);
+  const raw = getSetting(db, key)?.trim();
+  const n = raw ? Number(raw) : NaN;
   return Number.isFinite(n) && n >= 0 ? n : MONITOR_DEFAULTS[key];
 }

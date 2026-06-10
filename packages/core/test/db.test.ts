@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, test } from "vitest";
 import { openDb } from "../src/db/index.js";
-import { getAllSettings, getSetting, setSetting } from "../src/db/settings.js";
+import { getAllSettings, getSetting, getMonitorNumber, setSetting } from "../src/db/settings.js";
 
 const dir = mkdtempSync(join(tmpdir(), "dublyarr-test-"));
 const { db, sqlite } = openDb(join(dir, "test.db"));
@@ -213,5 +213,19 @@ describe("ключи настроек мониторинга", () => {
     for (const k of ["monitor_interval_min", "monitor_min_seeders", "monitor_stall_hours"]) {
       expect(all).toHaveProperty(k, null);
     }
+  });
+
+  test("getMonitorNumber: значение, дефолт, мусор, пустая строка", () => {
+    expect(getMonitorNumber(monDb, "monitor_interval_min")).toBe(15); // не задано → дефолт
+    setSetting(monDb, "monitor_interval_min", "30");
+    expect(getMonitorNumber(monDb, "monitor_interval_min")).toBe(30);
+    setSetting(monDb, "monitor_min_seeders", "abc");
+    expect(getMonitorNumber(monDb, "monitor_min_seeders")).toBe(1); // мусор → дефолт
+    setSetting(monDb, "monitor_stall_hours", "  ");
+    expect(getMonitorNumber(monDb, "monitor_stall_hours")).toBe(6); // пустая → дефолт
+    setSetting(monDb, "monitor_min_seeders", "-5");
+    expect(getMonitorNumber(monDb, "monitor_min_seeders")).toBe(1); // отрицательное → дефолт
+    setSetting(monDb, "monitor_min_seeders", "0");
+    expect(getMonitorNumber(monDb, "monitor_min_seeders")).toBe(0); // 0 валиден
   });
 });
