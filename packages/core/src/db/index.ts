@@ -38,3 +38,4 @@ export * from "./schema.js";
 export * from "./settings.js";
 export * from "./presets.js";
 export * from "./titles.js";
+export * from "./files.js";
