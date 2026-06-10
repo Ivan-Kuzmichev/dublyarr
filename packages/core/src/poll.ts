@@ -18,6 +18,9 @@ import { QbtError, qbtStateToStatus, type QbtClient } from "./qbittorrent.js";
 /** Состояния qBittorrent, которые считаем «застрял» (нет источника/метаданных). */
 const STALLED_STATES = new Set(["stalledDL", "metaDL"]);
 
+/** Сколько минут queued-загрузка может ждать появления торрента в qBittorrent. */
+const QUEUED_TIMEOUT_MIN = 10;
+
 export interface PollOptions {
   /** Текущее время (для детекта зависших). По умолчанию new Date(). */
   now?: Date;
@@ -27,6 +30,10 @@ export interface PollOptions {
 
 function hoursBetween(a: Date, b: Date): number {
   return Math.abs(a.getTime() - b.getTime()) / 3_600_000;
+}
+
+function parseDbDate(s: string): Date {
+  return new Date(s.replace(" ", "T") + (s.includes("Z") ? "" : "Z"));
 }
 
 /**
@@ -51,7 +58,21 @@ export async function refreshDownload(
   d = fresh;
 
   if (d.status === "queued") {
-    if (!torrent) return;
+    if (!torrent) {
+      // Раздача так и не появилась (qBittorrent не смог добавить) — не висим вечно.
+      // В blacklist не заносим: раздача не виновата, конвейер попробует её снова.
+      const created = parseDbDate(d.createdAt);
+      if (
+        !Number.isNaN(created.getTime()) &&
+        now.getTime() - created.getTime() > QUEUED_TIMEOUT_MIN * 60_000
+      ) {
+        updateDownload(db, d.id, {
+          status: "failed",
+          error: "Раздача не появилась в qBittorrent (таймаут)",
+        });
+      }
+      return;
+    }
     d = updateDownload(db, d.id, {
       qbitHash: torrent.hash,
       status: "downloading",
@@ -71,7 +92,7 @@ export async function refreshDownload(
       return;
     }
     if (next === "downloading" && stallHours > 0 && STALLED_STATES.has(torrent.state)) {
-      const started = new Date(d.createdAt.replace(" ", "T") + (d.createdAt.includes("Z") ? "" : "Z"));
+      const started = parseDbDate(d.createdAt);
       if (!Number.isNaN(started.getTime()) && hoursBetween(now, started) > stallHours) {
         updateDownload(db, d.id, { status: "failed", error: "Загрузка зависла (таймаут)" });
         blacklistRelease(db, d.titleId, d.releaseGuid, "Зависла дольше таймаута");

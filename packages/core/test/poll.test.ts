@@ -69,3 +69,32 @@ describe("refreshDownload", () => {
     expect(isBlacklisted(db, title.id, "g-stall")).toBe(true);
   });
 });
+
+describe("refreshDownload: зомби-queued", () => {
+  test("queued старше таймаута без торрента → failed (без blacklist)", async () => {
+    const d = newDownload("g-zombie");
+    sqlite
+      .prepare(`UPDATE downloads SET created_at = '2030-01-01T00:00:00Z' WHERE id = ?`)
+      .run(d.id);
+    const qbt = { listTorrents: vi.fn().mockResolvedValue([]) } as never;
+    await refreshDownload(db, qbt, getDownload(db, d.id)!, {
+      now: new Date("2030-01-01T00:20:00Z"), // +20 мин > 10 мин
+    });
+    const fresh = getDownload(db, d.id)!;
+    expect(fresh.status).toBe("failed");
+    expect(fresh.error).toContain("не появилась");
+    expect(isBlacklisted(db, title.id, "g-zombie")).toBe(false);
+  });
+
+  test("свежий queued без торрента → остаётся queued", async () => {
+    const d = newDownload("g-fresh");
+    sqlite
+      .prepare(`UPDATE downloads SET created_at = '2030-01-01T00:00:00Z' WHERE id = ?`)
+      .run(d.id);
+    const qbt = { listTorrents: vi.fn().mockResolvedValue([]) } as never;
+    await refreshDownload(db, qbt, getDownload(db, d.id)!, {
+      now: new Date("2030-01-01T00:05:00Z"), // +5 мин < 10 мин
+    });
+    expect(getDownload(db, d.id)!.status).toBe("queued");
+  });
+});

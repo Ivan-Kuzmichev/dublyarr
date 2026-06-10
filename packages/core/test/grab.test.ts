@@ -1,9 +1,10 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterAll, describe, expect, test, vi } from "vitest";
+import { afterAll, afterEach, describe, expect, test, vi } from "vitest";
 import { addTitle, getDownload, openDb } from "../src/db/index.js";
 import { grabRelease } from "../src/grab.js";
+import { QbtError } from "../src/qbittorrent.js";
 
 const dir = mkdtempSync(join(tmpdir(), "dublyarr-grab-"));
 const { db, sqlite } = openDb(join(dir, "grab.db"));
@@ -74,5 +75,80 @@ describe("grabRelease", () => {
     expect(d.status).toBe("queued");
     expect(d.qbitHash).toBeNull();
     expect(getDownload(db, d.id)?.status).toBe("queued");
+  });
+});
+
+describe("grabRelease: http-ссылка — скачиваем .torrent сами", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  const httpInput = { ...input, link: "http://jackett.local/dl/rutracker/?path=abc" };
+  const bencode = Buffer.from("d8:announce3:url4:infod4:name4:teste e");
+
+  test("torrent-файл скачан и отдан qbt файлом (addTorrentFile)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(bencode, { status: 200, headers: { "content-type": "application/x-bittorrent" } }),
+      ),
+    );
+    const addTorrentFile = vi.fn().mockResolvedValue(undefined);
+    const addTorrent = vi.fn();
+    const listTorrents = vi.fn().mockResolvedValue([{ hash: "H", progress: 0 }]);
+    const qbt = { addTorrent, addTorrentFile, listTorrents } as never;
+
+    const d = await grabRelease(db, qbt, { ...httpInput, guid: "g-http" }, { stagingDir: "/st", waitMs: 0 });
+    expect(addTorrent).not.toHaveBeenCalled();
+    expect(addTorrentFile).toHaveBeenCalledTimes(1);
+    const arg = addTorrentFile.mock.calls[0][0];
+    expect(Buffer.from(arg.file)[0]).toBe(0x64); // 'd' — bencode
+    expect(arg.category).toBe("dublyarr");
+    expect(arg.savePath).toBe("/st");
+    expect(arg.tags).toBe(d.tag);
+    expect(d.status).toBe("downloading");
+  });
+
+  test("redirect на magnet → addTorrent с магнитом", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(null, { status: 302, headers: { location: "magnet:?xt=urn:btih:dead" } }),
+      ),
+    );
+    const addTorrent = vi.fn().mockResolvedValue(undefined);
+    const addTorrentFile = vi.fn();
+    const qbt = { addTorrent, addTorrentFile, listTorrents: vi.fn().mockResolvedValue([]) } as never;
+
+    await grabRelease(db, qbt, { ...httpInput, guid: "g-magnet-redir" }, { waitMs: 0, attempts: 1 });
+    expect(addTorrentFile).not.toHaveBeenCalled();
+    expect(addTorrent.mock.calls[0][0].url).toBe("magnet:?xt=urn:btih:dead");
+  });
+
+  test("HTTP 500 от источника → download failed с кодом, исключение проброшено", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("err", { status: 500 })));
+    const qbt = { addTorrent: vi.fn(), addTorrentFile: vi.fn(), listTorrents: vi.fn() } as never;
+
+    const err = await grabRelease(db, qbt, { ...httpInput, guid: "g-500" }, { waitMs: 0 }).catch((e) => e);
+    expect(err).toBeInstanceOf(QbtError);
+    const row = sqlite
+      .prepare(`SELECT status, error FROM downloads WHERE release_guid = 'g-500'`)
+      .get() as { status: string; error: string };
+    expect(row.status).toBe("failed");
+    expect(row.error).toContain("500");
+  });
+
+  test("HTML вместо торрента → failed «не torrent-файл»", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("<html>login</html>", { status: 200 })),
+    );
+    const qbt = { addTorrent: vi.fn(), addTorrentFile: vi.fn(), listTorrents: vi.fn() } as never;
+
+    const err = await grabRelease(db, qbt, { ...httpInput, guid: "g-html" }, { waitMs: 0 }).catch((e) => e);
+    expect(err).toBeInstanceOf(QbtError);
+    const row = sqlite
+      .prepare(`SELECT status, error FROM downloads WHERE release_guid = 'g-html'`)
+      .get() as { status: string; error: string };
+    expect(row.status).toBe("failed");
+    expect(row.error).toContain("не torrent-файл");
   });
 });

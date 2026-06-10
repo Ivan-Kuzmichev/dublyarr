@@ -99,6 +99,34 @@ describe("QbtClient", () => {
     expect((err as QbtError).message).toBe("qBittorrent отклонил раздачу");
   });
 
+  test("addTorrentFile шлёт multipart с файлом, категорией и тегом", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(loginOk())
+      .mockResolvedValueOnce(new Response("Ok.", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const file = Buffer.from("d4:infod4:name1:xee");
+    await new QbtClient(CFG).addTorrentFile({
+      file,
+      filename: "dublyarr-1.torrent",
+      savePath: "/staging",
+      category: "dublyarr",
+      tags: "dublyarr-1",
+    });
+
+    const [addUrl, addInit] = fetchMock.mock.calls[1];
+    expect(String(addUrl)).toBe("http://qbt.local:8080/api/v2/torrents/add");
+    const form = addInit.body as FormData;
+    expect(form).toBeInstanceOf(FormData);
+    const blob = form.get("torrents") as File;
+    expect(blob).toBeTruthy();
+    expect(Buffer.from(await blob.arrayBuffer()).toString()).toBe("d4:infod4:name1:xee");
+    expect(form.get("savepath")).toBe("/staging");
+    expect(form.get("category")).toBe("dublyarr");
+    expect(form.get("tags")).toBe("dublyarr-1");
+  });
+
   test("listTorrents маппит поля и фильтрует по tag", async () => {
     const raw = [
       {

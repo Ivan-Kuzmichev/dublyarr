@@ -115,6 +115,31 @@ export class QbtClient {
     if (text.trim() === "Fails.") throw new QbtError("qBittorrent отклонил раздачу");
   }
 
+  /** Добавляет раздачу готовым .torrent-файлом (multipart) — не зависит от сети qBittorrent. */
+  async addTorrentFile(opts: {
+    file: Uint8Array;
+    filename: string;
+    savePath?: string;
+    category?: string;
+    tags?: string;
+  }): Promise<void> {
+    const form = new FormData();
+    form.append(
+      "torrents",
+      new Blob([opts.file], { type: "application/x-bittorrent" }),
+      opts.filename,
+    );
+    if (opts.savePath) form.append("savepath", opts.savePath);
+    if (opts.category) form.append("category", opts.category);
+    if (opts.tags) form.append("tags", opts.tags);
+    const res = await this.request("/api/v2/torrents/add", {
+      method: "POST",
+      body: form,
+    });
+    const text = await res.text();
+    if (text.trim() === "Fails.") throw new QbtError("qBittorrent отклонил раздачу");
+  }
+
   async listTorrents(
     filter: { tag?: string; hashes?: string[] } = {},
   ): Promise<QbtTorrent[]> {

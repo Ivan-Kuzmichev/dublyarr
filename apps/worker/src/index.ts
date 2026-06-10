@@ -5,7 +5,12 @@ import { QbtClient } from "@dublyarr/core/qbittorrent";
 import { runTick } from "@dublyarr/core/tick";
 
 const log = pino({ level: process.env.LOG_LEVEL ?? "info" });
-const dataDir = process.env.DATA_DIR ?? "./data";
+// По умолчанию — та же БД, что у веба: next dev/start работает с cwd=apps/web
+// и его "./data" = apps/web/data. Якоримся к файлу, а не к cwd, иначе
+// `npm run worker` открыл бы собственную пустую apps/worker/data (split-brain).
+// В Docker DATA_DIR задаётся явно (/data).
+const dataDir =
+  process.env.DATA_DIR ?? join(import.meta.dirname, "..", "..", "web", "data");
 const { db } = openDb(join(dataDir, "dublyarr.db"));
 
 let running = false;
