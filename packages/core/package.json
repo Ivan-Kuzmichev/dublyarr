@@ -9,7 +9,8 @@
     "./jackett": "./src/jackett.ts",
     "./tmdb": "./src/tmdb.ts",
     "./db": "./src/db/index.ts",
-    "./naming": "./src/naming.ts"
+    "./naming": "./src/naming.ts",
+    "./qbittorrent": "./src/qbittorrent.ts"
   },
   "scripts": {
     "test": "vitest run",
