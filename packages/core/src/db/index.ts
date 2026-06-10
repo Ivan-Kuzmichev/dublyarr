@@ -39,3 +39,4 @@ export * from "./settings.js";
 export * from "./presets.js";
 export * from "./titles.js";
 export * from "./files.js";
+export * from "./downloads.js";
