@@ -1,12 +1,15 @@
 import { Suspense } from "react";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getSetting, getTitleByTmdb, listEpisodes, listPresets } from "@dublyarr/core/db";
+import { getSetting, getTitleByTmdb, listDownloadsForTitle, listEpisodes, listFiles, listPresets } from "@dublyarr/core/db";
+import { qualityKeyFor, qualityLabel } from "@dublyarr/core/quality";
 import { TmdbError, getDetails, posterUrl, type TmdbType } from "@dublyarr/core/tmdb";
 import { getDb } from "@/server/db";
 import { Availability } from "./Availability";
 import { TrackingBlock } from "./TrackingBlock";
 import { EpisodeList } from "./EpisodeList";
+import { DownloadsBlock } from "./DownloadsBlock";
+import { FilesList } from "./FilesList";
 import styles from "./title.module.css";
 
 export const dynamic = "force-dynamic";
@@ -45,7 +48,29 @@ export default async function TitlePage({
         airDate: e.airDate,
         nameRu: e.nameRu,
         wanted: e.wanted,
+        fileId: e.fileId,
       }))
+    : [];
+  const downloadRows = trackedTitle
+    ? listDownloadsForTitle(db, trackedTitle.id).map((d) => ({
+        id: d.id,
+        releaseTitle: d.releaseTitle,
+        status: d.status,
+        progress: d.progress,
+        error: d.error,
+      }))
+    : [];
+  const fileRows = trackedTitle
+    ? listFiles(db, trackedTitle.id).map((f) => {
+        const key = qualityKeyFor(f.qualitySource, f.qualityResolution);
+        return {
+          id: f.id,
+          path: f.path,
+          size: f.size,
+          quality: key ? qualityLabel(key) : "",
+          voiceover: f.voiceoverStudio ?? "",
+        };
+      })
     : [];
 
   return (
@@ -93,6 +118,8 @@ export default async function TitlePage({
         searchQuery={details.originalTitle || details.title}
       />
 
+      {trackedTitle && <DownloadsBlock titleId={trackedTitle.id} initial={downloadRows} />}
+
       <h2>Доступные озвучки</h2>
       <Suspense fallback={<p className={styles.muted}>Ищу раздачи в Jackett…</p>}>
         <Availability
@@ -104,6 +131,8 @@ export default async function TitlePage({
       {trackedTitle && type === "tv" && episodeRows.length > 0 && (
         <EpisodeList titleId={trackedTitle.id} episodes={episodeRows} />
       )}
+
+      <FilesList files={fileRows} />
     </>
   );
 }

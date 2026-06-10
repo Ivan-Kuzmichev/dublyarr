@@ -11,6 +11,7 @@ export interface EpisodeRow {
   airDate: string | null;
   nameRu: string;
   wanted: boolean;
+  fileId: number | null;
 }
 
 function pad(n: number): string {
@@ -96,6 +97,7 @@ export function EpisodeList({
                     S{pad(e.season)}E{pad(e.episode)}
                   </code>
                   <span>{e.nameRu || "—"}</span>
+                  {e.fileId != null && <span className={styles.have}>✓</span>}
                   <span className={styles.epDate}>{airLabel(e.airDate)}</span>
                 </label>
               ))}
