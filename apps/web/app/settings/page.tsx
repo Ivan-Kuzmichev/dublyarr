@@ -4,6 +4,7 @@ import { getDb } from "@/server/db";
 import { PresetsEditor } from "./PresetsEditor";
 import { SettingsForm } from "./SettingsForm";
 import { FoldersForm } from "./FoldersForm";
+import { MonitoringForm } from "./MonitoringForm";
 import styles from "./settings.module.css";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ const TABS = [
   { key: "quality", label: "Качество" },
   { key: "integrations", label: "Интеграции" },
   { key: "folders", label: "Папки и имена" },
+  { key: "monitoring", label: "Мониторинг" },
 ] as const;
 
 export default async function SettingsPage({
@@ -21,7 +23,13 @@ export default async function SettingsPage({
 }) {
   const { tab } = await searchParams;
   const active =
-    tab === "integrations" ? "integrations" : tab === "folders" ? "folders" : "quality";
+    tab === "integrations"
+      ? "integrations"
+      : tab === "folders"
+        ? "folders"
+        : tab === "monitoring"
+          ? "monitoring"
+          : "quality";
   const db = getDb();
 
   return (
@@ -42,6 +50,8 @@ export default async function SettingsPage({
         <PresetsEditor initial={listPresets(db)} />
       ) : active === "folders" ? (
         <FoldersForm initial={getAllSettings(db)} />
+      ) : active === "monitoring" ? (
+        <MonitoringForm initial={getAllSettings(db)} />
       ) : (
         <SettingsForm initial={getAllSettings(db)} />
       )}
