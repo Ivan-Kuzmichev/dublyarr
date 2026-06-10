@@ -61,7 +61,7 @@ export async function Availability({
   }
 
   const rows = summarizeStudioAvailability(releases);
-  if (rows.length === 0) return <p className={styles.muted}>Раздач не найдено.</p>;
+  if (releases.length === 0) return <p className={styles.muted}>Раздач не найдено.</p>;
 
   const top = releases
     .filter((r) => r.link)
@@ -70,26 +70,28 @@ export async function Availability({
 
   return (
     <>
-      <div className={styles.tableWrap}>
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Озвучка</th><th>Тип</th><th>Сезоны</th><th>Качество</th><th>Раздач</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={`${r.studio}-${r.kind}`}>
-                <td data-label="Озвучка"><b>{r.studio}</b></td>
-                <td data-label="Тип">{r.kind}</td>
-                <td data-label="Сезоны">{compressSeasons(r.seasons)}</td>
-                <td data-label="Качество">{r.qualities.join(" · ") || "—"}</td>
-                <td data-label="Раздач">{r.count}</td>
+      {rows.length > 0 && (
+        <div className={styles.tableWrap}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Озвучка</th><th>Тип</th><th>Сезоны</th><th>Качество</th><th>Раздач</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={`${r.studio}-${r.kind}`}>
+                  <td data-label="Озвучка"><b>{r.studio}</b></td>
+                  <td data-label="Тип">{r.kind}</td>
+                  <td data-label="Сезоны">{compressSeasons(r.seasons)}</td>
+                  <td data-label="Качество">{r.qualities.join(" · ") || "—"}</td>
+                  <td data-label="Раздач">{r.count}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <h2>Раздачи</h2>
       {titleId == null && (
@@ -97,38 +99,42 @@ export async function Availability({
           Добавьте тайтл в отслеживание, чтобы скачивать раздачи.
         </p>
       )}
-      <div className={styles.tableWrap} data-testid="release-list">
-        <table className={styles.table}>
-          <thead>
-            <tr>
-              <th>Название</th><th>Озвучки</th><th>Качество</th><th>Размер</th><th>Сиды</th>
-              {titleId != null && <th />}
-            </tr>
-          </thead>
-          <tbody>
-            {top.map((r) => (
-              <tr key={r.guid || r.link}>
-                <td data-label="Название" className={styles.releaseTitle}>{r.title}</td>
-                <td data-label="Озвучки">
-                  {[...new Set(r.parsed.voiceovers.flatMap((v) => v.studios))].join(", ") || "—"}
-                </td>
-                <td data-label="Качество">
-                  {[r.parsed.quality.source, r.parsed.quality.resolution]
-                    .filter(Boolean)
-                    .join(" ") || "—"}
-                </td>
-                <td data-label="Размер">{formatGb(r.size)}</td>
-                <td data-label="Сиды">{r.seeders}</td>
-                {titleId != null && (
-                  <td data-label="">
-                    <DownloadButton payload={grabPayload(titleId, r)} />
-                  </td>
-                )}
+      {top.length === 0 ? (
+        <p className={styles.muted}>Нет раздач с прямой ссылкой на скачивание.</p>
+      ) : (
+        <div className={styles.tableWrap} data-testid="release-list">
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>Название</th><th>Озвучки</th><th>Качество</th><th>Размер</th><th>Сиды</th>
+                {titleId != null && <th />}
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {top.map((r) => (
+                <tr key={r.guid || r.link}>
+                  <td data-label="Название" className={styles.releaseTitle}>{r.title}</td>
+                  <td data-label="Озвучки">
+                    {[...new Set(r.parsed.voiceovers.flatMap((v) => v.studios))].join(", ") || "—"}
+                  </td>
+                  <td data-label="Качество">
+                    {[r.parsed.quality.source, r.parsed.quality.resolution]
+                      .filter(Boolean)
+                      .join(" ") || "—"}
+                  </td>
+                  <td data-label="Размер">{formatGb(r.size)}</td>
+                  <td data-label="Сиды">{r.seeders}</td>
+                  {titleId != null && (
+                    <td data-label="">
+                      <DownloadButton payload={grabPayload(titleId, r)} />
+                    </td>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </>
   );
 }

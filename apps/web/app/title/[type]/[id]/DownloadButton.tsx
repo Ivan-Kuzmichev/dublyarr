@@ -18,6 +18,7 @@ export interface GrabPayload {
 export function DownloadButton({ payload }: { payload: GrabPayload }) {
   const router = useRouter();
   const [busy, setBusy] = useState(false);
+  const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function grab() {
@@ -34,6 +35,7 @@ export function DownloadButton({ payload }: { payload: GrabPayload }) {
         setError(data.error ?? `Ошибка ${res.status}`);
         return;
       }
+      setDone(true);
       router.refresh();
     } catch {
       setError("Сеть недоступна");
@@ -47,11 +49,11 @@ export function DownloadButton({ payload }: { payload: GrabPayload }) {
       <button
         type="button"
         className={styles.primary}
-        disabled={busy}
+        disabled={busy || done}
         onClick={grab}
         data-testid="release-download"
       >
-        {busy ? "Добавляю…" : "Скачать"}
+        {done ? "Добавлено ✓" : busy ? "Добавляю…" : "Скачать"}
       </button>
       {error && <span className={styles.error}>{error}</span>}
     </span>
