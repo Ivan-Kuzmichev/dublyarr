@@ -6,7 +6,7 @@ import { listEpisodes, listTrackedTitles, type Episode, type Title } from "./db/
 import { getFile, listFiles } from "./db/files.js";
 import type { GrabInput } from "./grab.js";
 import type { JackettRelease } from "./jackett.js";
-import type { ParsedRelease } from "./parser.js";
+import type { ParsedInfo, ParsedRelease } from "./parser.js";
 import { pickBestRelease, type ScoreContext } from "./scoring.js";
 import { qualityKeyFor, qualityRank } from "./quality.js";
 
@@ -30,6 +30,27 @@ export interface SelectOptions {
 function rankOfFile(source: string | null, resolution: string | null): number {
   const k = qualityKeyFor(source, resolution);
   return k ? qualityRank(k) : -1;
+}
+
+function episodeRangeBounds(range: string): [number, number] | null {
+  const m = range.match(/^(\d+)(?:\s*[-–—]\s*(\d+))?$/);
+  if (!m) return null;
+  const a = parseInt(m[1], 10);
+  const b = m[2] ? parseInt(m[2], 10) : a;
+  return a <= b ? [a, b] : null;
+}
+
+/**
+ * Покрывает ли раздача эпизод: сезон совпадает (или в раздаче не распознан)
+ * и номер серии в диапазоне «Серии: N-M» (или диапазон не распознан — полный сезон).
+ */
+function releaseCoversEpisode(parsed: ParsedInfo, e: Episode): boolean {
+  if (parsed.seasons.length > 0 && !parsed.seasons.includes(e.season)) return false;
+  if (parsed.episodes) {
+    const r = episodeRangeBounds(parsed.episodes.range);
+    if (r && (e.episode < r[0] || e.episode > r[1])) return false;
+  }
+  return true;
 }
 
 /**
@@ -72,7 +93,10 @@ export function selectCandidates(
     }
 
     const eps = listEpisodes(db, title.id);
-    const wantedMissing = eps.filter((e) => e.wanted && e.fileId == null);
+    // Невышедшие серии (airDate в будущем) не ищем; без даты — считаем потенциально вышедшими.
+    const wantedMissing = eps.filter(
+      (e) => e.wanted && e.fileId == null && (e.airDate == null || e.airDate <= today),
+    );
     if (wantedMissing.length > 0) {
       out.push({
         title,
@@ -149,10 +173,9 @@ export async function runTitle(db: Db, cand: Candidate, deps: RunDeps): Promise<
 
   let releases = await deps.search(title.titleOriginal);
 
-  if (title.type === "tv" && cand.wantedSeasons.length > 0) {
-    const wanted = new Set(cand.wantedSeasons);
-    releases = releases.filter(
-      (r) => r.parsed.seasons.length === 0 || r.parsed.seasons.some((s) => wanted.has(s)),
+  if (title.type === "tv" && cand.wantedEpisodes.length > 0) {
+    releases = releases.filter((r) =>
+      cand.wantedEpisodes.some((e) => releaseCoversEpisode(r.parsed, e)),
     );
   }
 
@@ -171,11 +194,7 @@ export async function runTitle(db: Db, cand: Candidate, deps: RunDeps): Promise<
 
   const episodesCovered =
     title.type === "tv"
-      ? cand.wantedEpisodes
-          .filter(
-            (e) => best.parsed.seasons.length === 0 || best.parsed.seasons.includes(e.season),
-          )
-          .map((e) => e.id)
+      ? cand.wantedEpisodes.filter((e) => releaseCoversEpisode(best.parsed, e)).map((e) => e.id)
       : [];
 
   const studios = best.parsed.voiceovers.flatMap((v) => v.studios);

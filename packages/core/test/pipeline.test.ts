@@ -6,6 +6,7 @@ import {
   addFile,
   addHistory,
   addTitle,
+  listEpisodes,
   listHistory,
   openDb,
   syncEpisodes,
@@ -72,6 +73,35 @@ describe("selectCandidates", () => {
     expect(selectCandidates(db, TODAY).some((x) => x.title.id === movie.id)).toBe(false);
   });
 
+  test("невышедшие wanted-серии не дают кандидата", () => {
+    const tv = addTitle(db, {
+      tmdbId: 400, type: "tv", titleRu: "Будущее", titleOriginal: "Future", year: "2024",
+      posterPath: null, overview: "", tmdbStatus: null,
+      qualityPresetId: 1, voiceover: "any", monitorRule: "all",
+    });
+    syncEpisodes(db, tv.id, [
+      { season: 1, episode: 9, airDate: "2024-06-09", name: "" },
+      { season: 1, episode: 10, airDate: "2024-06-16", name: "" },
+    ], "all", TODAY);
+    expect(selectCandidates(db, TODAY).some((x) => x.title.id === tv.id)).toBe(false);
+  });
+
+  test("вышедшие и невышедшие вперемешку → в кандидате только вышедшие", () => {
+    const tv = addTitle(db, {
+      tmdbId: 401, type: "tv", titleRu: "Смесь", titleOriginal: "Mixed", year: "2023",
+      posterPath: null, overview: "", tmdbStatus: null,
+      qualityPresetId: 1, voiceover: "any", monitorRule: "all",
+    });
+    syncEpisodes(db, tv.id, [
+      { season: 1, episode: 1, airDate: "2023-12-01", name: "" },
+      { season: 1, episode: 2, airDate: null, name: "" },
+      { season: 1, episode: 3, airDate: "2024-06-01", name: "" },
+    ], "all", TODAY);
+    const c = selectCandidates(db, TODAY).find((x) => x.title.id === tv.id);
+    // серия без даты выхода считается потенциально вышедшей, будущая — нет
+    expect(c?.wantedEpisodes.map((e) => e.episode).sort()).toEqual([1, 2]);
+  });
+
   test("рейт-лимит: искали меньше интервала назад → пропуск", () => {
     const movie = addTitle(db, {
       tmdbId: 202, type: "movie", titleRu: "Свежий", titleOriginal: "Fresh", year: "2020",
@@ -120,6 +150,64 @@ describe("runTitle", () => {
     const kinds = listHistory(db, 20, 0).filter((h) => h.titleId === tv.id).map((h) => h.kind);
     expect(kinds).toContain("search");
     expect(kinds).toContain("grab");
+  });
+
+  test("раздача не покрывает ни одной нужной серии → not_found", async () => {
+    const tv = addTitle(db, {
+      tmdbId: 302, type: "tv", titleRu: "Уидоус-Бэй", titleOriginal: "Widows Bay", year: "2024",
+      posterPath: null, overview: "", tmdbStatus: null,
+      qualityPresetId: 1, voiceover: "any", monitorRule: "manual",
+    });
+    syncEpisodes(db, tv.id, [
+      { season: 1, episode: 9, airDate: "2023-12-01", name: "" },
+      { season: 1, episode: 10, airDate: "2023-12-08", name: "" },
+    ], "all", TODAY);
+
+    const search = vi.fn().mockResolvedValue([
+      parseRelease(rawRel({
+        title: "Widows.Bay.S01.1080p.WEB-DL",
+        description: "Уидоус-Бэй / Widows Bay / Сезон: 1 / Серии: 1-8 из 10 [2024, WEB-DL, 1080p] MVO (LostFilm)",
+        guid: "pack-1-8",
+        seeders: 30,
+      })),
+    ]);
+    const grab = vi.fn();
+    const cand = selectCandidates(db, TODAY).find((x) => x.title.id === tv.id)!;
+    await runTitle(db, cand, { search, grab, minSeeders: 1, now: new Date() });
+    expect(grab).not.toHaveBeenCalled();
+    expect(listHistory(db, 50, 0).some((h) => h.titleId === tv.id && h.kind === "not_found")).toBe(true);
+  });
+
+  test("episodesCovered — только нужные серии в диапазоне раздачи", async () => {
+    const tv = addTitle(db, {
+      tmdbId: 303, type: "tv", titleRu: "Диапазон", titleOriginal: "Ranged", year: "2023",
+      posterPath: null, overview: "", tmdbStatus: null,
+      qualityPresetId: 1, voiceover: "any", monitorRule: "all",
+    });
+    syncEpisodes(db, tv.id, [
+      { season: 1, episode: 7, airDate: "2023-11-01", name: "" },
+      { season: 1, episode: 8, airDate: "2023-11-08", name: "" },
+      { season: 1, episode: 9, airDate: "2023-11-15", name: "" },
+      { season: 1, episode: 10, airDate: "2023-11-22", name: "" },
+    ], "all", TODAY);
+
+    const search = vi.fn().mockResolvedValue([
+      parseRelease(rawRel({
+        title: "Ranged.S01.1080p.WEB-DL",
+        description: "Диапазон / Ranged / Сезон: 1 / Серии: 1-8 из 10 [2023, WEB-DL, 1080p] MVO (LostFilm)",
+        guid: "pack-1-8-ranged",
+        seeders: 30,
+      })),
+    ]);
+    const grab = vi.fn().mockResolvedValue(undefined);
+    const cand = selectCandidates(db, TODAY).find((x) => x.title.id === tv.id)!;
+    await runTitle(db, cand, { search, grab, minSeeders: 1, now: new Date() });
+
+    expect(grab).toHaveBeenCalledTimes(1);
+    const covered: number[] = grab.mock.calls[0][0].episodesCovered;
+    const eps = listEpisodes(db, tv.id);
+    const numOf = (id: number) => eps.find((e) => e.id === id)?.episode;
+    expect(covered.map(numOf).sort((a, b) => a! - b!)).toEqual([7, 8]);
   });
 
   test("ничего не подошло → history not_found, grab не зван", async () => {
