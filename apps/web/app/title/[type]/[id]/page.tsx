@@ -122,10 +122,7 @@ export default async function TitlePage({
 
       <h2>Доступные озвучки</h2>
       <Suspense fallback={<p className={styles.muted}>Ищу раздачи в Jackett…</p>}>
-        <Availability
-          query={details.originalTitle || details.title}
-          titleId={trackedTitle?.id ?? null}
-        />
+        <Availability query={details.originalTitle || details.title} />
       </Suspense>
 
       {trackedTitle && type === "tv" && episodeRows.length > 0 && (
