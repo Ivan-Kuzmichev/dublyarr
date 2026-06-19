@@ -62,6 +62,33 @@ describe("parseRelease", () => {
     });
     expect(r.parsed.seasons).toEqual([6, 7, 8]);
   });
+
+  test("аниме-диапазон E01-E06 → range 1-6", () => {
+    const r = parseRelease({
+      title: "x",
+      description: "Дьявол может плакать 2 / E01-E06 Devil May Cry Season 2 - AniLiberty [WEB-DL 1080p][HEVC]",
+      indexer: "RuTracker.org",
+    });
+    expect(r.parsed.episodes).toEqual({ range: "1-6", total: null });
+  });
+
+  test("аниме-диапазон в скобках [1-6] → range 1-6", () => {
+    const r = parseRelease({
+      title: "x",
+      description: "Дьявол может плакать 2 / Devil May Cry Season 2 - AniLiberty [WEB-DL 1080p][HEVC][1-6]",
+      indexer: "RuTracker.org",
+    });
+    expect(r.parsed.episodes).toEqual({ range: "1-6", total: null });
+  });
+
+  test("разрешение/год в скобках не считаются диапазоном серий", () => {
+    const r = parseRelease({
+      title: "x",
+      description: "Show [2021] [1080p] BDRemux VO (Сыендук)",
+      indexer: "RuTracker.org",
+    });
+    expect(r.parsed.episodes).toBeNull();
+  });
 });
 
 describe("summarizeStudioAvailability", () => {

@@ -170,6 +170,20 @@ function parseEpisodes(
     const b = em[2] ? parseInt(em[2], 10) : a;
     return { range: a === b ? `${a}` : `${a}-${b}`, total: null };
   }
+  // Аниме (AniLiberty): «E01-E06» без S-префикса.
+  const anime = text.match(/(?<![A-Za-z0-9])E(\d{1,3})\s*[-–—]\s*E(\d{1,3})(?!\d)/i);
+  if (anime) {
+    const a = parseInt(anime[1], 10);
+    const b = parseInt(anime[2], 10);
+    return { range: a === b ? `${a}` : `${a}-${b}`, total: null };
+  }
+  // Диапазон серий в скобках «[1-6]» — только чисто числовой (не «[1080p]», не «[Сезоны: 6-8]»).
+  const bracket = text.match(/\[\s*(\d{1,3})\s*[-–—]\s*(\d{1,3})\s*\]/);
+  if (bracket) {
+    const a = parseInt(bracket[1], 10);
+    const b = parseInt(bracket[2], 10);
+    if (a <= b) return { range: a === b ? `${a}` : `${a}-${b}`, total: null };
+  }
   return null;
 }
 
