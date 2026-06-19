@@ -192,9 +192,9 @@ export async function runTitle(db: Db, cand: Candidate, deps: RunDeps): Promise<
     return;
   }
 
-  const episodesCovered =
+  const covered =
     title.type === "tv"
-      ? cand.wantedEpisodes.filter((e) => releaseCoversEpisode(best.parsed, e)).map((e) => e.id)
+      ? cand.wantedEpisodes.filter((e) => releaseCoversEpisode(best.parsed, e))
       : [];
 
   const studios = best.parsed.voiceovers.flatMap((v) => v.studios);
@@ -203,7 +203,8 @@ export async function runTitle(db: Db, cand: Candidate, deps: RunDeps): Promise<
     link: best.link,
     guid: best.guid,
     releaseTitle: best.title,
-    episodesCovered,
+    episodesCovered: covered.map((e) => e.id),
+    wantedEpisodes: covered.map((e) => ({ season: e.season, episode: e.episode })),
     voiceoverStudio: title.voiceover !== "any" ? title.voiceover : (studios[0] ?? null),
     qualitySource: best.parsed.quality.source,
     qualityResolution: best.parsed.quality.resolution,

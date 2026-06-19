@@ -208,6 +208,11 @@ describe("runTitle", () => {
     const eps = listEpisodes(db, tv.id);
     const numOf = (id: number) => eps.find((e) => e.id === id)?.episode;
     expect(covered.map(numOf).sort((a, b) => a! - b!)).toEqual([7, 8]);
+
+    // те же серии передаём как wantedEpisodes (для выборочного скачивания пака)
+    const wanted: { season: number; episode: number }[] = grab.mock.calls[0][0].wantedEpisodes;
+    expect(wanted.map((e) => e.episode).sort((a, b) => a - b)).toEqual([7, 8]);
+    expect(wanted.every((e) => e.season === 1)).toBe(true);
   });
 
   test("ничего не подошло → history not_found, grab не зван", async () => {

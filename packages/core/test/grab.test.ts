@@ -66,6 +66,49 @@ describe("grabRelease", () => {
     expect(all.error).toContain("qbt down");
   });
 
+  test("season-пак: качаем только нужные серии, остальным priority=0", async () => {
+    const files = [
+      { index: 0, name: "Show/Show.S01E08.mkv", size: 1, progress: 0 },
+      { index: 1, name: "Show/Show.S01E09.mkv", size: 1, progress: 0 },
+      { index: 2, name: "Show/Show.S01E10.mkv", size: 1, progress: 0 },
+    ];
+    const setFilePriority = vi.fn().mockResolvedValue(undefined);
+    const qbt = {
+      addTorrent: vi.fn().mockResolvedValue(undefined),
+      listTorrents: vi.fn().mockResolvedValue([{ hash: "PACK", progress: 0 }]),
+      listFiles: vi.fn().mockResolvedValue(files),
+      setFilePriority,
+    } as never;
+
+    await grabRelease(
+      db,
+      qbt,
+      { ...input, guid: "g-pack", wantedEpisodes: [{ season: 1, episode: 10 }] },
+      { waitMs: 0 },
+    );
+    expect(setFilePriority).toHaveBeenCalledTimes(1);
+    expect(setFilePriority).toHaveBeenCalledWith("PACK", [0, 1], 0);
+  });
+
+  test("нужны все серии раздачи → priority не трогаем", async () => {
+    const files = [{ index: 0, name: "Show.S01E10.mkv", size: 1, progress: 0 }];
+    const setFilePriority = vi.fn().mockResolvedValue(undefined);
+    const qbt = {
+      addTorrent: vi.fn().mockResolvedValue(undefined),
+      listTorrents: vi.fn().mockResolvedValue([{ hash: "ONE", progress: 0 }]),
+      listFiles: vi.fn().mockResolvedValue(files),
+      setFilePriority,
+    } as never;
+
+    await grabRelease(
+      db,
+      qbt,
+      { ...input, guid: "g-one", wantedEpisodes: [{ season: 1, episode: 10 }] },
+      { waitMs: 0 },
+    );
+    expect(setFilePriority).not.toHaveBeenCalled();
+  });
+
   test("hash не нашёлся за отведённые попытки → download остаётся queued", async () => {
     const qbt = {
       addTorrent: vi.fn().mockResolvedValue(undefined),

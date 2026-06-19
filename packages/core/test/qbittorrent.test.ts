@@ -127,6 +127,46 @@ describe("QbtClient", () => {
     expect(form.get("tags")).toBe("dublyarr-1");
   });
 
+  test("setFilePriority шлёт hash/id/priority на filePrio", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(loginOk())
+      .mockResolvedValueOnce(new Response("", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await new QbtClient(CFG).setFilePriority("deadbeef", [0, 1, 2], 0);
+    const [url, init] = fetchMock.mock.calls[1];
+    expect(String(url)).toBe("http://qbt.local:8080/api/v2/torrents/filePrio");
+    const body = String(init.body);
+    expect(body).toContain("hash=deadbeef");
+    expect(body).toContain(`id=${encodeURIComponent("0|1|2")}`);
+    expect(body).toContain("priority=0");
+  });
+
+  test("listFiles маппит index/name/size/progress", async () => {
+    const raw = [
+      { index: 0, name: "Show/Show.S01E01.mkv", size: 100, progress: 1 },
+      { index: 1, name: "Show/Show.S01E02.mkv", size: 200, progress: 0 },
+    ];
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(loginOk())
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify(raw), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const out = await new QbtClient(CFG).listFiles("deadbeef");
+    expect(String(fetchMock.mock.calls[1][0])).toContain("hash=deadbeef");
+    expect(out).toEqual([
+      { index: 0, name: "Show/Show.S01E01.mkv", size: 100, progress: 1 },
+      { index: 1, name: "Show/Show.S01E02.mkv", size: 200, progress: 0 },
+    ]);
+  });
+
   test("listTorrents маппит поля и фильтрует по tag", async () => {
     const raw = [
       {

@@ -1,6 +1,26 @@
 import { createDownload, updateDownload, type Download } from "./db/downloads.js";
 import type { Db } from "./db/index.js";
+import { parseEpisodeTag } from "./parser.js";
 import { QbtError, type QbtClient } from "./qbittorrent.js";
+
+/**
+ * Индексы файлов раздачи, которые НЕ нужно качать: распознанные как серия SxxEyy,
+ * но не входящие в keep (нужные серии). Нераспознанные файлы и сами keep-серии
+ * остаются. Пустой keep → ничего не сбрасываем (защита от полного дропа).
+ */
+export function unwantedFileIndices(
+  files: { name: string }[],
+  keep: { season: number; episode: number }[],
+): number[] {
+  if (keep.length === 0) return [];
+  const wanted = new Set(keep.map((e) => `${e.season}:${e.episode}`));
+  const drop: number[] = [];
+  files.forEach((f, i) => {
+    const tag = parseEpisodeTag(f.name);
+    if (tag && !wanted.has(`${tag.season}:${tag.episode}`)) drop.push(i);
+  });
+  return drop;
+}
 
 export interface GrabInput {
   titleId: number;
@@ -11,6 +31,8 @@ export interface GrabInput {
   voiceoverStudio: string | null;
   qualitySource: string | null;
   qualityResolution: string | null;
+  /** Серии, которые реально нужны из раздачи; остальные файлы пака не качаем. */
+  wantedEpisodes?: { season: number; episode: number }[];
 }
 
 export interface GrabOptions {
@@ -25,6 +47,28 @@ export interface GrabOptions {
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Для season-пака помечает priority=0 файлам серий, которые не нужны (есть/не wanted),
+ * чтобы качались только нужные серии. Ошибки глотаем: торрент уже добавлен, в худшем
+ * случае скачается целиком. Без wantedEpisodes (фильм/нет данных) ничего не делает.
+ */
+async function deselectUnwantedFiles(
+  qbt: QbtClient,
+  hash: string,
+  wantedEpisodes: GrabInput["wantedEpisodes"],
+): Promise<void> {
+  if (!wantedEpisodes || wantedEpisodes.length === 0) return;
+  try {
+    const files = await qbt.listFiles(hash);
+    const drop = unwantedFileIndices(files, wantedEpisodes).map(
+      (i) => files[i].index,
+    );
+    if (drop.length > 0) await qbt.setFilePriority(hash, drop, 0);
+  } catch {
+    // приоритеты не критичны — не валим grab
+  }
+}
 
 type TorrentSource = { kind: "file"; file: Buffer } | { kind: "magnet"; uri: string };
 
@@ -123,6 +167,7 @@ export async function grabRelease(
           status: "downloading",
           progress: found.progress,
         })!;
+        await deselectUnwantedFiles(qbt, found.hash, input.wantedEpisodes);
         break;
       }
     } catch {

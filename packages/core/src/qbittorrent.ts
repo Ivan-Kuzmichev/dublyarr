@@ -24,6 +24,7 @@ export interface QbtTorrent {
 }
 
 export interface QbtFile {
+  index: number;
   name: string;
   size: number;
   progress: number;
@@ -175,11 +176,25 @@ export class QbtClient {
       `/api/v2/torrents/files?hash=${encodeURIComponent(hash)}`,
     );
     const raw = (await res.json()) as Record<string, unknown>[];
-    return raw.map((f) => ({
+    return raw.map((f, i) => ({
+      index: Number(f.index ?? i),
       name: String(f.name ?? ""),
       size: Number(f.size ?? 0),
       progress: Number(f.progress ?? 0),
     }));
+  }
+
+  /** Приоритет файлов раздачи (0 = «не качать»). id — индексы файлов из listFiles. */
+  async setFilePriority(hash: string, ids: number[], priority: number): Promise<void> {
+    await this.request("/api/v2/torrents/filePrio", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        hash,
+        id: ids.join("|"),
+        priority: String(priority),
+      }).toString(),
+    });
   }
 
   async deleteTorrent(hash: string, deleteFiles: boolean): Promise<void> {
