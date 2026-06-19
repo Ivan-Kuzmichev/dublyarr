@@ -6,10 +6,12 @@ import {
   addFile,
   addHistory,
   addTitle,
+  createDownload,
   listEpisodes,
   listHistory,
   openDb,
   syncEpisodes,
+  updateDownload,
 } from "../src/db/index.js";
 import { parseRelease } from "../src/parser.js";
 import type { JackettRelease } from "../src/jackett.js";
@@ -112,6 +114,69 @@ describe("selectCandidates", () => {
     const now = new Date("2024-01-01T12:00:00Z"); // 1 минута назад
     const cands = selectCandidates(db, TODAY, { now, rateLimitMinutes: 60 });
     expect(cands.some((x) => x.title.id === movie.id)).toBe(false);
+  });
+
+  test("серия уже качается (активная загрузка покрывает её) → не кандидат", () => {
+    const tv = addTitle(db, {
+      tmdbId: 500, type: "tv", titleRu: "Качается", titleOriginal: "Downloading", year: "2023",
+      posterPath: null, overview: "", tmdbStatus: null,
+      qualityPresetId: 1, voiceover: "any", monitorRule: "all",
+    });
+    syncEpisodes(db, tv.id, [{ season: 1, episode: 1, airDate: "2023-01-01", name: "" }], "all", TODAY);
+    const ep = listEpisodes(db, tv.id)[0];
+    createDownload(db, {
+      titleId: tv.id, releaseGuid: "g-active", releaseTitle: "rel",
+      episodesCovered: [ep.id], voiceoverStudio: null, qualitySource: null, qualityResolution: null,
+    }); // статус по умолчанию queued — активная
+    expect(selectCandidates(db, TODAY).some((x) => x.title.id === tv.id)).toBe(false);
+  });
+
+  test("активная загрузка покрывает часть серий → кандидат только из остальных", () => {
+    const tv = addTitle(db, {
+      tmdbId: 501, type: "tv", titleRu: "Частично", titleOriginal: "Partial", year: "2023",
+      posterPath: null, overview: "", tmdbStatus: null,
+      qualityPresetId: 1, voiceover: "any", monitorRule: "all",
+    });
+    syncEpisodes(db, tv.id, [
+      { season: 1, episode: 1, airDate: "2023-01-01", name: "" },
+      { season: 1, episode: 2, airDate: "2023-01-08", name: "" },
+    ], "all", TODAY);
+    const eps = listEpisodes(db, tv.id);
+    createDownload(db, {
+      titleId: tv.id, releaseGuid: "g-partial", releaseTitle: "rel",
+      episodesCovered: [eps[0].id], voiceoverStudio: null, qualitySource: null, qualityResolution: null,
+    });
+    const c = selectCandidates(db, TODAY).find((x) => x.title.id === tv.id);
+    expect(c?.wantedEpisodes.map((e) => e.episode)).toEqual([2]);
+  });
+
+  test("упавшая загрузка НЕ блокирует повторный подбор (только активные)", () => {
+    const tv = addTitle(db, {
+      tmdbId: 502, type: "tv", titleRu: "Упала", titleOriginal: "Failed", year: "2023",
+      posterPath: null, overview: "", tmdbStatus: null,
+      qualityPresetId: 1, voiceover: "any", monitorRule: "all",
+    });
+    syncEpisodes(db, tv.id, [{ season: 1, episode: 1, airDate: "2023-01-01", name: "" }], "all", TODAY);
+    const ep = listEpisodes(db, tv.id)[0];
+    const d = createDownload(db, {
+      titleId: tv.id, releaseGuid: "g-failed", releaseTitle: "rel",
+      episodesCovered: [ep.id], voiceoverStudio: null, qualitySource: null, qualityResolution: null,
+    });
+    updateDownload(db, d.id, { status: "failed", error: "boom" });
+    expect(selectCandidates(db, TODAY).some((x) => x.title.id === tv.id)).toBe(true);
+  });
+
+  test("фильм с активной загрузкой → не кандидат", () => {
+    const movie = addTitle(db, {
+      tmdbId: 503, type: "movie", titleRu: "ФильмКач", titleOriginal: "MovieDl", year: "2020",
+      posterPath: null, overview: "", tmdbStatus: null,
+      qualityPresetId: 1, voiceover: "any", monitorRule: "all",
+    });
+    createDownload(db, {
+      titleId: movie.id, releaseGuid: "g-movie-active", releaseTitle: "rel",
+      episodesCovered: [], voiceoverStudio: null, qualitySource: null, qualityResolution: null,
+    });
+    expect(selectCandidates(db, TODAY).some((x) => x.title.id === movie.id)).toBe(false);
   });
 });
 

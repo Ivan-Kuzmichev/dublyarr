@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, afterEach, describe, expect, test, vi } from "vitest";
-import { addTitle, getDownload, openDb } from "../src/db/index.js";
+import { addTitle, getDownload, isBlacklisted, openDb } from "../src/db/index.js";
 import { grabRelease } from "../src/grab.js";
 import { QbtError } from "../src/qbittorrent.js";
 
@@ -107,6 +107,24 @@ describe("grabRelease", () => {
       { waitMs: 0 },
     );
     expect(setFilePriority).not.toHaveBeenCalled();
+  });
+
+  test("qBittorrent отклонил раздачу (reject) → релиз в blacklist", async () => {
+    const qbt = {
+      addTorrent: vi.fn().mockRejectedValue(new QbtError("qBittorrent отклонил раздачу", "rejected")),
+      listTorrents: vi.fn(),
+    } as never;
+    await grabRelease(db, qbt, { ...input, guid: "g-reject" }, { waitMs: 0 }).catch(() => {});
+    expect(isBlacklisted(db, title.id, "g-reject")).toBe(true);
+  });
+
+  test("сетевая ошибка (не reject) → НЕ blacklist (транзиентная, проксирование флапает)", async () => {
+    const qbt = {
+      addTorrent: vi.fn().mockRejectedValue(new QbtError("qBittorrent недоступен")),
+      listTorrents: vi.fn(),
+    } as never;
+    await grabRelease(db, qbt, { ...input, guid: "g-neterr" }, { waitMs: 0 }).catch(() => {});
+    expect(isBlacklisted(db, title.id, "g-neterr")).toBe(false);
   });
 
   test("hash не нашёлся за отведённые попытки → download остаётся queued", async () => {

@@ -1,3 +1,4 @@
+import { blacklistRelease } from "./db/blacklist.js";
 import { createDownload, updateDownload, type Download } from "./db/downloads.js";
 import type { Db } from "./db/index.js";
 import { parseEpisodeTag } from "./parser.js";
@@ -160,6 +161,12 @@ export async function grabRelease(
   } catch (e) {
     const msg = e instanceof QbtError ? e.message : e instanceof Error ? e.message : "qBittorrent недоступен";
     updateDownload(db, download.id, { status: "failed", error: msg });
+    // qBittorrent отклонил саму раздачу (битый/дубликат торрента) — это устойчиво,
+    // заносим в blacklist, чтобы конвейер не выбирал её снова и снова (шторм отказов).
+    // Сетевые/HTTP-ошибки (прокси флапает) не блэклистим — они транзиентные.
+    if (e instanceof QbtError && e.code === "rejected") {
+      blacklistRelease(db, input.titleId, input.guid, "qBittorrent отклонил раздачу");
+    }
     throw e;
   }
 

@@ -5,9 +5,12 @@ export interface QbtConfig {
 }
 
 export class QbtError extends Error {
-  constructor(message: string) {
+  /** "rejected" — qBittorrent отклонил раздачу (Fails.: битый/дубликат); иначе сеть/ответ. */
+  readonly code?: string;
+  constructor(message: string, code?: string) {
     super(message);
     this.name = "QbtError";
+    this.code = code;
   }
 }
 
@@ -113,7 +116,7 @@ export class QbtClient {
       body: body.toString(),
     });
     const text = await res.text();
-    if (text.trim() === "Fails.") throw new QbtError("qBittorrent отклонил раздачу");
+    if (text.trim() === "Fails.") throw new QbtError("qBittorrent отклонил раздачу", "rejected");
   }
 
   /** Добавляет раздачу готовым .torrent-файлом (multipart) — не зависит от сети qBittorrent. */
@@ -143,7 +146,7 @@ export class QbtClient {
       body: form,
     });
     const text = await res.text();
-    if (text.trim() === "Fails.") throw new QbtError("qBittorrent отклонил раздачу");
+    if (text.trim() === "Fails.") throw new QbtError("qBittorrent отклонил раздачу", "rejected");
   }
 
   async listTorrents(

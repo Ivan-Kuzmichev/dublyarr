@@ -1,4 +1,5 @@
 import { isBlacklisted } from "./db/blacklist.js";
+import { listDownloadsForTitle, REFRESHABLE_STATUSES } from "./db/downloads.js";
 import type { Db } from "./db/index.js";
 import { addHistory, recentSearchAt } from "./db/history.js";
 import { getPreset } from "./db/presets.js";
@@ -75,7 +76,14 @@ export function selectCandidates(
 
     const preset = getPreset(db, title.qualityPresetId);
 
+    // Уже идущие (queued/downloading/completed) загрузки: не подбираем заново то,
+    // что уже качается/импортируется — иначе повторный грабёж той же раздачи (шторм).
+    const active = listDownloadsForTitle(db, title.id).filter((d) =>
+      REFRESHABLE_STATUSES.includes(d.status),
+    );
+
     if (title.type === "movie") {
+      if (active.length > 0) continue;
       const fs = listFiles(db, title.id);
       if (fs.length === 0) {
         out.push({ title, reason: "missing", wantedSeasons: [], wantedEpisodes: [], upgradeFromRank: 0 });
@@ -93,9 +101,15 @@ export function selectCandidates(
     }
 
     const eps = listEpisodes(db, title.id);
+    const coveredByActive = new Set(active.flatMap((d) => d.episodesCovered));
     // Невышедшие серии (airDate в будущем) не ищем; без даты — считаем потенциально вышедшими.
+    // Серии, уже покрытые активной загрузкой, исключаем (качаются/импортируются).
     const wantedMissing = eps.filter(
-      (e) => e.wanted && e.fileId == null && (e.airDate == null || e.airDate <= today),
+      (e) =>
+        e.wanted &&
+        e.fileId == null &&
+        !coveredByActive.has(e.id) &&
+        (e.airDate == null || e.airDate <= today),
     );
     if (wantedMissing.length > 0) {
       out.push({
@@ -111,7 +125,7 @@ export function selectCandidates(
     if (preset?.upgradeEnabled) {
       const prefRank = qualityRank(preset.preferred);
       const upgradable = eps.filter((e) => {
-        if (e.fileId == null) return false;
+        if (e.fileId == null || coveredByActive.has(e.id)) return false;
         const f = getFile(db, e.fileId);
         return f != null && rankOfFile(f.qualitySource, f.qualityResolution) < prefRank;
       });

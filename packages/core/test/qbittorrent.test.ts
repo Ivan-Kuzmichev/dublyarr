@@ -97,6 +97,7 @@ describe("QbtClient", () => {
       .catch((e) => e);
     expect(err).toBeInstanceOf(QbtError);
     expect((err as QbtError).message).toBe("qBittorrent отклонил раздачу");
+    expect((err as QbtError).code).toBe("rejected");
   });
 
   test("addTorrentFile шлёт multipart с файлом, категорией и тегом", async () => {
