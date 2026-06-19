@@ -159,4 +159,20 @@ describe("parseEpisodeTag", () => {
     expect(parseEpisodeTag("show.1X05.mkv")).toEqual({ season: 1, episode: 5 });
     expect(parseEpisodeTag("show.10x100.mkv")).toEqual({ season: 10, episode: 100 });
   });
+
+  test("аниме [NN]: серия без сезона (сезон подставит импорт из контекста)", () => {
+    expect(parseEpisodeTag("Devil_May_Cry_2_[06]_[HEVC].mkv")).toEqual({
+      season: null,
+      episode: 6,
+    });
+  });
+
+  test("аниме-скобки не путаются с разрешением/кодеком/группой/годом", () => {
+    expect(parseEpisodeTag("Show_[1080p]_[HEVC]_[AniLiberty].mkv")).toBeNull();
+    expect(parseEpisodeTag("Movie_[2021]_BDRemux.mkv")).toBeNull();
+  });
+
+  test("SxxEyy приоритетнее скобок", () => {
+    expect(parseEpisodeTag("Show.S02E06_[1080p].mkv")).toEqual({ season: 2, episode: 6 });
+  });
 });

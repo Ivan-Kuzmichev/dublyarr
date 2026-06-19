@@ -292,3 +292,62 @@ describe("importDownload: Duplicate Show (tmdbId 60626) — регрессии",
     expect(result).toEqual({ ok: false, error: "Шаблон имени дал пустой путь" });
   });
 });
+
+describe("importDownload: аниме [NN] — сезон из контекста загрузки", () => {
+  const anime = addTitle(db, {
+    tmdbId: 235930,
+    type: "tv",
+    titleRu: "Devil May Cry",
+    titleOriginal: "Devil May Cry",
+    year: "2025",
+    posterPath: null,
+    overview: "",
+    tmdbStatus: null,
+    qualityPresetId: 1,
+    voiceover: "AniLibria",
+    monitorRule: "manual",
+  });
+  // Сезон 1 и сезон 2 — у обоих есть «серия 6», чтобы проверить, что берётся именно сезон загрузки.
+  syncEpisodes(
+    db,
+    anime.id,
+    [
+      { season: 1, episode: 6, airDate: "2025-04-03", name: "S1E6" },
+      { season: 2, episode: 5, airDate: "2026-05-12", name: "S2E5" },
+      { season: 2, episode: 6, airDate: "2026-05-12", name: "S2E6" },
+    ],
+    "manual",
+  );
+
+  test("файл вида Devil_May_Cry_2_[06] импортируется как S02E06 (а не S01E06)", () => {
+    const eps = listEpisodes(db, anime.id);
+    const s2 = eps.filter((e) => e.season === 2);
+    const s2e6 = s2.find((e) => e.episode === 6)!;
+
+    const content = join(dir, "staging", "dmc-s2");
+    mkdirSync(content, { recursive: true });
+    writeFileSync(join(content, "Devil_May_Cry_2_[06]_[HEVC].mkv"), "anime-video");
+
+    const d = createDownload(db, {
+      titleId: anime.id,
+      releaseGuid: "guid-dmc-s2",
+      releaseTitle: "Devil May Cry Season 2 [1-6]",
+      episodesCovered: s2.map((e) => e.id), // контекст: только сезон 2
+      voiceoverStudio: "AniLibria",
+      qualitySource: "WEB-DL",
+      qualityResolution: "1080p",
+    });
+
+    const result = importDownload(db, d, anime, content, {
+      libraryDir,
+      template: DEFAULT_NAMING_TV,
+    });
+    expect(result.ok).toBe(true);
+
+    const after = listEpisodes(db, anime.id);
+    expect(after.find((e) => e.id === s2e6.id)?.fileId).not.toBeNull();
+    // сезон 1 серия 6 НЕ должна быть затронута
+    expect(after.find((e) => e.season === 1 && e.episode === 6)?.fileId ?? null).toBeNull();
+    expect(getDownload(db, d.id)?.status).toBe("imported");
+  });
+});

@@ -43,4 +43,17 @@ describe("unwantedFileIndices", () => {
     const files = [{ name: "Show.S01E01.mkv" }];
     expect(unwantedFileIndices(files, [])).toEqual([]);
   });
+
+  test("аниме [NN] без сезона: матчим по номеру серии (keep — один сезон)", () => {
+    const files = [
+      { name: "Devil_May_Cry_2_[06]_[HEVC].mkv" },
+      { name: "Devil_May_Cry_2_[07]_[HEVC].mkv" },
+      { name: "Devil_May_Cry_2_[09]_[HEVC].mkv" },
+    ];
+    const keep = [
+      { season: 2, episode: 6 },
+      { season: 2, episode: 7 },
+    ];
+    expect(unwantedFileIndices(files, keep)).toEqual([2]); // только [09] лишний
+  });
 });

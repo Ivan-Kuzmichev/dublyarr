@@ -364,13 +364,41 @@ export function groupBySeason<T extends ReleaseInput>(
   });
 }
 
-/** Метка серии из имени файла: S01E03 или 1x05. */
-export function parseEpisodeTag(
-  name: string
-): { season: number; episode: number } | null {
-  const m = name.match(/\bS(\d{1,2})[\s._-]*E(\d{1,3})\b/i);
-  if (m) return { season: parseInt(m[1], 10), episode: parseInt(m[2], 10) };
-  const m2 = name.match(/\b(\d{1,2})x(\d{2,3})\b/i);
-  if (m2) return { season: parseInt(m2[1], 10), episode: parseInt(m2[2], 10) };
+export interface EpisodeTag {
+  /** null — сезон не извлечён (аниме); импорт подставляет его из контекста загрузки. */
+  season: number | null;
+  episode: number;
+}
+
+/**
+ * Стратегии разбора метки серии из имени файла, пробуются по порядку — первая
+ * успешная побеждает. Границы не на \b (символ `_` сам словесный, ломал `_S02E06_`),
+ * а на «не буква/цифра» вокруг и «не цифра» после номера.
+ */
+const EPISODE_TAG_STRATEGIES: ((name: string) => EpisodeTag | null)[] = [
+  // S01E03 / S1E1 / S02_E06 — сезон и серия явно
+  (name) => {
+    const m = name.match(/(?<![A-Za-z0-9])S(\d{1,2})[\s._-]*E(\d{1,3})(?!\d)/i);
+    return m ? { season: parseInt(m[1], 10), episode: parseInt(m[2], 10) } : null;
+  },
+  // 1x05 / 10x100 — сезон×серия
+  (name) => {
+    const m = name.match(/(?<![A-Za-z0-9])(\d{1,2})x(\d{2,3})(?!\d)/i);
+    return m ? { season: parseInt(m[1], 10), episode: parseInt(m[2], 10) } : null;
+  },
+  // Аниме: номер серии в скобках [06]; сезон в имени не извлекаем (берётся из контекста).
+  // Только чисто числовые скобки 1–3 цифр: [1080p]/[HEVC]/[2021] не подхватываются.
+  (name) => {
+    const m = name.match(/\[(\d{1,3})\]/);
+    return m ? { season: null, episode: parseInt(m[1], 10) } : null;
+  },
+];
+
+/** Метка серии из имени файла (S01E03 / 1x05 / аниме [06]); null если ничего не подошло. */
+export function parseEpisodeTag(name: string): EpisodeTag | null {
+  for (const strategy of EPISODE_TAG_STRATEGIES) {
+    const tag = strategy(name);
+    if (tag) return tag;
+  }
   return null;
 }

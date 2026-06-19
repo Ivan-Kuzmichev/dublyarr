@@ -13,11 +13,18 @@ export function unwantedFileIndices(
   keep: { season: number; episode: number }[],
 ): number[] {
   if (keep.length === 0) return [];
-  const wanted = new Set(keep.map((e) => `${e.season}:${e.episode}`));
+  const wantedKeys = new Set(keep.map((e) => `${e.season}:${e.episode}`));
+  const wantedEpisodes = new Set(keep.map((e) => e.episode));
   const drop: number[] = [];
   files.forEach((f, i) => {
     const tag = parseEpisodeTag(f.name);
-    if (tag && !wanted.has(`${tag.season}:${tag.episode}`)) drop.push(i);
+    if (!tag) return; // нераспознанные файлы не трогаем
+    // Аниме-метка без сезона: матчим по номеру серии (keep — обычно один сезон).
+    const isWanted =
+      tag.season != null
+        ? wantedKeys.has(`${tag.season}:${tag.episode}`)
+        : wantedEpisodes.has(tag.episode);
+    if (!isWanted) drop.push(i);
   });
   return drop;
 }

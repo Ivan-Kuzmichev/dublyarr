@@ -143,14 +143,21 @@ export function importDownload(
       replaced += 1;
     }
   } else {
-    const byKey = new Map(
-      listEpisodes(db, title.id).map((e) => [`${e.season}:${e.episode}`, e]),
+    const episodes = listEpisodes(db, title.id);
+    const byKey = new Map(episodes.map((e) => [`${e.season}:${e.episode}`, e]));
+    // Аниме-метки ([06]) не несут сезона — берём его из контекста загрузки:
+    // если все покрытые серии в одном сезоне, считаем файлы без сезона его сериями.
+    const coveredSeasons = new Set(
+      episodes.filter((e) => download.episodesCovered.includes(e.id)).map((e) => e.season),
     );
+    const fallbackSeason = coveredSeasons.size === 1 ? [...coveredSeasons][0] : null;
     let matched = 0;
     for (const v of videos) {
       const tag = parseEpisodeTag(basename(v.path));
       if (!tag) continue;
-      const key = `${tag.season}:${tag.episode}`;
+      const season = tag.season ?? fallbackSeason;
+      if (season == null) continue;
+      const key = `${season}:${tag.episode}`;
       const ep = byKey.get(key);
       if (!ep) continue;
       matched += 1;
@@ -165,8 +172,8 @@ export function importDownload(
 
       const rendered = renderTemplate(opts.template, {
         ...vars,
-        season: tag.season,
-        episode: tag.episode,
+        season: ep.season,
+        episode: ep.episode,
       });
       if (!rendered) return { ok: false, error: "Шаблон имени дал пустой путь" };
       const dest = join(opts.libraryDir, rendered + extname(v.path).toLowerCase());
