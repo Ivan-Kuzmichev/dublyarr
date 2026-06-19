@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, test, vi } from "vitest";
@@ -8,6 +8,7 @@ import {
   getDownload,
   isBlacklisted,
   openDb,
+  setSetting,
   updateDownload,
 } from "../src/db/index.js";
 import { refreshDownload } from "../src/poll.js";
@@ -53,6 +54,27 @@ describe("refreshDownload", () => {
     const qbt = { listTorrents: vi.fn().mockResolvedValue([]) } as never;
     await refreshDownload(db, qbt, getDownload(db, d.id)!, { now: new Date("2030-01-01T00:00:00Z") });
     expect(getDownload(db, d.id)!.status).toBe("failed");
+  });
+
+  test("completed → imported → удаляет торрент из qBittorrent (с файлами staging)", async () => {
+    setSetting(db, "library_movies", join(dir, "lib"));
+    const content = join(dir, "stg", "movie");
+    mkdirSync(content, { recursive: true });
+    writeFileSync(join(content, "F.2020.1080p.mkv"), "video-content");
+
+    const d = newDownload("g-del");
+    updateDownload(db, d.id, { status: "downloading", qbitHash: "HDEL", progress: 1 });
+    const deleteTorrent = vi.fn().mockResolvedValue(undefined);
+    const qbt = {
+      listTorrents: vi
+        .fn()
+        .mockResolvedValue([{ hash: "HDEL", state: "uploading", progress: 1, contentPath: content }]),
+      deleteTorrent,
+    } as never;
+
+    await refreshDownload(db, qbt, getDownload(db, d.id)!, { now: new Date("2030-01-01T00:00:00Z") });
+    expect(getDownload(db, d.id)!.status).toBe("imported");
+    expect(deleteTorrent).toHaveBeenCalledWith("HDEL", true);
   });
 
   test("зависший downloading дольше stall_hours → failed + blacklist", async () => {

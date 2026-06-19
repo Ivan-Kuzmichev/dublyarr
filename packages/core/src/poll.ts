@@ -136,6 +136,11 @@ export async function refreshDownload(
               ? `Апгрейд: ${d.releaseTitle || d.tag}`
               : `Импортировано: ${d.releaseTitle || d.tag}`,
         });
+        // Раздача больше не нужна — убираем из qBittorrent вместе с файлами staging.
+        // Безопасно: импорт уже сделал hardlink/копию в библиотеку, её имя файла остаётся
+        // (для hardlink — блоки данных живы, пока на них ссылается библиотека). Раз торрент
+        // удаляем, не сидируем — staging-файлы держать незачем. Ошибку глотаем: импорт успешен.
+        await qbt.deleteTorrent(torrent.hash, true).catch(() => {});
       }
     } catch (e) {
       updateDownload(db, d.id, {
