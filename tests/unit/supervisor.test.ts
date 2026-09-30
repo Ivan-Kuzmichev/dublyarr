@@ -12,8 +12,10 @@ test('упавший процесс перезапускается, stop гас�
     delayFor: () => 50, // ускоряем backoff в тесте
     logger: { info: () => {}, error: () => {} },
   });
-  await new Promise((r) => setTimeout(r, 1500));
+  // Ждём условие, а не фиксированное время: под параллельной нагрузкой vitest старт node бывает медленным.
+  const deadline = Date.now() + 8000;
+  while (starts.filter((n) => n === 'crashy').length < 3 && Date.now() < deadline) await new Promise((r) => setTimeout(r, 50));
   expect(starts.filter((n) => n === 'crashy').length).toBeGreaterThanOrEqual(3);
   expect(starts.filter((n) => n === 'steady')).toHaveLength(1);
   await sup.stop();
-}, 10_000);
+}, 15_000);

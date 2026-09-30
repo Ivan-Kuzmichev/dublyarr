@@ -5,6 +5,7 @@ import { mkdirSync } from 'node:fs';
 import path from 'node:path';
 import * as schema from './schema';
 import { getConfig } from '../config';
+import { seedStudios } from '../studios';
 
 export type Db = BetterSQLite3Database<typeof schema> & { $client: Database.Database };
 
@@ -29,6 +30,7 @@ export function getDb(): Db {
   if (!g.__dublyarrDb) {
     const db = openDb(getConfig().dbPath);
     migrateDb(db);
+    seedStudios(db);
     g.__dublyarrDb = db;
   }
   return g.__dublyarrDb;
