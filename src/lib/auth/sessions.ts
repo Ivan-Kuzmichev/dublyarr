@@ -97,3 +97,8 @@ export function isTrustedDevice(db: Db, token: string, userId: number, now = Dat
 
 export const revokeTrustedDevices = (db: Db, userId: number) =>
   db.delete(trustedDevices).where(eq(trustedDevices.userId, userId)).run();
+
+export function getPendingUsername(db: Db, token: string, now = Date.now()): string | null {
+  const p = getPendingLogin(db, token, now);
+  return p ? (getUser(db, p.userId)?.username ?? null) : null;
+}

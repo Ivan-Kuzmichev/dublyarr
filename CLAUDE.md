@@ -46,7 +46,7 @@ Self-hosted сервис для одного пользователя: подп�
 
 ## Решения (фаза 0)
 
-- pnpm, Next.js 16 (App Router; в образе `next start` из prod-`node_modules`, без standalone), Tailwind v4 (токены в `@theme`), шрифты через `next/font`.
+- pnpm, Next.js 16 (App Router; в образе `next start` из prod-`node_modules`, без standalone), Tailwind v4 (токены в `@theme`), шрифты из пакетов `@fontsource` (без Google Fonts при сборке).
 - Точка входа `src/entry/supervisor.ts`: миграции → дочерние процессы Next, воркер, laya-serve; перезапуск упавших, проброс SIGTERM.
 - Секреты: AES-256-GCM, ключ из `DUBLYARR_SECRET_KEY` или сгенерированный `/data/secret.key` (0600). Логгер pino с redact.
 - Вход: argon2 (`@node-rs/argon2`), TOTP — своя реализация на `node:crypto` (RFC 6238), сеансы — хэш токена в БД.
@@ -54,3 +54,13 @@ Self-hosted сервис для одного пользователя: подп�
 - Тесты: Vitest (unit), Playwright (e2e входа). Образ Docker только `linux/amd64`.
 - TypeScript 6.0 (не 7: typescript-eslint пока не поддерживает TS 7), ESLint 9 (плагины eslint-config-next не поддерживают 10).
 - Миграции данных из старого Dublyarr не будет — начинаем с нуля.
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+# This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

@@ -14,6 +14,7 @@ import {
   createTrustedDevice,
   isTrustedDevice,
   revokeTrustedDevices,
+  getPendingUsername,
   SESSION_TTL_SHORT,
   SESSION_TTL_PERSISTENT,
   PENDING_TTL,
@@ -71,4 +72,12 @@ test('доверенное устройство 30 дней, отзываетс�
   expect(isTrustedDevice(db, d.token, u.id + 1, T0)).toBe(false);
   revokeTrustedDevices(db, u.id);
   expect(isTrustedDevice(db, d.token, u.id, T0)).toBe(false);
+});
+
+test('имя пользователя по ожидающему входу', async () => {
+  const db = testDb();
+  const u = await createUser(db, 'admin', 'пароль-длинный');
+  const p = createPendingLogin(db, u.id, false, T0);
+  expect(getPendingUsername(db, p, T0)).toBe('admin');
+  expect(getPendingUsername(db, 'x', T0)).toBeNull();
 });

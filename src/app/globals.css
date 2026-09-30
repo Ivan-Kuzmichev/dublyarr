@@ -26,28 +26,30 @@
   --color-danger-bg: #1f1916;
   --color-danger-line: #4a2f28;
   --color-destructive: #e5654f;
-  --font-sans: var(--font-onest), 'Segoe UI', system-ui, sans-serif;
-  --font-display: var(--font-unbounded), 'Segoe UI', sans-serif;
-  --font-mono: var(--font-mono-jb), ui-monospace, monospace;
+  --font-sans: 'Onest Variable', 'Segoe UI', system-ui, sans-serif;
+  --font-display: 'Unbounded', 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
-html {
-  color-scheme: dark;
-}
-body {
-  margin: 0;
-  background: var(--color-bg);
-  color: var(--color-text);
-  font-family: var(--font-sans);
-}
-a {
-  color: var(--color-accent);
-}
-a:hover {
-  color: var(--color-accent-hover);
-}
-button,
-input,
-select {
-  font-family: inherit;
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-text);
+    font-family: var(--font-sans);
+  }
+  a {
+    color: var(--color-accent);
+  }
+  a:hover {
+    color: var(--color-accent-hover);
+  }
+  button,
+  input,
+  select {
+    font-family: inherit;
+  }
 }

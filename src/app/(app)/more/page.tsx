@@ -5,6 +5,8 @@ import { ServiceRow } from '@/components/ui/StatusDot';
 import { SETTINGS_SECTIONS } from '@/components/shell/nav';
 import { getDb } from '@/lib/db/client';
 import { serviceStatuses } from '@/lib/heartbeat';
+import { Button } from '@/components/ui/Button';
+import { logoutAction } from '@/app/login/actions';
 
 export const metadata = { title: 'Ещё · Dublyarr' };
 
@@ -55,6 +57,11 @@ export default function MorePage() {
           </div>
         </>
       )}
+      <form action={logoutAction}>
+        <Button type="submit" variant="secondary" className="w-full">
+          Выйти
+        </Button>
+      </form>
     </div>
   );
 }
