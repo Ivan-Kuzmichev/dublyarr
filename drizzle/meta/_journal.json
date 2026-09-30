@@ -15,6 +15,13 @@
       "when": 1790801841992,
       "tag": "0001_cuddly_sugar_man",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790804213990,
+      "tag": "0002_amusing_silhouette",
+      "breakpoints": true
     }
   ]
 }

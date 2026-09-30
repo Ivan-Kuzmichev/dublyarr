@@ -1,3 +1,4 @@
+import type { Profile } from '../profile';
 import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 /** Время — миллисекунды unix. */
@@ -160,3 +161,30 @@ export const episodes = sqliteTable(
 export type Title = typeof titles.$inferSelect;
 export type Season = typeof seasons.$inferSelect;
 export type Episode = typeof episodes.$inferSelect;
+
+// Подписки и словарь студий (фаза 1b)
+
+export const studios = sqliteTable('studios', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  aliases: json<string[]>('aliases').notNull().default([]),
+  kind: text('kind', { enum: ['series', 'anime', 'both'] }).notNull(),
+  trackers: json<string[]>('trackers').notNull().default([]),
+  source: text('source', { enum: ['seed', 'manual', 'laya'] }).notNull(),
+  confirmed: integer('confirmed', { mode: 'boolean' }).notNull().default(true),
+  createdAt: ts('created_at').notNull(),
+});
+
+export const subscriptions = sqliteTable('subscriptions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  titleId: integer('title_id')
+    .notNull()
+    .unique()
+    .references(() => titles.id, { onDelete: 'cascade' }),
+  profile: json<Profile>('profile').notNull(),
+  subscribedAt: ts('subscribed_at').notNull(),
+  updatedAt: ts('updated_at').notNull(),
+});
+
+export type Studio = typeof studios.$inferSelect;
+export type Subscription = typeof subscriptions.$inferSelect;
