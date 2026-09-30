@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — Сегодня (телефон)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#121110}
+a{color:#F0A442}a:hover{color:#FFC577}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; background: #121110; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif; overflow: hidden">
+  <div style="padding: 24px 20px 110px; display: flex; flex-direction: column; gap: 22px">
+    <div style="display: flex; align-items: center; justify-content: space-between">
+      <div style="display: flex; flex-direction: column; gap: 4px">
+        <span style="font-size: 13px; color: #A39C92">Среда, 30 сентября</span>
+        <h1 style="margin: 0; font-family: Unbounded, sans-serif; font-weight: 600; font-size: 30px; letter-spacing: -0.02em">Сегодня</h1>
+      </div>
+      
+    </div>
+
+    <div style="display: flex; gap: 8px">
+      <span style="padding: 8px 12px; border-radius: 18px; background: #1B1A18; border: 1px solid #2E2B28; font-size: 13px">4 новые</span>
+      <span style="padding: 8px 12px; border-radius: 18px; background: #1B1A18; border: 1px solid #2E2B28; font-size: 13px; color: #F0A442">3 ждут озвучку</span>
+      <a href="MobileActivity.dc.html" style="padding: 8px 12px; border-radius: 18px; background: #1B1A18; border: 1px solid #2E2B28; font-size: 13px; color: #FF8A7A; text-decoration: none">2 проблемы</a>
+    </div>
+
+    <section style="display: flex; flex-direction: column; gap: 12px">
+      <h2 style="margin: 0; font-size: 17px; font-weight: 600">Новое</h2>
+      <div style="display: flex; gap: 12px; margin-right: -20px">
+        <sc-for list="{{fresh}}" as="e" hint-placeholder-count="3">
+          <div style="width: 150px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px">
+            <div style="position: relative; height: 200px; border-radius: 14px; background: {{e.color}}; display: flex; align-items: flex-end; padding: 12px; box-sizing: border-box">
+              <span style="font-family: Unbounded, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.15; opacity: 0.88">{{e.show}}</span>
+              <span style="position: absolute; top: 8px; left: 8px; padding: 3px 7px; border-radius: 6px; background: rgba(18,17,16,0.82); font-family: 'JetBrains Mono', monospace; font-size: 11px">{{e.ep}}</span>
+            </div>
+            <span style="font-size: 12px; color: #A39C92">{{e.dub}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 14px">
+      <h2 style="margin: 0; font-size: 17px; font-weight: 600">Ждём озвучку</h2>
+      <sc-for list="{{waiting}}" as="w" hint-placeholder-count="2">
+        <div style="display: flex; flex-direction: column; gap: 8px; padding: 14px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 14px">
+          <div style="display: flex; justify-content: space-between; gap: 10px">
+            <span style="font-size: 14px; font-weight: 600">{{w.show}} <span style="font-family: 'JetBrains Mono', monospace; font-weight: 400; font-size: 12px; color: #A39C92">{{w.ep}}</span></span>
+            <span style="font-size: 12px; font-weight: 600; color: #F0A442; white-space: nowrap">{{w.eta}}</span>
+          </div>
+          <div style="height: 5px; border-radius: 3px; background: #2E2B28"><div style="height: 5px; width: {{w.pct}}; border-radius: 3px; background: #F0A442"></div></div>
+          <span style="font-size: 12px; color: #8A847B">{{w.note}}</span>
+        </div>
+      </sc-for>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 10px; padding: 14px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 14px">
+      <div style="display: flex; justify-content: space-between; font-size: 14px"><span style="font-weight: 600">Уидоус-Бэй · S01E06</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #7FB2FF">64%</span></div>
+      <div style="height: 5px; border-radius: 3px; background: #2E2B28"><div style="height: 5px; width: 64%; border-radius: 3px; background: #7FB2FF"></div></div>
+      <span style="font-size: 12px; color: #8A847B">и ещё 2 загрузки · 18,1 МБ/с</span>
+    </section>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px">
+    <dc-import name="MobileTabs" active="today" hint-size="390px,84px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const fresh = [
+      { show: 'Дэдлок', ep: 'S02E05', dub: 'HDrezka · 1080p', color: '#22394A' },
+      { show: 'Рик и Морти', ep: 'S09E03', dub: 'Сыендук · 4K', color: '#2B3D2A' },
+      { show: 'Гриффины', ep: 'S24E02', dub: 'OMSKBIRD · 1080p', color: '#2A3656' }
+    ];
+    const waiting = [
+      { show: 'Криминальное прошлое', ep: 'S02E04', eta: '≈ вечером', pct: '78%', note: 'HDrezka обычно +1 день' },
+      { show: 'Джентльмены', ep: 'S02E06', eta: '≈ 2 окт', pct: '45%', note: 'Любая студия, обычно +3 дня' }
+    ];
+    const tabs = [
+      { label: 'Сегодня', href: 'Mobile.dc.html', icon: 'M3 11l9-7 9 7M5 10v10h14V10', fg: '#F0A442' },
+      { label: 'Библиотека', href: 'Library.dc.html', icon: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', fg: '#8A847B' },
+      { label: 'Календарь', href: 'Calendar.dc.html', icon: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4', fg: '#8A847B' },
+      { label: 'Загрузки', href: 'Activity.dc.html', icon: 'M12 4v11M7 10l5 5 5-5M5 20h14', fg: '#8A847B' },
+      { label: 'Поиск', href: 'Subscribe.dc.html', icon: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4', fg: '#8A847B' }
+    ];
+    return { fresh, waiting, tabs };
+  }
+}
+</script>
+</body>
+</html>

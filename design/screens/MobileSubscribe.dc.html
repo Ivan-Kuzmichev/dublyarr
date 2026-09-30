@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — Подписка (телефон)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#121110}
+a{color:#F0A442}a:hover{color:#FFC577}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 980px; background: #121110; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif; overflow: hidden">
+  <div style="padding: 24px 20px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+    <sc-for list="{{ghost}}" as="g" hint-placeholder-count="9"><div style="aspect-ratio: 2 / 3; border-radius: 12px; background: {{g}}"></div></sc-for>
+  </div>
+  <div style="position: absolute; inset: 0; background: rgba(10,9,8,0.72)"></div>
+  <div role="dialog" aria-modal="true" aria-labelledby="msub" style="position: absolute; left: 0; right: 0; bottom: 0; top: 96px; background: #1B1A18; border-top: 1px solid #34302C; border-radius: 24px 24px 0 0; padding: 10px 20px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px">
+    <span style="align-self: center; width: 40px; height: 5px; border-radius: 3px; background: #3A3632"></span>
+    <div style="display: flex; gap: 14px; align-items: center">
+      <div style="width: 48px; height: 72px; border-radius: 8px; background: #1F3440; flex-shrink: 0"></div>
+      <div style="display: flex; flex-direction: column; gap: 4px"><h2 id="msub" style="margin: 0; font-family: Unbounded, 'Segoe UI', sans-serif; font-size: 20px; font-weight: 600">Разделение</h2><span style="font-size: 13px; color: #A39C92">2022 · 2 сезона · 19 серий</span></div>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 600">Озвучки</span><span style="font-size: 12px; color: #8A847B">нажми, чтобы задать порядок</span></div>
+    <div style="display: flex; flex-direction: column; gap: 8px">
+      <sc-for list="{{studios}}" as="s" hint-placeholder-count="5">
+        <button onClick="{{s.toggle}}" style="display: flex; align-items: center; gap: 12px; height: 56px; padding: 0 14px; border-radius: 12px; border: 1px solid {{s.border}}; background: {{s.bg}}; color: #F3EFE8; text-align: left; cursor: pointer">
+          <span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; background: {{s.numBg}}; color: {{s.numFg}}">{{s.num}}</span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 15px; font-weight: 500">{{s.name}}</span><span style="font-size: 12px; color: #8A847B">{{s.meta}}</span></span>
+        </button>
+      </sc-for>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 15px; font-weight: 600">Качество</span><div style="display: flex; gap: 4px; padding: 4px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 12px"><button style="flex-grow: 1; height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #A39C92; font-size: 13px">720p</button><button style="flex-grow: 1; height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #A39C92; font-size: 13px">1080p</button><button style="flex-grow: 1; height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: #2A2622; color: #F3EFE8; font-size: 13px; font-weight: 500">2160p</button></div></div>
+    <div style="display: flex; flex-direction: column; gap: 8px"><span style="font-size: 15px; font-weight: 600">Что скачать</span><div style="display: flex; gap: 4px; padding: 4px; background: #242220; border-radius: 12px"><sc-for list="{{scopes}}" as="sc" hint-placeholder-count="3"><button onClick="{{sc.pick}}" style="flex-grow: 1; flex-basis: 0; height: 34px; padding: 0 6px; border: 0; border-radius: 8px; background: {{sc.bg}}; color: {{sc.fg}}; font-size: 13px; font-weight: 500; cursor: pointer">{{sc.short}}</button></sc-for></div></div>
+    <sc-if value="{{scopeFrom}}" hint-placeholder-val="{{ true }}">
+      <div style="padding: 12px; border-radius: 12px; background: #242220; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; justify-content: space-between"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #A39C92">Сезон<span style="display: inline-flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; overflow: hidden"><button aria-label="Меньше" style="width: 30px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 15px; cursor: pointer">−</button><span style="min-width: 24px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #F3EFE8">2</span><button aria-label="Больше" style="width: 30px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 15px; cursor: pointer">+</button></span></span><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #A39C92">Серия<span style="display: inline-flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; overflow: hidden"><button aria-label="Меньше" style="width: 30px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 15px; cursor: pointer">−</button><span style="min-width: 24px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #F3EFE8">5</span><button aria-label="Больше" style="width: 30px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 15px; cursor: pointer">+</button></span></span></div>
+        <div style="display: flex; gap: 4px; padding: 4px; background: #242220; border-radius: 10px; background: #1B1A18"><button style="flex-grow: 1; height: 30px; padding: 0 10px; border: 0; border-radius: 7px; background: #F3EFE8; color: #121110; font-size: 13px; font-weight: 600">до конца сезона</button><button style="flex-grow: 1; height: 30px; padding: 0 10px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">и дальше</button></div>
+      </div>
+    </sc-if>
+    <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.4; color: #D9D3C9; padding-top: 2px"><input type="checkbox" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 2px">Качать сезон целиком после финала<span style="font-size: 12px; color: #8A847B">Дождаться всех серий в нужной озвучке и скачать разом</span></span></label>
+    <div style="flex-grow: 1"></div>
+    <span style="font-size: 13px; color: #A39C92">{{summary}}</span>
+    <a href="MobileSeries.dc.html" style="height: 52px; display: flex; align-items: center; justify-content: center; background: #F0A442; color: #1A1206; border-radius: 14px; font-size: 16px; font-weight: 600; text-decoration: none">Подписаться</a>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":980}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { order: ['lf', 'hdr'] }; }
+  renderVals() {
+    const base = [
+      { id: 'lf', name: 'LostFilm', meta: '19/19 серий · +1,0 д · 2160p' },
+      { id: 'hdr', name: 'HDrezka', meta: '19/19 серий · +0,6 д · 1080p' },
+      { id: 'kvk', name: 'Кубик в Кубе', meta: '19/19 серий · ≈ +3 д · 2160p' },
+      { id: 'tvs', name: 'TVShows', meta: '10/19 серий · нет данных' },
+      { id: 'orig', name: 'Оригинал + субтитры', meta: 'в день эфира · 2160p' }
+    ];
+    const scopeDefs = [{ id: 'all', label: 'Все сезоны' }, { id: 'new', label: 'Только новые серии' }, { id: 'from', label: 'Начиная с серии' }];
+    const scope = this.state.scope ?? 'from';
+    const scopes = scopeDefs.map((d) => ({ ...d, short: { all: 'Все', new: 'Новые', from: 'С серии' }[d.id], bg: d.id === scope ? '#F3EFE8' : 'transparent', fg: d.id === scope ? '#121110' : '#A39C92', ring: d.id === scope ? '5px solid #F0A442' : '1.5px solid #6E6962', pick: () => this.setState({ scope: d.id }) }));
+    const order = this.state.order;
+    const studios = base.map((s) => {
+      const i = order.indexOf(s.id); const on = i >= 0;
+      return { ...s, num: on ? String(i + 1) : '', bg: on ? '#242220' : 'transparent', border: on ? '#F0A442' : '#2E2B28', numBg: on ? '#F0A442' : '#2A2724', numFg: on ? '#1A1206' : '#6E6962', toggle: () => this.setState({ order: on ? order.filter((x) => x !== s.id) : [...order, s.id] }) };
+    });
+    const names = order.map((id) => base.find((b) => b.id === id).name);
+    const summary = names.length ? names.join(' → ') + ' · ≈ 6 ГБ за серию' : 'Выбери хотя бы одну озвучку';
+    const ghost = ['#22394A', '#2B3D2A', '#2A3656', '#3E3322', '#3A2B2A', '#2A3346', '#4A3122', '#4A2A22', '#4A2E40'];
+    return { studios, summary, ghost, scopes, scopeFrom: scope === 'from' };
+  }
+}
+</script>
+</body>
+</html>

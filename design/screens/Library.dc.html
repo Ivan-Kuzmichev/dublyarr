@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — Библиотека</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#121110}
+a{color:#F0A442}a:hover{color:#FFC577}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1360px; display: flex; background: #121110; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif; overflow: hidden">
+  <div style="width: 232px; flex-shrink: 0; background: #171614; border-right: 1px solid #2A2724">
+    <dc-import name="Sidebar" active="library" hint-size="232px,1000px"></dc-import>
+  </div>
+
+  <main style="flex-grow: 1; min-width: 0; box-sizing: border-box; padding: 24px 40px 40px; display: flex; flex-direction: column; gap: 28px">
+    <div style="display: flex; align-items: center; gap: 12px">
+      <label style="width: 620px; height: 44px; display: flex; align-items: center; gap: 12px; padding: 0 14px; box-sizing: border-box; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 12px">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A847B" stroke-width="1.8" stroke-linecap="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></svg>
+        <input placeholder="Найти в библиотеке" aria-label="Найти в библиотеке" style="flex-grow: 1; border: 0; background: transparent; color: #F3EFE8; font-size: 14px; outline: none">
+      </label>
+      <div style="flex-grow: 1"></div>
+      <a href="Subscribe.dc.html" style="height: 44px; padding: 0 18px; display: flex; align-items: center; gap: 8px; background: #F0A442; color: #1A1206; border-radius: 12px; font-weight: 600; font-size: 14px; text-decoration: none">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1A1206" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>
+        Добавить сериал
+      </a>
+    </div>
+
+    <div style="display: flex; align-items: flex-end; justify-content: space-between">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div style="font-size: 14px; color: #A39C92">21 сериал · 4 фильма · 3,9 ТБ на диске</div>
+        <h1 style="margin: 0; font-family: Unbounded, 'Segoe UI', sans-serif; font-weight: 600; font-size: 44px; letter-spacing: -0.02em">Библиотека</h1>
+      </div>
+      <div style="display: flex; gap: 4px; padding: 4px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 12px">
+        <button style="height: 36px; padding: 0 16px; border: 0; border-radius: 9px; background: #2A2622; color: #F3EFE8; font-size: 14px; font-weight: 500">Сериалы</button>
+        <button style="height: 36px; padding: 0 16px; border: 0; border-radius: 9px; background: transparent; color: #A39C92; font-size: 14px; font-weight: 500">Фильмы</button>
+        <button style="height: 36px; padding: 0 16px; border: 0; border-radius: 9px; background: transparent; color: #A39C92; font-size: 14px; font-weight: 500">Аниме</button>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px">
+      <sc-for list="{{filters}}" as="f" hint-placeholder-count="5">
+        <button onClick="{{f.pick}}" style="height: 38px; padding: 0 14px; display: flex; align-items: center; gap: 8px; border-radius: 19px; border: 1px solid {{f.border}}; background: {{f.bg}}; color: {{f.fg}}; font-size: 14px; font-weight: 500; cursor: pointer">
+          {{f.label}} <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; opacity: 0.75">{{f.n}}</span>
+        </button>
+      </sc-for>
+      <div style="flex-grow: 1"></div>
+      <button style="height: 38px; padding: 0 14px; display: flex; align-items: center; gap: 8px; border-radius: 10px; border: 1px solid #2E2B28; background: transparent; color: #D9D3C9; font-size: 14px; cursor: pointer">
+        Сортировка: по следующей серии
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A39C92" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"></path></svg>
+      </button>
+      <div style="display: flex; border: 1px solid #2E2B28; border-radius: 10px; overflow: hidden">
+        <button aria-label="Сетка" style="width: 40px; height: 38px; border: 0; background: #2A2622; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F3EFE8" stroke-width="1.8"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"></path></svg></button>
+        <button aria-label="Список" style="width: 40px; height: 38px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A39C92" stroke-width="1.8" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg></button>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 32px 20px">
+      <sc-for list="{{shows}}" as="s" hint-placeholder-count="18">
+        <a href="Series.dc.html" style="display: flex; flex-direction: column; gap: 10px; color: #F3EFE8; text-decoration: none">
+          <div style="position: relative; aspect-ratio: 2 / 3; border-radius: 14px; background: {{s.color}}; overflow: hidden; display: flex; align-items: flex-end; padding: 14px; box-sizing: border-box">
+            <span style="font-family: Unbounded, sans-serif; font-weight: 600; font-size: 17px; line-height: 1.12; opacity: 0.85">{{s.title}}</span>
+            <span style="position: absolute; top: 10px; right: 10px; padding: 3px 7px; border-radius: 6px; background: rgba(18,17,16,0.82); font-size: 11px; font-weight: 600">{{s.q}}</span>
+            <sc-if value="{{s.hasNew}}" hint-placeholder-val="{{ false }}">
+              <span style="position: absolute; top: 10px; left: 10px; padding: 3px 8px; border-radius: 6px; background: #F0A442; color: #1A1206; font-size: 11px; font-weight: 700">{{s.newLabel}}</span>
+            </sc-if>
+            <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(18,17,16,0.65)"><div style="height: 4px; width: {{s.prog}}; background: #D9D3C9"></div></div>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 3px">
+            <div style="font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.title}}</div>
+            <div style="font-size: 12px; color: #8A847B">{{s.dub}}</div>
+            <div style="font-size: 13px; color: {{s.lineColor}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.line}}</div>
+          </div>
+        </a>
+      </sc-for>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1360}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { filter: 'all' }; }
+  renderVals() {
+    const A = '#F0A442', B = '#7FB2FF', M = '#A39C92';
+    const all = [
+      { title: 'Дэдлок', color: '#22394A', q: '1080p', dub: 'HDrezka', line: 'S02E05 вышла сегодня', lineColor: A, nw: 1, prog: '62%', t: ['air', 'new'] },
+      { title: 'Уидоус-Бэй', color: '#24454D', q: '4K', dub: 'Red Head Sound', line: 'Качается S01E06 · 64%', lineColor: B, nw: 0, prog: '60%', t: ['air'] },
+      { title: 'Криминальное прошлое', color: '#2F3B2E', q: '1080p', dub: 'HDrezka → LostFilm', line: 'Ждёт озвучку S02E04', lineColor: A, nw: 0, prog: '37%', t: ['air', 'wait'] },
+      { title: 'Рик и Морти', color: '#2B3D2A', q: '4K', dub: 'Сыендук', line: 'S09E04 · 7 окт', lineColor: M, nw: 1, prog: '30%', t: ['air', 'new'] },
+      { title: 'Гриффины', color: '#2A3656', q: '1080p', dub: 'OMSKBIRD', line: 'S24E03 · 5 окт', lineColor: M, nw: 1, prog: '10%', t: ['air', 'new'] },
+      { title: 'Джентльмены', color: '#3E3322', q: '1080p', dub: 'Любая', line: 'Ждёт озвучку S02E06', lineColor: A, nw: 0, prog: '62%', t: ['air', 'wait'] },
+      { title: 'Соперники', color: '#3A2B2A', q: '4K', dub: 'NewStudio', line: 'S02E03 · завтра', lineColor: M, nw: 0, prog: '25%', t: ['air'] },
+      { title: 'Истинное образование', color: '#2A3346', q: '4K', dub: 'RuDub', line: 'Ждёт озвучку S01E08', lineColor: A, nw: 0, prog: '87%', t: ['air', 'wait'] },
+      { title: 'Вместе до конца', color: '#4A3122', q: '4K', dub: 'TVShows', line: 'S01E04 · 3 окт', lineColor: M, nw: 0, prog: '37%', t: ['air'] },
+      { title: 'Devil May Cry', color: '#4A2A22', q: '1080p', dub: 'AniLibria', line: 'S02E02 · 4 окт', lineColor: M, nw: 0, prog: '12%', t: ['air'] },
+      { title: 'Эль', color: '#4A2E40', q: '4K', dub: 'Любая', line: 'Качается S01E03 · 21%', lineColor: B, nw: 0, prog: '25%', t: ['air'] },
+      { title: 'Друзья и соседи', color: '#233042', q: '4K', dub: 'LostFilm', line: 'Улучшаю S01E02 до 4K', lineColor: B, nw: 0, prog: '100%', t: ['air'] },
+      { title: 'Грызня', color: '#3A3A36', q: '4K', dub: 'TVShows', line: 'S03 объявлен · подпишусь сам', lineColor: A, nw: 0, prog: '100%', t: ['air'] },
+      { title: 'Медведь', color: '#2C3548', q: '1080p', dub: 'HDrezka', line: 'Завершён · всё скачано', lineColor: M, nw: 0, prog: '100%', t: ['done'] },
+      { title: 'Благие знамения', color: '#3B3526', q: '4K', dub: 'LostFilm', line: 'Завершён · всё скачано', lineColor: M, nw: 0, prog: '100%', t: ['done'] },
+      { title: 'Владимир', color: '#3A2626', q: '1080p', dub: 'Любая', line: 'Завершён · всё скачано', lineColor: M, nw: 0, prog: '100%', t: ['done'] },
+      { title: 'Его и её', color: '#2E2A26', q: '4K', dub: 'Дубляжная', line: 'Завершён · всё скачано', lineColor: M, nw: 0, prog: '100%', t: ['done'] },
+      { title: 'Третий лишний', color: '#3A3222', q: '4K', dub: 'Dragon Money Studio', line: 'Завершён · всё скачано', lineColor: M, nw: 0, prog: '100%', t: ['done'] }
+    ];
+    const defs = [
+      { id: 'all', label: 'Все' },
+      { id: 'air', label: 'В эфире' },
+      { id: 'wait', label: 'Ждут озвучку' },
+      { id: 'new', label: 'Свежие серии' },
+      { id: 'done', label: 'Завершены' }
+    ];
+    const cur = this.state.filter;
+    const filters = defs.map((d) => {
+      const on = d.id === cur;
+      return {
+        ...d,
+        n: d.id === 'all' ? all.length : all.filter((s) => s.t.includes(d.id)).length,
+        bg: on ? '#F3EFE8' : 'transparent',
+        fg: on ? '#121110' : '#D9D3C9',
+        border: on ? '#F3EFE8' : '#2E2B28',
+        pick: () => this.setState({ filter: d.id })
+      };
+    });
+    const shows = all
+      .filter((s) => cur === 'all' || s.t.includes(cur))
+      .map((s) => ({ ...s, hasNew: s.nw > 0, newLabel: 'новая серия' }));
+    return { filters, shows };
+  }
+}
+</script>
+</body>
+</html>

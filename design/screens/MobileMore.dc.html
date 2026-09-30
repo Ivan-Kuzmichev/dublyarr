@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — Ещё (телефон)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#121110}
+a{color:#F0A442}a:hover{color:#FFC577}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1160px; background: #121110; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif; overflow: hidden">
+  <div style="padding: 24px 20px 110px; display: flex; flex-direction: column; gap: 18px">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 4px"><h1 style="margin: 0; font-family: Unbounded, 'Segoe UI', sans-serif; font-weight: 600; font-size: 30px; letter-spacing: -0.02em">Ещё</h1></div>
+      
+    </div>
+    <a href="MobileStorage.dc.html" style="padding: 16px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 10px; color: #F3EFE8; text-decoration: none">
+      <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 16px; font-weight: 600">Хранилище</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #A39C92">6,2 / 8 ТБ</span></div>
+      <div style="height: 6px; border-radius: 3px; background: #2E2B28; display: flex; overflow: hidden"><div style="width: 71%; background: #D9D3C9"></div><div style="width: 7%; background: #F0A442"></div></div>
+      <span style="font-size: 12px; color: #8A847B">Уборка ждёт подтверждения: 742 ГБ</span>
+    </a>
+    <a href="MobileSubscribe.dc.html" style="height: 56px; padding: 0 16px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; align-items: center; gap: 12px; color: #F3EFE8; text-decoration: none; box-sizing: border-box">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F0A442" stroke-width="1.8" stroke-linecap="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></svg>
+      <span style="flex-grow: 1; font-size: 15px; font-weight: 500">Поиск и тренды</span>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E6962" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg>
+    </a>
+    <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A847B; padding: 0 4px">Настройки</span>
+    <div style="display: flex; flex-direction: column; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; overflow: hidden">
+      <sc-for list="{{settings}}" as="s" hint-placeholder-count="10">
+        <a href="{{s.href}}" style="height: 52px; padding: 0 16px; display: flex; align-items: center; gap: 12px; border-top: 1px solid #242220; color: #F3EFE8; text-decoration: none">
+          <span style="flex-grow: 1; font-size: 15px">{{s.label}}</span>
+          <span style="font-size: 13px; color: {{s.nc}}">{{s.note}}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E6962" stroke-width="2" stroke-linecap="round"><path d="M9 6l6 6-6 6"></path></svg>
+        </a>
+      </sc-for>
+    </div>
+    <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A847B; padding: 0 4px">Сервисы</span>
+    <div style="padding: 6px 16px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column">
+      <sc-for list="{{services}}" as="s" hint-placeholder-count="4">
+        <div style="height: 40px; display: flex; align-items: center; gap: 10px; font-size: 14px">
+          <span style="width: 8px; height: 8px; border-radius: 4px; background: {{s.dot}}"></span>
+          <span style="flex-grow: 1">{{s.name}}</span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{s.nc}}">{{s.note}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px">
+    <dc-import name="MobileTabs" active="more" hint-size="390px,84px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1160}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const A = '#F0A442', M = '#8A847B';
+    const settings = [
+      { label: 'Источники', note: '3 Jackett', nc: M },
+      { label: 'Подписки и студии', note: '1 новая', nc: A },
+      { label: 'Загрузка и папки', note: '', nc: M },
+      { label: 'Расписание', note: 'раз в 2 часа', nc: M },
+      { label: 'Обработка файлов', note: '', nc: M },
+      { label: 'Фильмы', note: '', nc: M },
+      { label: 'Правила хранения', note: '3 включено', nc: M, href: 'MobileStorage.dc.html' },
+      { label: 'Уведомления', note: 'Telegram', nc: M },
+      { label: 'AI · дообучение', note: 'идёт', nc: '#7FB2FF', href: 'MobileAiTraining.dc.html' }
+    ];
+    settings.forEach((x) => { x.href = x.href ?? '#'; });
+    const services = [
+      { name: 'qBittorrent', note: '2 ↓', dot: '#7FB2FF', nc: '#7FB2FF' },
+      { name: 'Jackett × 3', note: '1 сбой', dot: A, nc: A },
+      { name: 'TMDB', note: 'ок', dot: '#6E6962', nc: M }
+    ];
+    return { settings, services };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — Активность</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#121110}
+a{color:#F0A442}a:hover{color:#FFC577}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1120px; display: flex; background: #121110; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif; overflow: hidden">
+  <div style="width: 232px; flex-shrink: 0; background: #171614; border-right: 1px solid #2A2724">
+    <dc-import name="Sidebar" active="activity" hint-size="232px,1000px"></dc-import>
+  </div>
+
+  <main style="flex-grow: 1; min-width: 0; box-sizing: border-box; padding: 40px 40px; display: flex; flex-direction: column; gap: 28px">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between">
+      <h1 style="margin: 0; font-family: Unbounded, 'Segoe UI', sans-serif; font-weight: 600; font-size: 44px; letter-spacing: -0.02em">Активность</h1>
+      <div style="display: flex; gap: 4px; padding: 4px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 12px">
+        <button style="height: 36px; padding: 0 16px; border: 0; border-radius: 9px; background: #2A2622; color: #F3EFE8; font-size: 14px; font-weight: 500">Очередь · 3</button>
+        <button style="height: 36px; padding: 0 16px; border: 0; border-radius: 9px; background: transparent; color: #A39C92; font-size: 14px">История</button>
+        <button style="height: 36px; padding: 0 16px; border: 0; border-radius: 9px; background: transparent; color: #A39C92; font-size: 14px">Пропущенное · 5</button>
+        <button style="height: 36px; padding: 0 16px; border: 0; border-radius: 9px; background: transparent; color: #A39C92; font-size: 14px">Чёрный список</button>
+      </div>
+    </div>
+
+    <section style="border: 1px solid #2E2B28; border-radius: 16px; overflow: hidden">
+      <sc-for list="{{queue}}" as="q" hint-placeholder-count="3">
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 280px 150px 120px; gap: 20px; align-items: center; padding: 16px 20px; border-bottom: 1px solid #242220">
+          <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0">
+            <span style="font-size: 15px; font-weight: 600">{{q.title}}</span>
+            <span style="font-size: 12px; color: #8A847B; font-family: 'JetBrains Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{q.release}}</span>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <div style="height: 6px; border-radius: 3px; background: #2E2B28"><div style="height: 6px; width: {{q.pct}}; border-radius: 3px; background: {{q.bar}}"></div></div>
+            <span style="font-size: 12px; color: {{q.sc}}">{{q.state}}</span>
+          </div>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #B5AEA4">{{q.speed}}</span>
+          <button style="height: 34px; padding: 0 12px; border: 1px solid #3A3632; background: transparent; color: #F3EFE8; border-radius: 9px; font-size: 13px; cursor: pointer">{{q.act}}</button>
+        </div>
+      </sc-for>
+    </section>
+
+    <section style="display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 20px">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <h2 style="margin: 0; font-size: 22px; font-weight: 600">Ручной поиск · Криминальное прошлое S02E03</h2>
+          <div style="font-size: 14px; color: #A39C92">13 релизов с 10 трекеров, студия и качество — из названий и тегов. Профиль: HDrezka → LostFilm → любая · 1080p · до 4 ГБ</div>
+        </div>
+        <label style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: #D9D3C9"><input type="checkbox" style="width: 18px; height: 18px; margin: 0; accent-color: #F0A442">Показать отклонённые</label>
+      </div>
+
+      <div style="border: 1px solid #2E2B28; border-radius: 16px; overflow: hidden">
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 100px 120px 70px 70px 56px 170px 148px; gap: 14px; padding: 12px 20px; background: #1B1A18; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8A847B">
+          <span>Релиз</span><span>Трекер</span><span>Озвучка</span><span>Качество</span><span>Размер</span><span>Сиды</span><span>Вердикт</span><span></span>
+        </div>
+        <sc-for list="{{rels}}" as="r" hint-placeholder-count="7">
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 100px 120px 70px 70px 56px 170px 148px; gap: 14px; align-items: center; padding: 14px 20px; border-top: 1px solid #242220; opacity: {{r.op}}">
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #D9D3C9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span>
+            <span style="font-size: 13px; color: #B5AEA4">{{r.tracker}}</span>
+            <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 13px; font-weight: 500; color: {{r.dubC}}">{{r.dub}}</span><span style="font-size: 11px; color: #8A847B">{{r.rec}}</span></span>
+            <span style="font-size: 13px; color: #B5AEA4">{{r.q}}</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #B5AEA4">{{r.size}}</span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{r.seedC}}">{{r.seeds}}</span>
+            <span style="font-size: 13px; color: {{r.vc}}">{{r.verdict}}</span>
+            <sc-if value="{{r.best}}" hint-placeholder-val="{{ false }}">
+              <button style="height: 34px; padding: 0 14px; border: 0; background: #F0A442; color: #1A1206; border-radius: 9px; font-size: 13px; font-weight: 600; cursor: pointer">Скачать</button>
+            </sc-if>
+            <sc-if value="{{r.notBest}}" hint-placeholder-val="{{ true }}">
+              <button style="height: 34px; padding: 0 14px; border: 1px solid #3A3632; background: transparent; color: #D9D3C9; border-radius: 9px; font-size: 13px; cursor: pointer">{{r.btn}}</button>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1120}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const queue = [
+      { title: 'Уидоус-Бэй · S01E06', release: 'Widows.Bay.S01E06.2160p.WEB-DL.RHS', pct: '64%', bar: '#7FB2FF', state: 'Качается · 64% · 4 мин', sc: '#7FB2FF', speed: '12,3 МБ/с', act: 'Пауза' },
+      { title: 'Эль · S01E03', release: 'Эль / Elle / Сезон 1 / Серии 1-3 из 8 [WEB-DL 2160p]', pct: '21%', bar: '#7FB2FF', state: 'Из пака: 1 файл из 3 · 21% · 17 мин', sc: '#7FB2FF', speed: '5,8 МБ/с', act: 'Пауза' },
+      { title: 'Криминальное прошлое · S02E03', release: 'Criminal.Record.S02E03.1080p.WEB-DL.HDrezka', pct: '8%', bar: '#FF8A7A', state: 'Нет сидов 6 ч · 8%', sc: '#FF8A7A', speed: '0 Б/с', act: 'Заменить' }
+    ];
+    const ok = '#B5AEA4', no = '#8A847B';
+    const rels = [
+      { name: 'Criminal.Record.S02E03.1080p.ATVP.WEB-DL.LostFilm', tracker: 'LostFilm', dub: 'LostFilm', rec: 'по трекеру', q: '1080p', size: '2,3 ГБ', seeds: '412', verdict: 'Лучший · 2-я по приоритету', vc: '#F0A442', best: true },
+      { name: 'Criminal.Record.S02E03.1080p.WEB-DL.HDrezka.Studio', tracker: 'RuTor', dub: 'HDrezka', rec: 'по названию', q: '1080p', size: '2,1 ГБ', seeds: '0', verdict: 'Текущий · нет сидов', vc: '#FF8A7A' },
+      { name: 'Criminal.Record.S02E03.2160p.ATVP.WEB-DL.LostFilm', tracker: 'LostFilm', dub: 'LostFilm', rec: 'по трекеру', q: '2160p', size: '7,8 ГБ', seeds: '96', verdict: 'Больше 4 ГБ', vc: no },
+      { name: 'Criminal.Record.S02E03.1080p.WEB-DL.TVShows', tracker: 'NNM-Club', dub: 'TVShows', rec: 'по тегу MVO', q: '1080p', size: '1,9 ГБ', seeds: '38', verdict: 'Не в профиле озвучки', vc: no },
+      { name: 'Criminal.Record.S02E03.720p.WEB-DL.LostFilm', tracker: 'LostFilm', dub: 'LostFilm', rec: 'по трекеру', q: '720p', size: '1,1 ГБ', seeds: '120', verdict: 'Ниже 1080p', vc: no },
+      { name: 'Криминальное прошлое S02E03 [WEB-DL 1080p] MVO Paravozik', tracker: 'Kinozal', dub: 'Paravozik?', rec: 'не распознано', q: '1080p', size: '2,0 ГБ', seeds: '54', verdict: 'Неизвестная студия', vc: '#F0A442', unk: true },
+      { name: 'Criminal.Record.S02.1080p.WEB-DL.Pack', tracker: 'RuTracker', dub: 'Многоголосый', rec: 'по тегу MVO', q: '1080p', size: '6,4 ГБ', seeds: '—', verdict: 'Трекер не отвечает', vc: no }
+    ].map((r) => ({ ...r, best: !!r.best, notBest: !r.best, btn: r.unk ? 'Назначить студию' : 'Всё равно', dubC: r.unk ? '#F0A442' : '#F3EFE8', op: r.vc === no ? '0.6' : '1', seedC: r.seeds === '0' ? '#FF8A7A' : ok }));
+    return { queue, rels };
+  }
+}
+</script>
+</body>
+</html>

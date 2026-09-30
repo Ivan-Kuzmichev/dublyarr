@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — Хранилище</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#121110}
+a{color:#F0A442}a:hover{color:#FFC577}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 1240px; display: flex; background: #121110; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif; overflow: hidden">
+  <div style="width: 232px; flex-shrink: 0; background: #171614; border-right: 1px solid #2A2724">
+    <dc-import name="Sidebar" active="storage" hint-size="232px,1000px"></dc-import>
+  </div>
+
+  <main style="flex-grow: 1; min-width: 0; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 28px">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 20px">
+      <div style="display: flex; flex-direction: column; gap: 10px">
+        <div style="font-size: 14px; color: #A39C92">NAS · /volume1/media</div>
+        <h1 style="margin: 0; font-family: Unbounded, 'Segoe UI', sans-serif; font-weight: 600; font-size: 44px; letter-spacing: -0.02em">Хранилище</h1>
+      </div>
+      <a href="SettingsStorage.dc.html" style="height: 44px; padding: 0 16px; display: flex; align-items: center; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 12px; color: #F3EFE8; font-size: 14px; text-decoration: none; box-sizing: border-box">Правила хранения</a>
+    </div>
+
+    <!-- disk overview -->
+    <section style="padding: 24px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 18px; display: flex; flex-direction: column; gap: 16px">
+      <div style="display: flex; align-items: baseline; gap: 16px">
+        <span style="font-family: Unbounded, sans-serif; font-size: 30px; font-weight: 600">6,2 ТБ</span>
+        <span style="font-size: 15px; color: #A39C92">занято из 8 ТБ · свободно 1,8 ТБ</span>
+      </div>
+      <div style="height: 14px; border-radius: 7px; background: #2A2724; display: flex; overflow: hidden; gap: 2px">
+        <sc-for list="{{parts}}" as="p" hint-placeholder-count="4">
+          <div style="width: {{p.w}}; background: {{p.c}}"></div>
+        </sc-for>
+      </div>
+      <div style="display: flex; gap: 28px; flex-wrap: wrap">
+        <sc-for list="{{parts}}" as="p" hint-placeholder-count="4">
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 14px"><span style="width: 10px; height: 10px; border-radius: 3px; background: {{p.c}}"></span>{{p.name}} <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #A39C92">{{p.size}}</span></span>
+        </sc-for>
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 14px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #2A2724; border: 1px solid #3A3632; box-sizing: border-box"></span>Свободно <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #A39C92">1,8 ТБ</span></span>
+      </div>
+    </section>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 24px; align-items: start">
+      <!-- per show -->
+      <section style="display: flex; flex-direction: column; gap: 14px">
+        <div style="display: flex; align-items: center; justify-content: space-between">
+          <h2 style="margin: 0; font-size: 20px; font-weight: 600">По сериалам</h2>
+          <div style="display: flex; gap: 4px; padding: 4px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 10px">
+            <button style="height: 30px; padding: 0 12px; border: 0; border-radius: 7px; background: #2A2622; color: #F3EFE8; font-size: 13px">По размеру</button>
+            <button style="height: 30px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">По дате</button>
+          </div>
+        </div>
+        <div style="border: 1px solid #2E2B28; border-radius: 16px; overflow: hidden">
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 84px 60px 70px 128px 36px; gap: 12px; padding: 12px 18px; background: #1B1A18; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8A847B">
+            <span>Сериал</span><span>На диске</span><span>Качество</span><span>Размер</span><span>Правило</span><span></span>
+          </div>
+          <sc-for list="{{shows}}" as="s" hint-placeholder-count="9">
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) 84px 60px 70px 128px 36px; gap: 12px; align-items: center; padding: 12px 18px; border-top: 1px solid #242220">
+              <div style="display: flex; align-items: center; gap: 12px; min-width: 0">
+                <span style="width: 26px; height: 39px; flex-shrink: 0; border-radius: 5px; background: {{s.color}}"></span>
+                <span style="font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.title}}</span>
+              </div>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B5AEA4">{{s.seasons}}</span>
+              <span style="font-size: 13px; color: #B5AEA4">{{s.q}}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #D9D3C9">{{s.size}}</span>
+              <span style="font-size: 12px; color: {{s.ruleC}}">{{s.rule}}</span>
+              <button onClick="{{s.ask}}" aria-label="Удалить сериал" style="width: 36px; height: 36px; border: 1px solid #2E2B28; background: transparent; border-radius: 9px; display: flex; align-items: center; justify-content: center; cursor: pointer">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B5AEA4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"></path></svg>
+              </button>
+            </div>
+          </sc-for>
+        </div>
+        
+      </section>
+
+      <!-- side -->
+      <aside style="display: flex; flex-direction: column; gap: 20px">
+        <section style="padding: 22px; background: #1F1B16; border: 1px solid #4A3A24; border-radius: 18px; display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; flex-direction: column; gap: 6px">
+            <h2 style="margin: 0; font-size: 18px; font-weight: 600">Первая уборка по правилу сезонов</h2>
+            <span style="font-size: 13px; line-height: 1.45; color: #B5AEA4">Правило только что включено. Перед первым запуском проверь, что уйдёт.</span>
+          </div>
+          <sc-for list="{{cleanup}}" as="c" hint-placeholder-count="4">
+            <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer">
+              <input type="checkbox" checked="{{ true }}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0">
+              <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 500; line-height: 20px">{{c.title}}</span><span style="font-size: 12px; color: #8A847B">{{c.why}}</span></span>
+              <span style="width: 64px; flex-shrink: 0; text-align: right; white-space: nowrap; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 20px; color: #F0A442">{{c.size}}</span>
+            </label>
+          </sc-for>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; padding-top: 12px; border-top: 1px solid #3A2F22; font-size: 14px"><span>Освободится</span><span style="width: 64px; text-align: right; white-space: nowrap; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500">742 ГБ</span></div>
+          <div style="display: flex; gap: 8px">
+            <button style="flex-grow: 1; height: 40px; background: #F0A442; color: #1A1206; border: 0; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer">Удалить отмеченное</button>
+            <button style="height: 40px; padding: 0 14px; background: transparent; color: #D9D3C9; border: 1px solid #3A3632; border-radius: 10px; font-size: 14px; cursor: pointer">Позже</button>
+          </div>
+        </section>
+
+        <section style="padding: 22px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 18px; display: flex; flex-direction: column; gap: 14px">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 600">Прогноз</h2>
+          <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+            <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: Unbounded, sans-serif; font-size: 20px; font-weight: 600">+140 ГБ</span><span style="font-size: 12px; color: #A39C92">в неделю, по последнему месяцу</span></div>
+            <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-family: Unbounded, sans-serif; font-size: 20px; font-weight: 600">~13 нед</span><span style="font-size: 12px; color: #A39C92">до заполнения · ~18 после уборки</span></div>
+          </div>
+        </section>
+
+        <section style="padding: 22px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 18px; display: flex; flex-direction: column; gap: 12px">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 600">Недавно удалено</h2>
+          <sc-for list="{{history}}" as="h" hint-placeholder-count="3">
+            <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 13px">
+              <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 500">{{h.title}}</span><span style="color: #8A847B">{{h.why}}</span></span>
+              <span style="font-family: 'JetBrains Mono', monospace; color: #A39C92; white-space: nowrap">{{h.size}}</span>
+            </div>
+          </sc-for>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <sc-if value="{{confirming}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(10,9,8,0.72); display: flex; align-items: center; justify-content: center">
+      <div role="dialog" aria-modal="true" aria-labelledby="del-title" style="width: 520px; background: #1B1A18; border: 1px solid #34302C; border-radius: 20px; padding: 26px; display: flex; flex-direction: column; gap: 18px">
+        <div style="display: flex; gap: 16px; align-items: center">
+          <span style="width: 44px; height: 66px; flex-shrink: 0; border-radius: 8px; background: {{target.color}}"></span>
+          <div style="display: flex; flex-direction: column; gap: 4px">
+            <h2 id="del-title" style="margin: 0; font-size: 20px; font-weight: 600">Удалить «{{target.title}}»?</h2>
+            <span style="font-size: 14px; color: #A39C92">{{target.seasons}} · {{target.size}} на диске</span>
+          </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 10px">
+          <sc-for list="{{modes}}" as="m" hint-placeholder-count="3">
+            <button onClick="{{m.pick}}" style="display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-radius: 12px; border: 1px solid {{m.border}}; background: {{m.bg}}; color: #F3EFE8; text-align: left; cursor: pointer">
+              <span style="width: 18px; height: 18px; margin-top: 1px; flex-shrink: 0; border-radius: 9px; box-sizing: border-box; border: {{m.ring}}"></span>
+              <span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 500">{{m.title}}</span><span style="font-size: 13px; color: #8A847B">{{m.sub}}</span></span>
+            </button>
+          </sc-for>
+        </div>
+        <div style="display: flex; gap: 8px; justify-content: flex-end">
+          <button onClick="{{cancel}}" style="height: 42px; padding: 0 16px; background: transparent; color: #D9D3C9; border: 1px solid #3A3632; border-radius: 10px; font-size: 14px; cursor: pointer">Отмена</button>
+          <button onClick="{{cancel}}" style="height: 42px; padding: 0 18px; background: #E5654F; color: #1A0A06; border: 0; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer">{{confirmLabel}}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { target: null, mode: 'all' }; }
+  renderVals() {
+    const parts = [
+      { name: 'Сериалы', size: '3,2 ТБ', w: '40%', c: '#D9D3C9' },
+      { name: 'Аниме', size: '0,7 ТБ', w: '8.75%', c: '#9C8F7E' },
+      { name: 'Фильмы', size: '0,6 ТБ', w: '7.5%', c: '#6E6962' },
+      { name: 'Не Dublyarr', size: '1,7 ТБ', w: '21.25%', c: '#4A4642' }
+    ];
+    const M = '#8A847B', A = '#F0A442';
+    const shows = [
+      { title: 'Симпсоны', color: '#4A4222', seasons: 'S01–S36', q: '1080p', size: '612 ГБ', keep: '100%', drop: '0%', rule: 'исключение: все', ruleC: M },
+      { title: 'Гриффины', color: '#2A3656', seasons: 'S01–S24', q: '1080p', size: '418 ГБ', keep: '11%', drop: '89%', rule: 'S23 + выходящий', ruleC: A },
+      { title: 'Рик и Морти', color: '#2B3D2A', seasons: 'S01–S09', q: '2160p', size: '386 ГБ', keep: '14%', drop: '86%', rule: 'S08 + выходящий', ruleC: A },
+      { title: 'Благие знамения', color: '#3B3526', seasons: 'S01–S03', q: '2160p', size: '214 ГБ', keep: '100%', drop: '0%', rule: 'завершён', ruleC: M },
+      { title: 'Медведь', color: '#2C3548', seasons: 'S01–S04', q: '1080p', size: '96 ГБ', keep: '100%', drop: '0%', rule: 'завершён', ruleC: M },
+      { title: 'Грызня', color: '#3A3A36', seasons: 'S01–S02', q: '2160p', size: '88 ГБ', keep: '57%', drop: '43%', rule: 'последний', ruleC: A },
+      { title: 'Друзья и соседи', color: '#233042', seasons: 'S01', q: '2160p', size: '64 ГБ', keep: '100%', drop: '0%', rule: 'выходящий', ruleC: M },
+      { title: 'Криминальное прошлое', color: '#2F3B2E', seasons: 'S01–S02', q: '1080p', size: '24 ГБ', keep: '100%', drop: '0%', rule: 'S01 + выходящий', ruleC: M },
+      { title: 'Дэдлок', color: '#22394A', seasons: 'S01–S02', q: '1080p', size: '19 ГБ', keep: '100%', drop: '0%', rule: 'S01 + выходящий', ruleC: M }
+    ];
+    const cleanup = [
+      { title: 'Гриффины · S01–S22', why: 'старше последнего вышедшего сезона', size: '372 ГБ' },
+      { title: 'Рик и Морти · S01–S07', why: 'старше последнего вышедшего сезона', size: '290 ГБ' },
+      { title: 'Рик и Морти · 1080p-копии', why: 'заменены версиями в 2160p', size: '42 ГБ' },
+      { title: 'Грызня · S01', why: 'S02 скачан целиком, новый не выходит', size: '38 ГБ' }
+    ];
+    const history = [
+      { title: 'Друзья и соседи · S01E01 1080p', why: 'улучшено до 2160p', size: '2,4 ГБ' },
+      { title: 'Дэдлок · S02E03 TVShows', why: 'вышла HDrezka по приоритету', size: '1,9 ГБ' },
+      { title: 'Криминальное прошлое · S02E02 LostFilm', why: 'вышла HDrezka по приоритету', size: '2,0 ГБ' }
+    ];
+    const withAsk = shows.map((s) => ({ ...s, ask: () => this.setState({ target: s.title, mode: 'all' }) }));
+    const target = shows.find((s) => s.title === this.state.target) || shows[0];
+    const defs = [
+      { id: 'all', title: 'Удалить файлы и отписаться', sub: 'Сериал пропадёт из библиотеки, новые серии качаться не будут', label: 'Удалить всё' },
+      { id: 'files', title: 'Только файлы, подписка остаётся', sub: 'Освободит место, новые серии продолжат скачиваться', label: 'Удалить файлы' },
+      { id: 'sub', title: 'Только отписаться, файлы оставить', sub: 'Скачанное останется на диске, дальше ничего не качается', label: 'Отписаться' }
+    ];
+    const modes = defs.map((d) => {
+      const on = d.id === this.state.mode;
+      return { ...d, bg: on ? '#242220' : 'transparent', border: on ? '#E5654F' : '#2E2B28', ring: on ? '5px solid #E5654F' : '1.5px solid #6E6962', pick: () => this.setState({ mode: d.id }) };
+    });
+    const confirmLabel = defs.find((d) => d.id === this.state.mode).label;
+    return {
+      parts, shows: withAsk, cleanup, history, target, modes, confirmLabel,
+      confirming: !!this.state.target,
+      cancel: () => this.setState({ target: null })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — Дообучение Laya</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#121110}
+a{color:#F0A442}a:hover{color:#FFC577}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1240px; display: flex; background: #121110; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif; overflow: hidden">
+  <div style="width: 232px; flex-shrink: 0; background: #171614; border-right: 1px solid #2A2724">
+    <dc-import name="Sidebar" active="settings" hint-size="232px,1000px"></dc-import>
+  </div>
+
+  <main style="flex-grow: 1; min-width: 0; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 24px">
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <a href="SettingsAi.dc.html" style="align-self: flex-start; display: flex; align-items: center; gap: 4px; font-size: 14px; color: #A39C92; text-decoration: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A39C92" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"></path></svg>Настройки · AI</a>
+      <h1 style="margin: 0; font-family: Unbounded, 'Segoe UI', sans-serif; font-weight: 600; font-size: 40px; letter-spacing: -0.02em">Дообучение Laya</h1>
+      <p style="margin: 0; font-size: 15px; color: #A39C92">Модель учится на твоих «Верно» и «Нет». Обучение идёт в фоне и не мешает загрузкам.</p>
+    </div>
+
+    <!-- running -->
+    <section style="padding: 22px 24px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 18px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; align-items: center; gap: 16px">
+        <span style="width: 10px; height: 10px; border-radius: 5px; background: #7FB2FF; flex-shrink: 0"></span>
+        <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px"><span style="font-size: 17px; font-weight: 600">Идёт обучение версии 4</span><span style="font-size: 13px; color: #8A847B">214 примеров, из них 38 новых · проход 2 из 3 · осталось около 25 минут</span></span>
+        <button style="height: 40px; padding: 0 16px; background: transparent; color: #F3EFE8; border: 1px solid #3A3632; border-radius: 10px; font-size: 14px; cursor: pointer">Остановить</button>
+      </div>
+      <div style="height: 8px; border-radius: 4px; background: #2E2B28"><div style="height: 8px; width: 58%; border-radius: 4px; background: #7FB2FF"></div></div>
+      <span style="font-size: 13px; color: #8A847B">Когда закончится, новая версия проверится на отложенных примерах и заменит текущую, только если окажется не хуже.</span>
+    </section>
+
+    <div style="display: grid; grid-template-columns: minmax(0, 1fr) 380px; gap: 24px; align-items: start">
+      <div style="display: flex; flex-direction: column; gap: 24px">
+        <!-- accuracy by task -->
+        <section style="padding: 22px 24px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 18px; display: flex; flex-direction: column; gap: 16px">
+          <div style="display: flex; align-items: baseline; justify-content: space-between"><h2 style="margin: 0; font-size: 18px; font-weight: 600">Точность по задачам</h2><span style="font-size: 13px; color: #8A847B">текущая версия 3</span></div>
+          <div style="display: grid; grid-template-columns: minmax(0, 1fr) 90px 200px 110px; gap: 16px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8A847B">
+            <span>Задача</span><span>Примеров</span><span>Точность</span><span>Решает сама</span>
+          </div>
+          <sc-for list="{{tasks}}" as="t" hint-placeholder-count="3">
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) 90px 200px 110px; gap: 16px; align-items: center; padding-top: 14px; border-top: 1px solid #242220">
+              <span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 15px; font-weight: 500">{{t.name}}</span><span style="font-size: 12px; color: {{t.nc}}">{{t.note}}</span></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; color: #D9D3C9">{{t.n}}</span>
+              <span style="display: flex; align-items: center; gap: 10px"><span style="flex-grow: 1; height: 6px; border-radius: 3px; background: #2E2B28"><span style="display: block; height: 6px; width: {{t.acc}}; border-radius: 3px; background: {{t.bar}}"></span></span><span style="width: 40px; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 13px">{{t.acc}}</span></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #D9D3C9">{{t.auto}}</span>
+            </div>
+          </sc-for>
+          <span style="font-size: 13px; line-height: 1.45; color: #8A847B">«Решает сама» — доля решений выше порога уверенности 85%, которые не пришлось подтверждать.</span>
+        </section>
+
+        <!-- examples -->
+        <section style="padding: 22px 24px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 18px; display: flex; flex-direction: column; gap: 14px">
+          <div style="display: flex; align-items: center; justify-content: space-between">
+            <h2 style="margin: 0; font-size: 18px; font-weight: 600">Твои ответы <span style="font-size: 14px; font-weight: 400; color: #8A847B">· 38 новых</span></h2>
+            <div style="display: flex; gap: 4px; padding: 4px; background: #242220; border-radius: 10px">
+              <button style="height: 30px; padding: 0 12px; border: 0; border-radius: 7px; background: #F3EFE8; color: #121110; font-size: 13px; font-weight: 600">Все</button>
+              <button style="height: 30px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">Где модель ошиблась · 9</button>
+            </div>
+          </div>
+          <sc-for list="{{examples}}" as="e" hint-placeholder-count="5">
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) 190px 150px 36px; gap: 14px; align-items: center; padding-top: 12px; border-top: 1px solid #242220">
+              <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #D9D3C9; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{e.release}}</span><span style="font-size: 12px; color: #8A847B">{{e.q}}</span></span>
+              <span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 11px; color: #8A847B">модель думала</span><span style="font-size: 13px; color: {{e.mc}}">{{e.model}}</span></span>
+              <span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 11px; color: #8A847B">ты ответил</span><span style="font-size: 13px; font-weight: 500">{{e.you}}</span></span>
+              <button aria-label="Убрать пример" style="width: 36px; height: 36px; border: 1px solid #2E2B28; background: transparent; border-radius: 9px; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A847B" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+            </div>
+          </sc-for>
+        </section>
+      </div>
+
+      <aside style="display: flex; flex-direction: column; gap: 24px">
+        <!-- versions -->
+        <section style="padding: 22px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 18px; display: flex; flex-direction: column; gap: 14px">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 600">Версии модели</h2>
+          <sc-for list="{{versions}}" as="v" hint-placeholder-count="4">
+            <div style="display: flex; align-items: center; gap: 12px; padding-top: 12px; border-top: 1px solid #242220">
+              <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px">
+                <span style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 500">{{v.name}}<sc-if value="{{v.current}}" hint-placeholder-val="{{ false }}"><span style="padding: 2px 8px; border-radius: 10px; background: #2A2622; font-size: 11px; font-weight: 600; color: #F0A442">сейчас</span></sc-if></span>
+                <span style="font-size: 12px; color: #8A847B">{{v.meta}}</span>
+              </span>
+              <sc-if value="{{v.canRollback}}" hint-placeholder-val="{{ false }}">
+                <button style="height: 32px; padding: 0 10px; border: 1px solid #3A3632; background: transparent; color: #D9D3C9; border-radius: 8px; font-size: 12px; cursor: pointer">Вернуть</button>
+              </sc-if>
+            </div>
+          </sc-for>
+        </section>
+
+        <!-- rules -->
+        <section style="padding: 22px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 18px; display: flex; flex-direction: column; gap: 14px">
+          <h2 style="margin: 0; font-size: 18px; font-weight: 600">Когда обучать</h2>
+          <sc-for list="{{rules}}" as="r" hint-placeholder-count="3">
+            <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer">
+              <input type="checkbox" checked="{{r.on}}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0">
+              <span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">{{r.title}}</span><span style="font-size: 12px; line-height: 1.4; color: #8A847B">{{r.sub}}</span></span>
+            </label>
+          </sc-for>
+        </section>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const tasks = [
+      { name: 'Какая студия', note: 'новые и странные названия озвучек', nc: '#8A847B', n: '124', acc: '94%', bar: '#D9D3C9', auto: '81%' },
+      { name: 'Тот ли это сериал', note: 'похожие названия, ремейки, фильмы', nc: '#8A847B', n: '71', acc: '91%', bar: '#D9D3C9', auto: '74%' },
+      { name: 'Нумерация аниме', note: 'мало примеров — пока чаще спрашивает', nc: '#F0A442', n: '19', acc: '78%', bar: '#F0A442', auto: '42%' }
+    ];
+    const examples = [
+      { release: 'Криминальное прошлое S02E03 [WEB-DL 1080p] MVO Paravozik', q: 'Какая студия?', model: 'LostFilm · 64%', mc: '#FF8A7A', you: 'Paravozik (новая)' },
+      { release: 'Медведь / Bear (2025) [WEB-DL 1080p] Дубляж', q: 'Это «Медведь» (2022)?', model: 'да · 71%', mc: '#FF8A7A', you: 'нет, другой' },
+      { release: 'Devil May Cry [27 из 12+] AniLibria', q: 'Какая это серия?', model: 'S02E03 · 58%', mc: '#F0A442', you: 'S02E03' },
+      { release: 'Deadloch.S02E05.1080p.WEB-DL.Jaskier', q: 'Какая студия?', model: 'Jaskier · 88%', mc: '#8A847B', you: 'Jaskier' },
+      { release: 'Rivals.S02E03.2160p.NewStudio', q: 'Это «Соперники» (2024)?', model: 'да · 93%', mc: '#8A847B', you: 'да' }
+    ];
+    const versions = [
+      { name: 'Версия 3', meta: '12 сентября · 176 примеров · решает сама 71%', current: true, canRollback: false },
+      { name: 'Версия 2', meta: '29 августа · 104 примера · 58%', current: false, canRollback: true },
+      { name: 'Версия 1', meta: '14 августа · 41 пример · 39%', current: false, canRollback: true },
+      { name: 'Базовая', meta: 'laya-multilingual без дообучения', current: false, canRollback: true }
+    ];
+    const rules = [
+      { on: true, title: 'Автоматически ночью', sub: 'Если накопилось 30 новых примеров, в ночное окно из «Расписания»' },
+      { on: true, title: 'Применять, только если не хуже', sub: 'Новая версия проверяется на 20% примеров, которые не видела при обучении' },
+      { on: true, title: 'Хранить 3 последние версии', sub: 'Чтобы можно было вернуть прошлую, если стало хуже' }
+    ];
+    return { tasks, examples, versions, rules };
+  }
+}
+</script>
+</body>
+</html>

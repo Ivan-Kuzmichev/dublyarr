@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — боковая навигация</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 232px; height: 1000px; box-sizing: border-box; padding: 22px 14px; display: flex; flex-direction: column; gap: 28px; background: #171614; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif">
+  <a href="Main.dc.html" style="display: flex; align-items: center; gap: 10px; padding: 0 8px; color: #F3EFE8; text-decoration: none">
+    <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#F0A442" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="M12 3c1 3.5 5 5.5 5 10a5 5 0 0 1-10 0c0-2.2 1-3.6 2.2-4.8.2 1.6 1 2.6 2 3 0-3 .3-5.6.8-8.2z"></path></svg>
+    <span style="font-family: Unbounded, 'Segoe UI', sans-serif; font-weight: 600; font-size: 18px; letter-spacing: -0.01em">Dublyarr</span>
+  </a>
+
+  <nav aria-label="Основная навигация" style="display: flex; flex-direction: column; gap: 2px">
+    <sc-for list="{{items}}" as="item" hint-placeholder-count="7">
+      <a href="{{item.href}}" style="display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 10px; background: {{item.bg}}; color: {{item.fg}}; font-size: 15px; font-weight: 500; text-decoration: none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="{{item.ic}}" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"><path d="{{item.icon}}"></path></svg>
+        <span style="flex-grow: 1">{{item.label}}</span>
+        <sc-if value="{{item.hasBadge}}" hint-placeholder-val="{{ false }}">
+          <span style="min-width: 22px; height: 22px; padding: 0 7px; box-sizing: border-box; border-radius: 11px; background: {{item.badgeBg}}; color: {{item.badgeFg}}; font-size: 12px; font-weight: 600; display: flex; align-items: center; justify-content: center">{{item.badge}}</span>
+        </sc-if>
+      </a>
+    </sc-for>
+  </nav>
+
+  <div style="flex-grow: 1"></div>
+
+  <section aria-label="Сервисы" style="display: flex; flex-direction: column; gap: 10px; padding: 0 10px">
+    <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #8A847B">Сервисы</div>
+    <sc-for list="{{services}}" as="s" hint-placeholder-count="3">
+      <div style="display: flex; align-items: center; gap: 10px; font-size: 13px">
+        <span style="width: 8px; height: 8px; border-radius: 4px; background: {{s.dot}}"></span>
+        <span style="flex-grow: 1; color: #D9D3C9">{{s.name}}</span>
+        <span style="color: {{s.noteColor}}; font-family: 'JetBrains Mono', monospace; font-size: 12px">{{s.note}}</span>
+      </div>
+    </sc-for>
+  </section>
+
+  <section aria-label="Хранилище" style="display: flex; flex-direction: column; gap: 10px; padding: 16px; background: #1F1D1B; border: 1px solid #2E2B28; border-radius: 14px">
+    <div style="display: flex; justify-content: space-between; align-items: baseline">
+      <span style="font-size: 13px; font-weight: 600">NAS · media</span>
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #A39C92">6,2 / 8 ТБ</span>
+    </div>
+    <div style="height: 6px; border-radius: 3px; background: #2E2B28; overflow: hidden; display: flex">
+      <div style="width: 71%; background: #D9D3C9"></div>
+      <div style="width: 7%; background: #F0A442"></div>
+    </div>
+    <div style="font-size: 12px; line-height: 1.45; color: #A39C92">Уборка ждёт подтверждения: <span style="color: #F0A442">742 ГБ</span></div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["today","library","calendar","discover","activity","storage","settings"],"default":"today"},"$preview":{"width":232,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const active = this.props.active ?? 'today';
+    const raw = [
+      { id: 'today', label: 'Сегодня', href: 'Main.dc.html', icon: 'M3 11l9-7 9 7M5 10v10h14V10M10 20v-5h4v5' },
+      { id: 'library', label: 'Библиотека', href: 'Library.dc.html', icon: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', badge: '21', quiet: true },
+      { id: 'calendar', label: 'Календарь', href: 'Calendar.dc.html', icon: 'M4 6h16v14H4zM4 10h16M8 3v4M16 3v4' },
+      { id: 'discover', label: 'Поиск и тренды', href: 'Subscribe.dc.html', icon: 'M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4' },
+      { id: 'activity', label: 'Активность', href: 'Activity.dc.html', icon: 'M12 4v11M7 10l5 5 5-5M5 20h14', badge: '3' },
+      { id: 'storage', label: 'Хранилище', href: 'Storage.dc.html', icon: 'M4 5h16v6H4zM4 13h16v6H4zM8 8h.01M8 16h.01' },
+      { id: 'settings', label: 'Настройки', href: 'Settings.dc.html', icon: 'M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4' }
+    ];
+    const items = raw.map((r) => {
+      const on = r.id === active;
+      return {
+        ...r,
+        bg: on ? '#2A2622' : 'transparent',
+        fg: on ? '#F3EFE8' : '#B5AEA4',
+        ic: on ? '#F0A442' : '#8A847B',
+        hasBadge: !!r.badge,
+        badgeBg: r.quiet ? '#2A2724' : '#F0A442',
+        badgeFg: r.quiet ? '#A39C92' : '#1A1206'
+      };
+    });
+    const services = [
+      { name: 'qBittorrent', note: '2 ↓', dot: '#7FB2FF', noteColor: '#7FB2FF' },
+      { name: 'Jackett', note: '1 сбой', dot: '#F0A442', noteColor: '#F0A442' },
+      { name: 'TMDB', note: 'ок', dot: '#6E6962', noteColor: '#8A847B' }
+    ];
+    return { items, services };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — Дообучение (телефон)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#121110}
+a{color:#F0A442}a:hover{color:#FFC577}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1900px; background: #121110; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif; overflow: hidden">
+  <div style="padding: 24px 20px 110px; display: flex; flex-direction: column; gap: 18px">
+    <a href="MobileMore.dc.html" style="align-self: flex-start; display: flex; align-items: center; gap: 4px; color: #A39C92; font-size: 14px; text-decoration: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A39C92" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"></path></svg>Ещё</a>
+    <div style="display: flex; flex-direction: column; gap: 6px">
+      <h1 style="margin: 0; font-family: Unbounded, 'Segoe UI', sans-serif; font-weight: 600; font-size: 26px; letter-spacing: -0.02em">Дообучение Laya</h1>
+      <span style="font-size: 14px; line-height: 1.45; color: #A39C92">Модель учится на твоих «Верно» и «Нет». Идёт в фоне и не мешает загрузкам.</span>
+    </div>
+
+    <section style="padding: 16px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: center; gap: 10px"><span style="width: 10px; height: 10px; border-radius: 5px; background: #7FB2FF"></span><span style="flex-grow: 1; font-size: 15px; font-weight: 600">Обучается версия 4</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #7FB2FF">58%</span></div>
+      <div style="height: 6px; border-radius: 3px; background: #2E2B28"><div style="height: 6px; width: 58%; border-radius: 3px; background: #7FB2FF"></div></div>
+      <span style="font-size: 12px; line-height: 1.45; color: #8A847B">214 примеров · проход 2 из 3 · ~25 мин. Заменит текущую, только если не хуже.</span>
+      <button style="height: 40px; border: 1px solid #3A3632; border-radius: 10px; background: transparent; color: #F3EFE8; font-size: 14px">Остановить</button>
+    </section>
+
+    <span style="font-size: 17px; font-weight: 600">Точность по задачам</span>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <sc-for list="{{tasks}}" as="t" hint-placeholder-count="3">
+        <div style="padding: 14px 16px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 8px">
+          <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 15px; font-weight: 500">{{t.name}}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 14px">{{t.acc}}</span></div>
+          <div style="height: 6px; border-radius: 3px; background: #2E2B28"><div style="height: 6px; width: {{t.acc}}; border-radius: 3px; background: {{t.bar}}"></div></div>
+          <span style="font-size: 12px; color: {{t.nc}}">{{t.n}} примеров · решает сама {{t.auto}}</span>
+        </div>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 17px; font-weight: 600">Твои ответы <span style="font-size: 14px; font-weight: 400; color: #8A847B">· 38 новых</span></span><button style="border: 0; background: transparent; padding: 0; color: #F0A442; font-size: 14px">Где ошиблась · 9</button></div>
+    <div style="display: flex; flex-direction: column; gap: 10px">
+      <sc-for list="{{examples}}" as="e" hint-placeholder-count="4">
+        <div style="padding: 14px 16px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 8px">
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #B5AEA4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{e.release}}</span>
+          <span style="font-size: 14px; font-weight: 500">{{e.q}}</span>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 13px">
+            <span style="color: {{e.mc}}">{{e.model}}</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E6962" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg>
+            <span style="flex-grow: 1; font-weight: 500">{{e.you}}</span>
+            <button aria-label="Убрать ответ" style="width: 32px; height: 32px; border: 1px solid #2E2B28; border-radius: 8px; background: transparent; display: flex; align-items: center; justify-content: center"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#8A847B" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+
+    <span style="font-size: 17px; font-weight: 600">Версии модели</span>
+    <div style="display: flex; flex-direction: column; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; overflow: hidden">
+      <sc-for list="{{versions}}" as="v" hint-placeholder-count="4">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-top: 1px solid #242220">
+          <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px">
+            <span style="display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 500">{{v.name}}<sc-if value="{{v.current}}" hint-placeholder-val="{{ false }}"><span style="padding: 2px 8px; border-radius: 10px; background: #2A2622; font-size: 11px; font-weight: 600; color: #F0A442">сейчас</span></sc-if></span>
+            <span style="font-size: 12px; color: #8A847B">{{v.meta}}</span>
+          </span>
+          <sc-if value="{{v.canRollback}}" hint-placeholder-val="{{ false }}"><button style="height: 34px; padding: 0 12px; border: 1px solid #3A3632; background: transparent; color: #D9D3C9; border-radius: 9px; font-size: 13px">Вернуть</button></sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <span style="font-size: 17px; font-weight: 600">Когда обучать</span>
+    <div style="padding: 6px 16px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column">
+      <sc-for list="{{rules}}" as="r" hint-placeholder-count="3">
+        <label style="display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #242220">
+          <input type="checkbox" checked="{{r.on}}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0">
+          <span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">{{r.title}}</span><span style="font-size: 12px; line-height: 1.4; color: #8A847B">{{r.sub}}</span></span>
+        </label>
+      </sc-for>
+    </div>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px">
+    <dc-import name="MobileTabs" active="more" hint-size="390px,84px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const tasks = [
+      { name: 'Какая студия', n: '124', acc: '94%', bar: '#D9D3C9', auto: '81%', nc: '#8A847B' },
+      { name: 'Тот ли это сериал', n: '71', acc: '91%', bar: '#D9D3C9', auto: '74%', nc: '#8A847B' },
+      { name: 'Нумерация аниме', n: '19', acc: '78%', bar: '#F0A442', auto: '42%', nc: '#F0A442' }
+    ];
+    const examples = [
+      { release: 'Криминальное прошлое S02E03 [WEB-DL 1080p] MVO Paravozik', q: 'Какая студия?', model: 'LostFilm · 64%', mc: '#FF8A7A', you: 'Paravozik' },
+      { release: 'Медведь / Bear (2025) [WEB-DL 1080p] Дубляж', q: 'Это «Медведь» (2022)?', model: 'да · 71%', mc: '#FF8A7A', you: 'нет' },
+      { release: 'Devil May Cry [27 из 12+] AniLibria', q: 'Какая это серия?', model: 'S02E03 · 58%', mc: '#F0A442', you: 'S02E03' },
+      { release: 'Deadloch.S02E05.1080p.WEB-DL.Jaskier', q: 'Какая студия?', model: 'Jaskier · 88%', mc: '#8A847B', you: 'Jaskier' }
+    ];
+    const versions = [
+      { name: 'Версия 3', meta: '12 сент · 176 примеров · сама 71%', current: true, canRollback: false },
+      { name: 'Версия 2', meta: '29 авг · 104 примера · 58%', current: false, canRollback: true },
+      { name: 'Версия 1', meta: '14 авг · 41 пример · 39%', current: false, canRollback: true },
+      { name: 'Базовая', meta: 'без дообучения', current: false, canRollback: true }
+    ];
+    const rules = [
+      { on: true, title: 'Автоматически ночью', sub: 'Когда накопилось 30 новых ответов' },
+      { on: true, title: 'Применять, только если не хуже', sub: 'Проверка на 20% ответов, которых модель не видела' },
+      { on: true, title: 'Хранить 3 последние версии', sub: 'Чтобы вернуть прошлую, если стало хуже' }
+    ];
+    return { tasks, examples, versions, rules };
+  }
+}
+</script>
+</body>
+</html>

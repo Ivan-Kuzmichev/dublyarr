@@ -1,0 +1,345 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Activity.dc.html": {
+      "h": 1120,
+      "is_interactive": true,
+      "title": "Активность и ручной поиск",
+      "w": 1440,
+      "x": 1520,
+      "y": 1900
+    },
+    "Calendar.dc.html": {
+      "h": 1000,
+      "is_interactive": true,
+      "title": "Календарь с прогнозом озвучки",
+      "w": 1440,
+      "x": 3040,
+      "y": 1900
+    },
+    "Library.dc.html": {
+      "h": 1360,
+      "is_interactive": true,
+      "title": "Библиотека",
+      "w": 1440,
+      "x": 1520,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 1320,
+      "is_interactive": true,
+      "title": "Сегодня",
+      "w": 1440,
+      "x": 0,
+      "y": 0
+    },
+    "Mobile.dc.html": {
+      "h": 844,
+      "is_interactive": true,
+      "title": "Телефон · Сегодня",
+      "w": 390,
+      "x": 0,
+      "y": 6600
+    },
+    "MobileActivity.dc.html": {
+      "h": 1000,
+      "is_interactive": true,
+      "title": "Телефон · Загрузки",
+      "w": 390,
+      "x": 2350,
+      "y": 6600
+    },
+    "MobileCalendar.dc.html": {
+      "h": 1100,
+      "is_interactive": true,
+      "title": "Телефон · Календарь",
+      "w": 390,
+      "x": 1880,
+      "y": 6600
+    },
+    "MobileLibrary.dc.html": {
+      "h": 1100,
+      "is_interactive": true,
+      "title": "Телефон · Библиотека",
+      "w": 390,
+      "x": 470,
+      "y": 6600
+    },
+    "MobileMore.dc.html": {
+      "h": 1160,
+      "is_interactive": true,
+      "title": "Телефон · Ещё",
+      "w": 390,
+      "x": 3290,
+      "y": 6600
+    },
+    "MobileSeries.dc.html": {
+      "h": 1860,
+      "is_interactive": true,
+      "title": "Телефон · Карточка сериала",
+      "w": 390,
+      "x": 940,
+      "y": 6600
+    },
+    "MobileStorage.dc.html": {
+      "h": 1560,
+      "is_interactive": true,
+      "title": "Телефон · Хранилище",
+      "w": 390,
+      "x": 2820,
+      "y": 6600
+    },
+    "MobileSubscribe.dc.html": {
+      "h": 980,
+      "is_interactive": true,
+      "title": "Телефон · Подписка",
+      "w": 390,
+      "x": 1410,
+      "y": 6600
+    },
+    "MobileTabs.dc.html": {
+      "h": 84,
+      "title": "Компонент · нижняя навигация",
+      "w": 390,
+      "x": 3740,
+      "y": 6600
+    },
+    "Series.dc.html": {
+      "h": 1420,
+      "is_interactive": true,
+      "title": "Карточка сериала",
+      "w": 1440,
+      "x": 3040,
+      "y": 0
+    },
+    "Settings.dc.html": {
+      "h": 1240,
+      "is_interactive": true,
+      "title": "Настройки · Источники",
+      "w": 1440,
+      "x": 0,
+      "y": 3500
+    },
+    "SettingsAi.dc.html": {
+      "h": 1240,
+      "is_interactive": true,
+      "title": "Настройки · AI",
+      "w": 1440,
+      "x": 3040,
+      "y": 4860
+    },
+    "SettingsDownload.dc.html": {
+      "h": 1240,
+      "is_interactive": true,
+      "title": "Настройки · Загрузка и папки",
+      "w": 1440,
+      "x": 3040,
+      "y": 3500
+    },
+    "SettingsFiles.dc.html": {
+      "h": 1240,
+      "is_interactive": true,
+      "title": "Настройки · Обработка файлов",
+      "w": 1440,
+      "x": 4560,
+      "y": 3500
+    },
+    "SettingsMovies.dc.html": {
+      "h": 1240,
+      "is_interactive": true,
+      "title": "Настройки · Фильмы",
+      "w": 1440,
+      "x": 4560,
+      "y": 4860
+    },
+    "SettingsNotify.dc.html": {
+      "h": 1240,
+      "is_interactive": true,
+      "title": "Настройки · Уведомления",
+      "w": 1440,
+      "x": 1520,
+      "y": 4860
+    },
+    "SettingsSchedule.dc.html": {
+      "h": 1240,
+      "is_interactive": true,
+      "title": "Настройки · Расписание",
+      "w": 1440,
+      "x": 6080,
+      "y": 3500
+    },
+    "SettingsStorage.dc.html": {
+      "h": 1240,
+      "is_interactive": true,
+      "title": "Настройки · Хранение",
+      "w": 1440,
+      "x": 0,
+      "y": 4860
+    },
+    "SettingsStudios.dc.html": {
+      "h": 1240,
+      "is_interactive": true,
+      "title": "Настройки · Подписки и студии",
+      "w": 1440,
+      "x": 1520,
+      "y": 3500
+    },
+    "Sidebar.dc.html": {
+      "h": 1000,
+      "title": "Компонент · навигация",
+      "w": 232,
+      "x": 4560,
+      "y": 1900
+    },
+    "Storage.dc.html": {
+      "h": 1240,
+      "is_interactive": true,
+      "title": "Хранилище",
+      "w": 1440,
+      "x": 4872,
+      "y": 1900
+    },
+    "Subscribe.dc.html": {
+      "h": 1000,
+      "is_interactive": true,
+      "title": "Подписка на сериал",
+      "w": 1440,
+      "x": 0,
+      "y": 1900
+    },
+    "AiTraining.dc.html": {
+      "x": 6080,
+      "y": 4860,
+      "w": 1440,
+      "h": 1240,
+      "title": "Настройки · Дообучение Laya",
+      "is_interactive": true
+    },
+    "MobileAiTraining.dc.html": {
+      "x": 4210,
+      "y": 6600,
+      "w": 390,
+      "h": 1900,
+      "title": "Телефон · Дообучение",
+      "is_interactive": true
+    },
+    "Login.dc.html": {
+      "x": 0,
+      "y": 8920,
+      "w": 1440,
+      "h": 900,
+      "title": "Вход · логин и пароль",
+      "is_interactive": true
+    },
+    "Login2FA.dc.html": {
+      "x": 1520,
+      "y": 8920,
+      "w": 1440,
+      "h": 900,
+      "title": "Вход · двухфакторка",
+      "is_interactive": true
+    },
+    "MobileLogin.dc.html": {
+      "x": 3040,
+      "y": 8920,
+      "w": 390,
+      "h": 844,
+      "title": "Телефон · Вход",
+      "is_interactive": true
+    },
+    "MobileLogin2FA.dc.html": {
+      "x": 3510,
+      "y": 8920,
+      "w": 390,
+      "h": 844,
+      "title": "Телефон · Двухфакторка",
+      "is_interactive": true
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-09-30T17:05:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "row1": {
+      "kind": "title1",
+      "maxW": 4950,
+      "text": "Каждый день: что вышло и что качается",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    },
+    "row2": {
+      "kind": "title1",
+      "maxW": 6312,
+      "text": "Управление: подписка, загрузки, расписание",
+      "w": 240,
+      "x": 0,
+      "y": 1600
+    },
+    "row3": {
+      "kind": "title1",
+      "maxW": 7520,
+      "text": "Настройки",
+      "w": 240,
+      "x": 0,
+      "y": 3200
+    },
+    "row4": {
+      "kind": "title1",
+      "maxW": 4620,
+      "text": "Мобильная версия",
+      "w": 240,
+      "x": 0,
+      "y": 6300
+    },
+    "row5": {
+      "x": 0,
+      "y": 8620,
+      "text": "Вход",
+      "kind": "title1",
+      "maxW": 3900
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Library.dc.html",
+    "Series.dc.html",
+    "Mobile.dc.html",
+    "Subscribe.dc.html",
+    "Activity.dc.html",
+    "Calendar.dc.html",
+    "Sidebar.dc.html",
+    "Settings.dc.html",
+    "SettingsStudios.dc.html",
+    "SettingsDownload.dc.html",
+    "SettingsStorage.dc.html",
+    "SettingsNotify.dc.html",
+    "SettingsAi.dc.html",
+    "Storage.dc.html",
+    "SettingsFiles.dc.html",
+    "SettingsMovies.dc.html",
+    "SettingsSchedule.dc.html",
+    "MobileLibrary.dc.html",
+    "MobileSeries.dc.html",
+    "MobileSubscribe.dc.html",
+    "MobileCalendar.dc.html",
+    "MobileActivity.dc.html",
+    "MobileStorage.dc.html",
+    "MobileMore.dc.html",
+    "MobileTabs.dc.html",
+    "AiTraining.dc.html",
+    "MobileAiTraining.dc.html",
+    "Login.dc.html",
+    "Login2FA.dc.html",
+    "MobileLogin.dc.html",
+    "MobileLogin2FA.dc.html"
+  ],
+  "pages": [],
+  "title": "Dublyarr — редизайн"
+}

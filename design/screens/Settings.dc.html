@@ -1,0 +1,579 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — Настройки</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#121110}
+a{color:#F0A442}a:hover{color:#FFC577}
+button,input,select{font-family:inherit}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1240px; display: flex; background: #121110; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif; overflow: hidden">
+  <div style="width: 232px; flex-shrink: 0; background: #171614; border-right: 1px solid #2A2724">
+    <dc-import name="Sidebar" active="settings" hint-size="232px,1000px"></dc-import>
+  </div>
+
+  <main style="flex-grow: 1; min-width: 0; box-sizing: border-box; padding: 40px; display: flex; flex-direction: column; gap: 28px">
+    <h1 style="margin: 0; font-family: Unbounded, 'Segoe UI', sans-serif; font-weight: 600; font-size: 44px; letter-spacing: -0.02em">Настройки</h1>
+
+    <div style="display: flex; gap: 32px; align-items: flex-start">
+      <nav aria-label="Разделы настроек" style="width: 220px; flex-shrink: 0; display: flex; flex-direction: column; gap: 2px">
+        <sc-for list="{{sections}}" as="s" hint-placeholder-count="6">
+          <button onClick="{{s.pick}}" style="height: 44px; padding: 0 14px; display: flex; align-items: center; justify-content: space-between; border: 0; border-radius: 10px; background: {{s.bg}}; color: {{s.fg}}; font-size: 15px; font-weight: 500; text-align: left; cursor: pointer">
+            <span>{{s.label}}</span>
+            <span style="font-size: 12px; color: {{s.noteC}}">{{s.note}}</span>
+          </button>
+        </sc-for>
+      </nav>
+
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+
+        <!-- ИСТОЧНИКИ -->
+        <sc-if value="{{isSources}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 20px">
+            <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 20px">
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <h2 style="margin: 0; font-size: 24px; font-weight: 600">Источники поиска</h2>
+                <p style="margin: 0; font-size: 14px; color: #A39C92">Любой Torznab: Jackett или Prowlarr. Опрашиваются параллельно, одинаковые раздачи склеиваются.</p>
+              </div>
+              <button style="height: 44px; padding: 0 18px; background: #F0A442; color: #1A1206; border: 0; border-radius: 11px; font-size: 14px; font-weight: 600; cursor: pointer; white-space: nowrap">+ Добавить источник</button>
+            </div>
+
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px">
+              <sc-for list="{{sources}}" as="j" hint-placeholder-count="3">
+                <article style="padding: 18px; background: #1B1A18; border: 1px solid {{j.border}}; border-radius: 16px; display: flex; flex-direction: column; gap: 12px">
+                  <div style="display: flex; align-items: center; gap: 10px">
+                    <span style="width: 8px; height: 8px; border-radius: 4px; background: {{j.dot}}"></span>
+                    <span style="flex-grow: 1; font-size: 16px; font-weight: 600">{{j.name}}</span>
+                    <button aria-label="Настроить источник" style="width: 32px; height: 32px; border: 1px solid #2E2B28; background: transparent; border-radius: 8px; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#A39C92" stroke-width="2" stroke-linecap="round"><path d="M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4"></path></svg></button>
+                  </div>
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8A847B">{{j.url}}</span>
+                  <div style="display: flex; gap: 16px; font-size: 13px; color: #B5AEA4">
+                    <span>{{j.count}}</span><span>{{j.ping}}</span>
+                  </div>
+                  <span style="font-size: 13px; color: {{j.stateC}}">{{j.state}}</span>
+                </article>
+              </sc-for>
+            </div>
+
+            <div style="border: 1px solid #2E2B28; border-radius: 16px; overflow: hidden">
+              <div style="display: grid; grid-template-columns: minmax(0, 1fr) 110px 170px 170px 150px; gap: 14px; padding: 12px 18px; background: #1B1A18; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8A847B">
+                <span>Трекер</span><span>Контент</span><span>Основной</span><span>Запасной</span><span>Статус</span>
+              </div>
+              <sc-for list="{{trackers}}" as="t" hint-placeholder-count="8">
+                <div style="display: grid; grid-template-columns: minmax(0, 1fr) 110px 170px 170px 150px; gap: 14px; align-items: center; padding: 12px 18px; border-top: 1px solid #242220; font-size: 14px">
+                  <span style="font-weight: 500">{{t.name}}</span>
+                  <span style="font-size: 13px; color: #B5AEA4">{{t.kind}}</span>
+                  <span style="font-size: 13px">{{t.main}}</span>
+                  <span style="font-size: 13px; color: #8A847B">{{t.backup}}</span>
+                  <span style="font-size: 13px; color: {{t.c}}">{{t.status}}</span>
+                </div>
+              </sc-for>
+            </div>
+            <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #8A847B">Если трекер есть в нескольких источниках, Dublyarr ходит только через основной, а запасной включается, когда основной не ответил. Торрент-файл скачивает сам Dublyarr и передаёт в qBittorrent.</p>
+          </div>
+        </sc-if>
+
+        <!-- СТУДИИ -->
+        <sc-if value="{{isStudios}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 20px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <h2 style="margin: 0; font-size: 24px; font-weight: 600">Подписки и студии</h2>
+              <p style="margin: 0; font-size: 14px; color: #A39C92">Профиль подставляется в новую подписку по типу: сериал или аниме (тип берётся из TMDB).</p>
+            </div>
+            <section style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px; flex-direction: row; gap: 28px; align-items: flex-start">
+              <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 12px">
+                <span style="font-size: 16px; font-weight: 600">Новые сезоны</span>
+                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer"><input type="checkbox" checked="{{ true }}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">Подписываться на новые сезоны сериалов из библиотеки</span><span style="font-size: 13px; color: #8A847B">С тем же профилем озвучки и качества, что у прошлого сезона</span></span></label>
+                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer"><input type="checkbox" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">Предлагать спин-оффы и продолжения</span><span style="font-size: 13px; color: #8A847B">Отдельные сериалы в TMDB — только уведомление, без подписки</span></span></label>
+              </div>
+              <div style="width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px">
+                <span style="font-size: 13px; color: #A39C92">Когда TMDB объявил сезон</span>
+                <div style="display: flex; gap: 4px; padding: 4px; background: #242220; border-radius: 10px"><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: #F3EFE8; color: #121110; font-size: 13px; font-weight: 600">подписаться сразу</button><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">спросить</button></div>
+                <span style="font-size: 13px; line-height: 1.45; color: #8A847B">Сейчас ждут: «Грызня», сезон 3 — подпишусь сам, как только TMDB даст дату.</span>
+              </div>
+            </section>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+              <sc-for list="{{profiles}}" as="p" hint-placeholder-count="2">
+                <article style="padding: 18px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 12px">
+                  <div style="display: flex; justify-content: space-between; align-items: baseline">
+                    <span style="font-size: 16px; font-weight: 600">{{p.name}}</span>
+                    <span style="font-size: 13px; color: #A39C92">{{p.q}}</span>
+                  </div>
+                  <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px">
+                    <sc-for list="{{p.chain}}" as="c" hint-placeholder-count="3">
+                      <span style="height: 30px; padding: 0 10px; display: flex; align-items: center; gap: 6px; border-radius: 8px; background: #242220; font-size: 13px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #F0A442">{{c.n}}</span>{{c.name}}</span>
+                    </sc-for>
+                  </div>
+                  <span style="font-size: 13px; color: #8A847B">{{p.rule}}</span>
+                </article>
+              </sc-for>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between">
+              <h3 style="margin: 0; font-size: 18px; font-weight: 600">Словарь студий <span style="font-size: 14px; font-weight: 400; color: #8A847B">· 64</span></h3>
+              <button style="height: 38px; padding: 0 14px; background: transparent; color: #F3EFE8; border: 1px solid #3A3632; border-radius: 10px; font-size: 13px; cursor: pointer">+ Студия</button>
+            </div>
+            <div style="border: 1px solid #2E2B28; border-radius: 16px; overflow: hidden">
+              <div style="display: grid; grid-template-columns: 170px minmax(0, 1fr) 130px 150px 190px; gap: 14px; padding: 12px 18px; background: #1B1A18; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8A847B">
+                <span>Студия</span><span>Варианты написания</span><span>Тип</span><span>Свой трекер</span><span>Кто добавил</span>
+              </div>
+              <sc-for list="{{studios}}" as="s" hint-placeholder-count="7">
+                <div style="display: grid; grid-template-columns: 170px minmax(0, 1fr) 130px 150px 190px; gap: 14px; align-items: center; padding: 12px 18px; border-top: 1px solid #242220; background: {{s.rowBg}}; font-size: 14px">
+                  <span style="font-weight: 500">{{s.name}}</span>
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B5AEA4">{{s.aliases}}</span>
+                  <span style="font-size: 13px; color: #B5AEA4">{{s.kind}}</span>
+                  <span style="font-size: 13px; color: #B5AEA4">{{s.tracker}}</span>
+                  <sc-if value="{{s.isAi}}" hint-placeholder-val="{{ false }}">
+                    <div style="display: flex; align-items: center; gap: 6px">
+                      <span style="font-size: 12px; color: #F0A442">AI · сегодня</span>
+                      <button style="height: 28px; padding: 0 8px; border: 0; background: #F0A442; color: #1A1206; border-radius: 7px; font-size: 12px; font-weight: 600; cursor: pointer">Верно</button>
+                      <button style="height: 28px; padding: 0 8px; border: 1px solid #3A3632; background: transparent; color: #D9D3C9; border-radius: 7px; font-size: 12px; cursor: pointer">Нет</button>
+                    </div>
+                  </sc-if>
+                  <sc-if value="{{s.notAi}}" hint-placeholder-val="{{ true }}">
+                    <span style="font-size: 13px; color: #8A847B">{{s.by}}</span>
+                  </sc-if>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ЗАГРУЗКА -->
+        <sc-if value="{{isDownload}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 20px; max-width: 820px">
+            <h2 style="margin: 0; font-size: 24px; font-weight: 600">Загрузка и папки</h2>
+            <section style="padding: 22px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 16px">
+              <div style="display: flex; align-items: center; gap: 10px"><span style="width: 8px; height: 8px; border-radius: 4px; background: #7FB2FF"></span><span style="font-size: 16px; font-weight: 600; flex-grow: 1">qBittorrent</span><span style="font-size: 13px; color: #A39C92">подключён · v5</span></div>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #A39C92">Адрес<input value="http://nas.local:8080" style="height: 42px; padding: 0 12px; background: #242220; border: 1px solid #34302C; border-radius: 10px; color: #F3EFE8; font-family: 'JetBrains Mono', monospace; font-size: 13px"></label>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #A39C92">Категория в qBittorrent<input value="dublyarr" style="height: 42px; padding: 0 12px; background: #242220; border: 1px solid #34302C; border-radius: 10px; color: #F3EFE8; font-family: 'JetBrains Mono', monospace; font-size: 13px"></label>
+              </div>
+            </section>
+            <section style="padding: 22px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+              <span style="font-size: 16px; font-weight: 600">Папки</span>
+              <sc-for list="{{folders}}" as="f" hint-placeholder-count="3">
+                <label style="display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 14px; align-items: center; font-size: 14px; color: #D9D3C9">{{f.k}}<input value="{{f.v}}" style="height: 42px; padding: 0 12px; background: #242220; border: 1px solid #34302C; border-radius: 10px; color: #F3EFE8; font-family: 'JetBrains Mono', monospace; font-size: 13px"></label>
+              </sc-for>
+              <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #A39C92; padding-top: 6px">Имя файла<input value="{Название} ({Год})/Season {С}/{Название} S{С}E{Е} [{Студия} {Качество}]" style="height: 42px; padding: 0 12px; background: #242220; border: 1px solid #34302C; border-radius: 10px; color: #F3EFE8; font-family: 'JetBrains Mono', monospace; font-size: 13px"></label>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #8A847B">→ Criminal Record (2024)/Season 02/Criminal Record S02E04 [HDrezka 1080p].mkv</span>
+            </section>
+            <section style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+              <span style="font-size: 16px; font-weight: 600">Как качается серия</span>
+              <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px">
+                <sc-for list="{{steps}}" as="st" hint-placeholder-count="3">
+                  <div style="padding: 14px; border-radius: 12px; background: #242220; display: flex; flex-direction: column; gap: 6px">
+                    <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600"><span style="width: 22px; height: 22px; border-radius: 11px; background: #F0A442; color: #1A1206; font-family: 'JetBrains Mono', monospace; font-size: 12px; display: flex; align-items: center; justify-content: center">{{st.n}}</span>{{st.title}}</span>
+                    <span style="font-size: 13px; line-height: 1.45; color: #A39C92">{{st.sub}}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer"><input type="checkbox" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">Режим «весь сезон после финала» по умолчанию для новых подписок</span><span style="font-size: 13px; color: #8A847B">Можно включить у отдельного сериала в его карточке</span></span></label>
+            </section>
+            <section style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 16px; font-weight: 600">Уборка в qBittorrent</span><span style="font-size: 13px; color: #8A847B">за неделю убрано 14 торрентов · 38 ГБ</span></div>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #D9D3C9"><span>Убирать торрент</span><div style="display: flex; gap: 4px; padding: 4px; background: #242220; border-radius: 10px"><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">сразу после импорта</button><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: #F3EFE8; color: #121110; font-size: 13px; font-weight: 600">после раздачи</button><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">никогда</button></div></div>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #D9D3C9"><span>Раздавать</span><span style="display: flex; align-items: center; gap: 10px"><span style="display: inline-flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; overflow: hidden"><button aria-label="Меньше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">−</button><span style="min-width: 44px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px">3 дн</span><button aria-label="Больше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">+</button></span> или до рейтинга <span style="display: inline-flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; overflow: hidden"><button aria-label="Меньше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">−</button><span style="min-width: 44px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px">1,0</span><button aria-label="Больше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">+</button></span></span></div>
+              <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer"><input type="checkbox" checked="{{ true }}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">Удалять файлы из папки загрузок вместе с торрентом</span><span style="font-size: 13px; color: #8A847B">В библиотеке лежит своя пересобранная копия</span></span></label>
+              <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer"><input type="checkbox" checked="{{ true }}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">Убирать зависшие и заменённые раздачи</span><span style="font-size: 13px; color: #8A847B">Нет сидов больше суток или серию уже скачали из другой раздачи</span></span></label>
+              <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer"><input type="checkbox" checked="{{ true }}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">Чистить брошенные файлы в папке загрузок</span><span style="font-size: 13px; color: #8A847B">Остатки, которые не принадлежат ни одному торренту</span></span></label>
+            </section>
+          </div>
+        </sc-if>
+
+        <!-- РАСПИСАНИЕ -->
+        <sc-if value="{{isSchedule}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 20px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <h2 style="margin: 0; font-size: 24px; font-weight: 600">Расписание</h2>
+              <p style="margin: 0; font-size: 14px; color: #A39C92">Когда искать новые серии и когда качать.</p>
+            </div>
+            <section style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 16px; font-weight: 600">Как часто искать</span><span style="font-size: 13px; color: #8A847B">следующая проверка в 20:00</span></div>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #D9D3C9"><span>Проверять трекеры</span><div style="display: flex; gap: 4px; padding: 4px; background: #242220; border-radius: 10px"><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">каждые 15 мин</button><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">раз в час</button><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: #F3EFE8; color: #121110; font-size: 13px; font-weight: 600">раз в 2 часа</button><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">раз в 6 часов</button><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">только ночью</button></div></div>
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #D9D3C9"><span>Ночное окно</span><span style="display: flex; align-items: center; gap: 8px"><span style="height: 32px; padding: 0 12px; display: flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; font-family: 'JetBrains Mono', monospace; font-size: 13px">01:00</span>—<span style="height: 32px; padding: 0 12px; display: flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; font-family: 'JetBrains Mono', monospace; font-size: 13px">07:00</span></span></div>
+              <div style="height: 1px; background: #2A2724"></div>
+              <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer"><input type="checkbox" checked="{{ true }}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">Чаще, когда ждём серию</span><span style="font-size: 13px; color: #8A847B">В день прогноза озвучки — каждые 30 минут, пока серия не найдётся. Сейчас так ждут 3 сериала</span></span></label>
+              <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer"><input type="checkbox" checked="{{ true }}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">Проверять обновления паков чаще основного поиска</span><span style="font-size: 13px; color: #8A847B">Проверка хэша знакомой раздачи почти не нагружает трекер — раз в 30 минут</span></span></label>
+            </section>
+            <section style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px">
+                <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 16px; font-weight: 600">Расписание скорости</span><span style="font-size: 13px; color: #A39C92">Сейчас: ограничено до 5 МБ/с · полная скорость с 00:00</span></div>
+                <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: #D9D3C9">Ограничение <span style="display: inline-flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; overflow: hidden"><button aria-label="Меньше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">−</button><span style="min-width: 44px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px">5 МБ/с</span><button aria-label="Больше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">+</button></span></div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 3px">
+                <div style="display: grid; grid-template-columns: 28px repeat(24, minmax(0, 1fr)); gap: 3px; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #8A847B">
+                  <span></span>
+                  <sc-for list="{{hours}}" as="hr" hint-placeholder-count="24"><span style="text-align: center">{{hr}}</span></sc-for>
+                </div>
+                <sc-for list="{{speedRows}}" as="r" hint-placeholder-count="7">
+                  <div style="display: grid; grid-template-columns: 28px repeat(24, minmax(0, 1fr)); gap: 3px; align-items: center">
+                    <span style="font-size: 12px; color: #A39C92">{{r.day}}</span>
+                    <sc-for list="{{r.cells}}" as="c" hint-placeholder-count="24"><span style="height: 22px; border-radius: 4px; background: {{c}}"></span></sc-for>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="display: flex; gap: 20px; font-size: 13px; color: #B5AEA4">
+                <span style="display: flex; align-items: center; gap: 8px"><span style="width: 12px; height: 12px; border-radius: 3px; background: #D9D3C9"></span>Полная скорость</span>
+                <span style="display: flex; align-items: center; gap: 8px"><span style="width: 12px; height: 12px; border-radius: 3px; background: #F0A442"></span>Ограничено</span>
+                <span style="display: flex; align-items: center; gap: 8px"><span style="width: 12px; height: 12px; border-radius: 3px; background: #2E2B28"></span>Пауза</span>
+                <span style="flex-grow: 1"></span>
+                <span style="color: #8A847B">Проведи по ячейкам, чтобы поменять</span>
+              </div>
+            </section>
+          </div>
+        </sc-if>
+
+        <!-- ОБРАБОТКА ФАЙЛОВ -->
+        <sc-if value="{{isFiles}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 20px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <h2 style="margin: 0; font-size: 24px; font-weight: 600">Обработка файлов</h2>
+              <p style="margin: 0; font-size: 14px; color: #A39C92">После скачивания Dublyarr пересобирает mkv без перекодирования: меняет только набор и порядок дорожек. Качество не страдает, занимает секунды.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+              <section style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+                <span style="font-size: 16px; font-weight: 600">Звуковые дорожки</span>
+                <label style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: #D9D3C9; cursor: pointer"><input type="radio" name="audio" checked="{{ true }}" style="width: 18px; height: 18px; margin: 0; accent-color: #F0A442">Озвучка из подписки + оригинал</label>
+                <label style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: #D9D3C9; cursor: pointer"><input type="radio" name="audio" style="width: 18px; height: 18px; margin: 0; accent-color: #F0A442">Только озвучка из подписки</label>
+                <label style="display: flex; align-items: center; gap: 12px; font-size: 14px; color: #D9D3C9; cursor: pointer"><input type="radio" name="audio" style="width: 18px; height: 18px; margin: 0; accent-color: #F0A442">Ничего не удалять</label>
+                <div style="height: 1px; background: #2A2724"></div>
+                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer"><input type="checkbox" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">Оставлять запасные озвучки из профиля</span></span></label>
+                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer"><input type="checkbox" checked="{{ true }}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">Вшивать внешние дорожки (.mka, .srt) из раздачи</span></span></label>
+              </section>
+              <section style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+                <span style="font-size: 16px; font-weight: 600">По умолчанию в плеере</span>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #D9D3C9"><span>Основная дорожка</span><span style="color: #F3EFE8">озвучка из подписки</span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #D9D3C9"><span>Субтитры включены</span><div style="display: flex; gap: 4px; padding: 4px; background: #242220; border-radius: 10px"><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">нет</button><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: #F3EFE8; color: #121110; font-size: 13px; font-weight: 600">форсированные</button><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">полные</button></div></div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #D9D3C9"><span>Оставлять субтитры</span><span style="color: #F3EFE8">русские, английские</span></div>
+                <span style="font-size: 13px; line-height: 1.45; color: #8A847B">VidHub сразу включит нужную озвучку и форсированные субтитры к надписям на экране — переключать ничего не придётся.</span>
+              </section>
+            </div>
+            <section style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 16px; font-weight: 600">Пример · Криминальное прошлое S02E04</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #B5AEA4">2,4 ГБ → <span style="color: #F0A442">2,0 ГБ</span></span></div>
+              <div style="display: grid; grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr); gap: 12px; align-items: start">
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8A847B">В раздаче</span>
+                  <sc-for list="{{tracksBefore}}" as="t" hint-placeholder-count="9">
+                    <div style="display: flex; align-items: center; gap: 10px; height: 30px; padding: 0 10px; border-radius: 7px; background: #242220; font-size: 13px; opacity: {{t.op}}">
+                      <span style="width: 64px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8A847B">{{t.kind}}</span><span style="flex-grow: 1; text-decoration: {{t.strike}}">{{t.name}}</span>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="align-self: center; display: flex; justify-content: center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F0A442" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></div>
+                <div style="display: flex; flex-direction: column; gap: 6px">
+                  <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8A847B">В библиотеке</span>
+                  <sc-for list="{{tracksAfter}}" as="t" hint-placeholder-count="5">
+                    <div style="display: flex; align-items: center; gap: 10px; height: 30px; padding: 0 10px; border-radius: 7px; background: #242220; font-size: 13px">
+                      <span style="width: 64px; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #8A847B">{{t.kind}}</span><span style="flex-grow: 1">{{t.name}}</span><span style="font-size: 11px; font-weight: 600; color: #F0A442">{{t.flag}}</span>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+              <span style="font-size: 13px; line-height: 1.45; color: #8A847B">Пока торрент раздаётся, исходный файл лежит в папке загрузок. Когда раздача закончится, он удаляется. Если позже выйдет озвучка выше по приоритету, файл пересоберётся заново.</span>
+            </section>
+          </div>
+        </sc-if>
+
+        <!-- ФИЛЬМЫ -->
+        <sc-if value="{{isMovies}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 20px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <h2 style="margin: 0; font-size: 24px; font-weight: 600">Фильмы</h2>
+              <p style="margin: 0; font-size: 14px; color: #A39C92">У фильмов нет серий и студий-сериальщиков: важнее, какой это релиз и какой перевод.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+              <section style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+                <span style="font-size: 16px; font-weight: 600">Какие релизы брать</span>
+                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer"><input type="checkbox" checked="{{ true }}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">Не качать экранки</span><span style="font-size: 13px; color: #8A847B">CAMRip, TS, TC и прочие записи из кинотеатра</span></span></label>
+                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer"><input type="checkbox" checked="{{ true }}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">Ждать цифровой релиз</span><span style="font-size: 13px; color: #8A847B">WEB-DL или BDRip — раньше ничего не скачается</span></span></label>
+                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer"><input type="checkbox" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">Улучшить до BDRemux, когда выйдет</span><span style="font-size: 13px; color: #8A847B">Старая копия удалится по правилам хранения</span></span></label>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #D9D3C9"><span>Максимальный размер</span><span style="display: inline-flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; overflow: hidden"><button aria-label="Меньше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">−</button><span style="min-width: 44px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px">30 ГБ</span><button aria-label="Больше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">+</button></span></div>
+              </section>
+              <section style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+                <span style="font-size: 16px; font-weight: 600">Перевод</span>
+                <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px">
+                  <span style="height: 30px; padding: 0 10px; display: flex; align-items: center; gap: 6px; border-radius: 8px; background: #242220; font-size: 13px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #F0A442">1</span>Дубляж</span>
+                  <span style="height: 30px; padding: 0 10px; display: flex; align-items: center; gap: 6px; border-radius: 8px; background: #242220; font-size: 13px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #F0A442">2</span>Многоголосый</span>
+                  <span style="height: 30px; padding: 0 10px; display: flex; align-items: center; gap: 6px; border-radius: 8px; background: #242220; font-size: 13px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #F0A442">3</span>Оригинал + субтитры</span>
+                </div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #D9D3C9"><span>Ждать дубляж после цифрового релиза</span><span style="display: inline-flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; overflow: hidden"><button aria-label="Меньше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">−</button><span style="min-width: 44px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px">14 дн</span><button aria-label="Больше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">+</button></span></div>
+                <label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer"><input type="checkbox" checked="{{ true }}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 3px"><span style="font-size: 14px; color: #D9D3C9">Заменить на дубляж, когда выйдет</span></span></label>
+              </section>
+            </div>
+            <section style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; align-items: baseline; justify-content: space-between"><span style="font-size: 16px; font-weight: 600">Как это выглядит · Миссия: Красный</span><span style="font-size: 13px; color: #F0A442">ждём дубляж ещё 8 дней</span></div>
+              <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px">
+                <sc-for list="{{movieSteps}}" as="m" hint-placeholder-count="4">
+                  <div style="padding: 14px; border-radius: 12px; border: {{m.border}}; background: {{m.bg}}; display: flex; flex-direction: column; gap: 6px">
+                    <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: {{m.c}}">{{m.state}}</span>
+                    <span style="font-size: 14px; font-weight: 500">{{m.title}}</span>
+                    <span style="font-size: 12px; color: #8A847B">{{m.sub}}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </section>
+          </div>
+        </sc-if>
+
+        <!-- ХРАНЕНИЕ -->
+        <sc-if value="{{isStorage}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 20px">
+            <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 20px">
+              <div style="display: flex; flex-direction: column; gap: 6px">
+                <h2 style="margin: 0; font-size: 24px; font-weight: 600">Правила хранения</h2>
+                <p style="margin: 0; font-size: 14px; color: #A39C92">Что Dublyarr удаляет сам. Правила срабатывают во время уборки, а не сразу.</p>
+              </div>
+              <a href="Storage.dc.html" style="height: 40px; padding: 0 14px; display: flex; align-items: center; border: 1px solid #3A3632; border-radius: 10px; color: #F3EFE8; font-size: 14px; text-decoration: none; white-space: nowrap">Открыть хранилище</a>
+            </div>
+
+            <section style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px; flex-direction: row; align-items: center; gap: 24px">
+              <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px">
+                <span style="font-size: 16px; font-weight: 600">Уборка</span>
+                <span style="font-size: 13px; color: #A39C92">Следующая: вс, 4 октября, 04:00 · освободит <span style="color: #F0A442">742 ГБ</span></span>
+              </div>
+              <div style="display: flex; gap: 4px; padding: 4px; background: #242220; border-radius: 10px">
+                <button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">каждый день</button>
+                <button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: #F3EFE8; color: #121110; font-size: 13px; font-weight: 600">раз в неделю</button>
+                <button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">вручную</button>
+              </div>
+              <button style="height: 40px; padding: 0 14px; background: transparent; color: #F3EFE8; border: 1px solid #3A3632; border-radius: 10px; font-size: 14px; cursor: pointer; white-space: nowrap">Запустить сейчас</button>
+            </section>
+
+            <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px">
+              <article style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer"><input type="checkbox" checked="{{ true }}" style="width: 20px; height: 20px; margin: 0; accent-color: #F0A442; flex-shrink: 0"><span style="font-size: 16px; font-weight: 600">Сезоны: последний + выходящий</span></label>
+                <span style="font-size: 13px; line-height: 1.45; color: #8A847B">Когда выходящий сезон скачан целиком в нужной озвучке, предыдущий удаляется.</span>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #D9D3C9"><span>Хранить вышедших сезонов</span><span style="display: inline-flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; overflow: hidden"><button aria-label="Меньше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">−</button><span style="min-width: 40px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px">1</span><button aria-label="Больше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">+</button></span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #D9D3C9"><span>Завершённые сериалы</span><div style="display: flex; gap: 4px; padding: 4px; background: #242220; border-radius: 10px"><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: #F3EFE8; color: #121110; font-size: 13px; font-weight: 600">не трогать</button><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">тоже чистить</button></div></div>
+                <div style="padding-top: 12px; border-top: 1px solid #2A2724; font-size: 13px; color: #F0A442">Затронет в эту уборку: 3 сериала · 700 ГБ</div>
+              </article>
+
+              <article style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer"><input type="checkbox" checked="{{ true }}" style="width: 20px; height: 20px; margin: 0; accent-color: #F0A442; flex-shrink: 0"><span style="font-size: 16px; font-weight: 600">Старая копия после улучшения</span></label>
+                <span style="font-size: 13px; line-height: 1.45; color: #8A847B">Серия скачалась заново в лучшем качестве или в озвучке выше по приоритету — старый файл удаляется.</span>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #D9D3C9"><span>Удалять старую копию</span><div style="display: flex; gap: 4px; padding: 4px; background: #242220; border-radius: 10px"><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: #F3EFE8; color: #121110; font-size: 13px; font-weight: 600">сразу</button><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">через 3 дня</button><button style="height: 32px; padding: 0 12px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">при уборке</button></div></div>
+                <div style="padding-top: 12px; border-top: 1px solid #2A2724; font-size: 13px; color: #F0A442">Затронет: «Рик и Морти» · 42 ГБ</div>
+              </article>
+
+              <article style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer"><input type="checkbox" style="width: 20px; height: 20px; margin: 0; accent-color: #F0A442; flex-shrink: 0"><span style="font-size: 16px; font-weight: 600">Удалять через N дней после скачивания</span></label>
+                <span style="font-size: 13px; line-height: 1.45; color: #8A847B">Для сериалов «посмотреть и забыть». Включается у конкретных сериалов в их карточке.</span>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #D9D3C9"><span>Срок</span><span style="display: inline-flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; overflow: hidden"><button aria-label="Меньше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">−</button><span style="min-width: 40px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px">30 дн</span><button aria-label="Больше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">+</button></span></div>
+                <div style="padding-top: 12px; border-top: 1px solid #2A2724; font-size: 13px; color: #6E6962">Выключено</div>
+              </article>
+
+              <article style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+                <label style="display: flex; align-items: center; gap: 12px; cursor: pointer"><input type="checkbox" checked="{{ true }}" style="width: 20px; height: 20px; margin: 0; accent-color: #F0A442; flex-shrink: 0"><span style="font-size: 16px; font-weight: 600">Защита от переполнения</span></label>
+                <span style="font-size: 13px; line-height: 1.45; color: #8A847B">Сначала предупредить в Telegram, потом поставить новые загрузки на паузу.</span>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #D9D3C9"><span>Предупредить при</span><span style="display: inline-flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; overflow: hidden"><button aria-label="Меньше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">−</button><span style="min-width: 40px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px">90%</span><button aria-label="Больше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">+</button></span></div>
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 14px; color: #D9D3C9"><span>Пауза загрузок при</span><span style="display: inline-flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; overflow: hidden"><button aria-label="Меньше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">−</button><span style="min-width: 40px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px">97%</span><button aria-label="Больше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px; cursor: pointer">+</button></span></div>
+                <div style="padding-top: 12px; border-top: 1px solid #2A2724; font-size: 13px; color: #8A847B">Сейчас занято 78%</div>
+              </article>
+            </div>
+
+            <section style="padding: 20px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+              <div style="display: flex; align-items: center; justify-content: space-between">
+                <span style="font-size: 16px; font-weight: 600">Исключения</span>
+                <button style="height: 36px; padding: 0 12px; background: transparent; color: #F3EFE8; border: 1px solid #3A3632; border-radius: 9px; font-size: 13px; cursor: pointer">+ Сериал</button>
+              </div>
+              <sc-for list="{{exceptions}}" as="x" hint-placeholder-count="2">
+                <div style="display: flex; align-items: center; gap: 14px; padding-top: 12px; border-top: 1px solid #2A2724">
+                  <span style="width: 26px; height: 39px; flex-shrink: 0; border-radius: 5px; background: {{x.color}}"></span>
+                  <span style="flex-grow: 1; font-size: 14px; font-weight: 500">{{x.title}}</span>
+                  <span style="font-size: 13px; color: #B5AEA4">{{x.rule}}</span>
+                  <button aria-label="Убрать исключение" style="width: 32px; height: 32px; border: 0; background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A847B" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+                </div>
+              </sc-for>
+            </section>
+          </div>
+        </sc-if>
+
+        <!-- УВЕДОМЛЕНИЯ -->
+        <sc-if value="{{isNotify}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 20px; max-width: 820px">
+            <h2 style="margin: 0; font-size: 24px; font-weight: 600">Уведомления</h2>
+            <section style="padding: 22px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+              <span style="font-size: 16px; font-weight: 600">Telegram-бот</span>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px">
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #A39C92">Токен бота<input type="password" value="000000000000" style="height: 42px; padding: 0 12px; background: #242220; border: 1px solid #34302C; border-radius: 10px; color: #F3EFE8; font-size: 13px"></label>
+                <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: #A39C92">Chat ID<input value="[CHAT ID]" style="height: 42px; padding: 0 12px; background: #242220; border: 1px solid #34302C; border-radius: 10px; color: #F3EFE8; font-family: 'JetBrains Mono', monospace; font-size: 13px"></label>
+              </div>
+              <button style="align-self: flex-start; height: 36px; padding: 0 14px; background: transparent; color: #F3EFE8; border: 1px solid #3A3632; border-radius: 9px; font-size: 13px; cursor: pointer">Отправить тестовое</button>
+            </section>
+            <section style="padding: 8px 22px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column">
+              <sc-for list="{{events}}" as="e" hint-placeholder-count="5">
+                <label style="display: flex; align-items: center; gap: 14px; padding: 14px 0; border-bottom: 1px solid #242220; font-size: 15px; cursor: pointer">
+                  <input type="checkbox" checked="{{e.on}}" style="width: 18px; height: 18px; margin: 0; accent-color: #F0A442">{{e.t}}
+                </label>
+              </sc-for>
+            </section>
+          </div>
+        </sc-if>
+
+        <!-- AI -->
+        <sc-if value="{{isAi}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 20px; max-width: 820px">
+            <div style="display: flex; flex-direction: column; gap: 6px">
+              <h2 style="margin: 0; font-size: 24px; font-weight: 600">AI · Laya</h2>
+              <p style="margin: 0; font-size: 14px; color: #A39C92">Локальная модель решений: выбирает из вариантов и отвечает «да/нет» с уверенностью. Текст не пишет, поэтому ничего не выдумывает.</p>
+            </div>
+            <section style="padding: 22px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; align-items: center; gap: 16px">
+              <span style="width: 10px; height: 10px; border-radius: 5px; background: #D9D3C9; flex-shrink: 0"></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 15px; font-weight: 600">Laya работает внутри Dublyarr</span><span style="font-size: 13px; color: #8A847B">Модель загружена · последний ответ 0,4 с</span></span>
+              <button style="height: 40px; padding: 0 16px; background: transparent; color: #F3EFE8; border: 1px solid #3A3632; border-radius: 10px; font-size: 14px; cursor: pointer; white-space: nowrap">Проверить</button>
+            </section>
+            <section style="padding: 22px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; align-items: center; gap: 20px">
+              <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 15px; font-weight: 600">Дообучение</span><span style="font-size: 13px; line-height: 1.45; color: #8A847B">Каждое «Верно» или «Нет» в словаре и в «Активности» — пример для дообучения. Накоплено 214, с прошлого раза +38.</span></span>
+              <a href="AiTraining.dc.html" style="height: 40px; padding: 0 16px; display: flex; align-items: center; box-sizing: border-box; background: transparent; color: #F3EFE8; border: 1px solid #3A3632; border-radius: 10px; font-size: 14px; text-decoration: none; white-space: nowrap">Дообучение</a>
+            </section>
+            <section style="padding: 8px 22px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column">
+              <sc-for list="{{aiTasks}}" as="a" hint-placeholder-count="4">
+                <label style="display: flex; align-items: flex-start; gap: 14px; padding: 14px 0; border-bottom: 1px solid #242220; cursor: pointer">
+                  <input type="checkbox" checked="{{a.on}}" style="width: 18px; height: 18px; margin: 2px 0 0; accent-color: #F0A442; flex-shrink: 0">
+                  <span style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 15px; font-weight: 500">{{a.title}}</span><span style="font-size: 13px; color: #8A847B">{{a.sub}}</span></span>
+                </label>
+              </sc-for>
+            </section>
+            <section style="padding: 22px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; align-items: center; gap: 16px">
+              <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 15px; font-weight: 500">Принимать решение AI без меня, если уверенность выше</span><span style="font-size: 13px; color: #8A847B">Ниже порога — раздача ждёт подтверждения в «Активности»</span></span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 18px; color: #F0A442">85%</span>
+            </section>
+          </div>
+        </sc-if>
+
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"section":{"editor":"enum","options":["sources","studios","download","schedule","files","movies","storage","notify","ai"],"default":"sources"},"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { section: null }; }
+  renderVals() {
+    const cur = this.state.section ?? this.props.section ?? 'sources';
+    const defs = [
+      { id: 'sources', label: 'Источники', note: '3' },
+      { id: 'studios', label: 'Подписки и студии', note: '1 новая', warn: true },
+      { id: 'download', label: 'Загрузка и папки', note: '' },
+      { id: 'schedule', label: 'Расписание', note: '' },
+      { id: 'files', label: 'Обработка файлов', note: '' },
+      { id: 'movies', label: 'Фильмы', note: '' },
+      { id: 'storage', label: 'Хранение', note: '' },
+      { id: 'notify', label: 'Уведомления', note: '' },
+      { id: 'ai', label: 'AI', note: '' }
+    ];
+    const sections = defs.map((d) => {
+      const on = d.id === cur;
+      return { ...d, bg: on ? '#2A2622' : 'transparent', fg: on ? '#F3EFE8' : '#B5AEA4', noteC: d.warn ? '#F0A442' : '#8A847B', pick: () => this.setState({ section: d.id }) };
+    });
+    const sources = [
+      { name: 'NAS · дома', url: 'http://nas.local:9117', count: '5 трекеров', ping: '120 мс', state: 'Все отвечают', stateC: '#8A847B', dot: '#6E6962', border: '#2E2B28' },
+      { name: 'VPS · Амстердам', url: 'https://[VPS-NL]:9117', count: '6 трекеров', ping: '340 мс', state: 'RuTracker не отвечает с 14:20', stateC: '#F0A442', dot: '#F0A442', border: '#4A3A24' },
+      { name: 'VPS · Россия', url: 'https://[VPS-RU]:9117', count: '4 трекера', ping: '180 мс', state: 'Все отвечают', stateC: '#8A847B', dot: '#6E6962', border: '#2E2B28' }
+    ];
+    const ok = '#8A847B';
+    const trackers = [
+      { name: 'LostFilm', kind: 'сериалы', main: 'VPS · Россия', backup: 'NAS · дома', status: 'ок', c: ok },
+      { name: 'RuTracker', kind: 'всё', main: 'VPS · Амстердам', backup: '—', status: 'не отвечает', c: '#FF8A7A' },
+      { name: 'Kinozal', kind: 'всё', main: 'NAS · дома', backup: 'VPS · Амстердам', status: 'ок', c: ok },
+      { name: 'RuTor', kind: 'всё', main: 'VPS · Амстердам', backup: 'NAS · дома', status: 'ок', c: ok },
+      { name: 'NNM-Club', kind: 'всё', main: 'VPS · Амстердам', backup: '—', status: 'ок', c: ok },
+      { name: 'AniLibria', kind: 'аниме', main: 'VPS · Россия', backup: '—', status: 'ок', c: ok },
+      { name: 'AniDub', kind: 'аниме', main: 'NAS · дома', backup: 'VPS · Россия', status: 'ок', c: ok },
+      { name: 'HDrezka', kind: 'сериалы', main: 'VPS · Амстердам', backup: 'VPS · Россия', status: 'медленно · 4 с', c: '#F0A442' }
+    ];
+    const profiles = [
+      { name: 'Сериалы', q: '1080p → 2160p', chain: [{ n: '1', name: 'LostFilm' }, { n: '2', name: 'HDrezka' }, { n: '3', name: 'Любая' }], rule: 'Запасная озвучка через 2 дня, замена при выходе приоритетной' },
+      { name: 'Аниме', q: '1080p', chain: [{ n: '1', name: 'AniLibria' }, { n: '2', name: 'AniDub' }, { n: '3', name: 'Субтитры' }], rule: 'Запасная через 1 день, сквозная нумерация серий' }
+    ];
+    const studios = [
+      { name: 'LostFilm', aliases: 'LostFilm, LF, Лостфильм', kind: 'сериалы', tracker: 'LostFilm', by: 'вручную' },
+      { name: 'HDrezka', aliases: 'HDrezka, HDrezka Studio, Rezka', kind: 'сериалы', tracker: '—', by: 'вручную' },
+      { name: 'Кубик в Кубе', aliases: 'Кубик в Кубе, KvK', kind: 'сериалы', tracker: '—', by: 'вручную' },
+      { name: 'Jaskier', aliases: 'Jaskier, Jaskier Studio', kind: 'сериалы, аниме', tracker: '—', by: 'AI · подтверждено' },
+      { name: 'AniLibria', aliases: 'AniLibria, AniLiberty, Anilibria.TV', kind: 'аниме', tracker: 'AniLibria', by: 'вручную' },
+      { name: 'AniDub', aliases: 'AniDub, Anidub Online', kind: 'аниме', tracker: 'AniDub', by: 'вручную' },
+      { name: 'Paravozik', aliases: 'Paravozik, Паравозик', kind: 'сериалы', tracker: '—', ai: true }
+    ].map((s) => ({ ...s, isAi: !!s.ai, notAi: !s.ai, rowBg: s.ai ? '#1F1C18' : 'transparent' }));
+    const folders = [
+      { k: 'Сериалы', v: '/volume1/media/series' },
+      { k: 'Аниме', v: '/volume1/media/anime' },
+      { k: 'Фильмы', v: '/volume1/media/movies' }
+    ];
+    const retention = [
+      { on: true, title: 'Удалять старую копию после улучшения', sub: 'Когда 1080p заменился на 2160p или вышла приоритетная озвучка' },
+      { on: true, title: 'Хранить последний сезон и тот, что выходит', sub: 'Когда выходящий сезон скачан целиком в нужной озвучке, предыдущий удаляется. Исключения задаются в карточке сериала' },
+      { on: false, title: 'Удалять через N дней после скачивания', sub: 'Для сериалов с пометкой «посмотреть и забыть»' },
+      { on: true, title: 'Предупреждать, когда диск заполнен на 90%', sub: 'И ставить новые загрузки на паузу при 97%' }
+    ];
+    const exceptions = [
+      { title: 'Симпсоны', rule: 'хранить все сезоны', color: '#4A4222' },
+      { title: 'Devil May Cry', rule: 'хранить все сезоны', color: '#4A2A22' }
+    ];
+    const hours = Array.from({ length: 24 }, (_, i) => (i % 3 === 0 ? String(i).padStart(2, '0') : ''));
+    const F = '#D9D3C9', L = '#F0A442', P = '#2E2B28';
+    const wk = (i) => (i < 8 ? F : i < 9 ? L : i < 19 ? P : L);
+    const we = (i) => (i < 10 ? F : L);
+    const speedRows = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'].map((day, d) => ({
+      day, cells: Array.from({ length: 24 }, (_, i) => (d < 5 ? wk(i) : we(i)))
+    }));
+    const tracksBefore = [
+      { kind: 'видео', name: 'HEVC 1080p' },
+      { kind: 'аудио 1', name: 'English · оригинал 5.1' },
+      { kind: 'аудио 2', name: 'HDrezka 5.1' },
+      { kind: 'аудио 3', name: 'LostFilm 2.0', drop: true },
+      { kind: 'аудио 4', name: 'TVShows 2.0', drop: true },
+      { kind: 'аудио 5', name: 'Кубик в Кубе 2.0', drop: true },
+      { kind: 'субт.', name: 'Русские · форсированные' },
+      { kind: 'субт.', name: 'Русские · полные' },
+      { kind: 'субт.', name: 'Украинские', drop: true }
+    ].map((t) => ({ ...t, op: t.drop ? '0.45' : '1', strike: t.drop ? 'line-through' : 'none' }));
+    const tracksAfter = [
+      { kind: 'видео', name: 'HEVC 1080p', flag: '' },
+      { kind: 'аудио 1', name: 'HDrezka 5.1', flag: 'по умолч.' },
+      { kind: 'аудио 2', name: 'English · оригинал 5.1', flag: '' },
+      { kind: 'субт.', name: 'Русские · форсированные', flag: 'по умолч.' },
+      { kind: 'субт.', name: 'Русские · полные', flag: '' }
+    ];
+    const movieSteps = [
+      { state: 'пропущено', title: 'Экранки', sub: '5 раздач CAMRip и TS', border: '1px solid #2E2B28', bg: 'transparent', c: '#8A847B' },
+      { state: 'скачано', title: 'WEB-DL · многоголосый', sub: 'найден 6 дней назад · 14 ГБ', border: '1px solid #2E2B28', bg: '#242220', c: '#D9D3C9' },
+      { state: 'ждём', title: 'Дубляж', sub: 'обычно через 1–3 недели', border: '1.5px dashed #F0A442', bg: 'transparent', c: '#F0A442' },
+      { state: 'потом', title: 'Замена файла', sub: 'многоголосый удалится', border: '1px solid #2E2B28', bg: 'transparent', c: '#8A847B' }
+    ];
+    const steps = [
+      { n: '1', title: 'Текущая раздача', sub: 'Если сезон уже качался из пака — проверяю, не обновился ли он, и беру новую серию оттуда' },
+      { n: '2', title: 'Отдельная серия', sub: 'Ищу раздачу только этой серии в нужной озвучке и качестве' },
+      { n: '3', title: 'Пак сезона', sub: 'Добавляю на паузе, оставляю галочку только на нужной серии и запускаю' }
+    ];
+    const events = [
+      { on: true, t: 'Скачана новая серия' },
+      { on: true, t: 'Загрузка застряла или раздача пропала' },
+      { on: true, t: 'Нужно подтверждение: сомнительная раздача или новая студия' },
+      { on: false, t: 'Вышел оригинал, озвучки пока нет' },
+      { on: true, t: 'Источник или трекер не отвечает больше часа' }
+    ];
+    const aiTasks = [
+      { on: true, title: 'Разбирать нераспознанные раздачи', sub: 'Новая студия, странный формат заголовка, паки серий — результат уходит в словарь' },
+      { on: true, title: 'Проверять, тот ли это сериал', sub: 'Когда название похоже, но год или состав не совпадают' },
+      { on: true, title: 'Сопоставлять нумерацию аниме', sub: 'Сквозная серия 27 → сезон 2, серия 3 по TMDB' }
+    ];
+    return {
+      sections, sources, trackers, profiles, studios, folders, retention, exceptions, events, aiTasks, steps, isSchedule: cur === 'schedule', hours, speedRows, tracksBefore, tracksAfter, movieSteps, isFiles: cur === 'files', isMovies: cur === 'movies',
+      isSources: cur === 'sources', isStudios: cur === 'studios', isDownload: cur === 'download',
+      isStorage: cur === 'storage', isNotify: cur === 'notify', isAi: cur === 'ai'
+    };
+  }
+}
+</script>
+</body>
+</html>

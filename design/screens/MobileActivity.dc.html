@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — Загрузки (телефон)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#121110}
+a{color:#F0A442}a:hover{color:#FFC577}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1000px; background: #121110; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif; overflow: hidden">
+  <div style="padding: 24px 20px 110px; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; color: #A39C92">↓ 18,1 МБ/с · ограничено до 00:00</span><h1 style="margin: 0; font-family: Unbounded, 'Segoe UI', sans-serif; font-weight: 600; font-size: 30px; letter-spacing: -0.02em">Загрузки</h1></div>
+      
+    </div>
+    <div style="display: flex; gap: 4px; padding: 4px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 12px"><button style="flex-grow: 1; height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: #2A2622; color: #F3EFE8; font-size: 13px; font-weight: 500">Очередь · 3</button><button style="flex-grow: 1; height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #A39C92; font-size: 13px">История</button><button style="flex-grow: 1; height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #A39C92; font-size: 13px">Пропущено</button></div>
+    <section style="padding: 16px; background: #1F1916; border: 1px solid #4A2F28; border-radius: 16px; display: flex; flex-direction: column; gap: 12px">
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #FF8A7A">Требует внимания</span>
+      <span style="font-size: 14px; line-height: 1.45"><b style="font-weight: 600">Криминальное прошлое S02E03</b> — у раздачи HDrezka нет сидов 6 часов. Серия есть у LostFilm.</span>
+      <div style="display: flex; gap: 8px">
+        <button style="flex-grow: 1; height: 40px; border: 0; border-radius: 10px; background: #F0A442; color: #1A1206; font-size: 14px; font-weight: 600">Взять LostFilm</button>
+        <button style="flex-grow: 1; height: 40px; border: 1px solid #3A3632; border-radius: 10px; background: transparent; color: #F3EFE8; font-size: 14px">Все раздачи</button>
+      </div>
+    </section>
+    <sc-for list="{{queue}}" as="q" hint-placeholder-count="3">
+      <article style="padding: 16px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; align-items: flex-start; gap: 12px">
+          <span style="width: 32px; height: 48px; flex-shrink: 0; border-radius: 6px; background: {{q.color}}"></span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0"><span style="font-size: 15px; font-weight: 600">{{q.title}}</span><span style="font-size: 12px; color: #8A847B">{{q.meta}}</span></span>
+          <button aria-label="Пауза" style="width: 36px; height: 36px; flex-shrink: 0; border: 1px solid #2E2B28; border-radius: 10px; background: transparent; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="#D9D3C9"><path d="M7 5h3v14H7zM14 5h3v14h-3z"></path></svg></button>
+        </div>
+        <div style="height: 6px; border-radius: 3px; background: #2E2B28"><div style="height: 6px; width: {{q.pct}}; border-radius: 3px; background: #7FB2FF"></div></div>
+        <div style="display: flex; justify-content: space-between; font-size: 12px"><span style="color: #7FB2FF">{{q.state}}</span><span style="font-family: 'JetBrains Mono', monospace; color: #A39C92">{{q.speed}}</span></div>
+      </article>
+    </sc-for>
+    <section style="padding: 14px 16px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; gap: 12px; align-items: flex-start">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F0A442" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-top: 1px"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"></path></svg>
+      <span style="font-size: 13px; line-height: 1.45; color: #D9D3C9">Пак «Дэдлок» S02 на RuTracker обновился: добавлена S02E05. Скачал только её, старую раздачу убрал из клиента.</span>
+    </section>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px">
+    <dc-import name="MobileTabs" active="activity" hint-size="390px,84px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1000}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const queue = [
+      { title: 'Уидоус-Бэй · S01E06', color: '#24454D', meta: '2160p · Red Head Sound · отдельная серия', pct: '64%', state: '64% · 4 мин', speed: '12,3 МБ/с' },
+      { title: 'Эль · S01E03', color: '#4A2E40', meta: '2160p · из пака: 1 файл из 3', pct: '21%', state: '21% · 17 мин', speed: '5,8 МБ/с' },
+      { title: 'Друзья и соседи · S01E02', color: '#233042', meta: 'улучшение 1080p → 2160p', pct: '0%', state: 'в очереди', speed: '—' }
+    ];
+    return { queue };
+  }
+}
+</script>
+</body>
+</html>

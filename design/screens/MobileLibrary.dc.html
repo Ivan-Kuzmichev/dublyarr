@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — Библиотека (телефон)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#121110}
+a{color:#F0A442}a:hover{color:#FFC577}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1100px; background: #121110; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif; overflow: hidden">
+  <div style="padding: 24px 20px 110px; display: flex; flex-direction: column; gap: 16px">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; color: #A39C92">21 сериал · 3,9 ТБ</span><h1 style="margin: 0; font-family: Unbounded, 'Segoe UI', sans-serif; font-weight: 600; font-size: 30px; letter-spacing: -0.02em">Библиотека</h1></div>
+      
+    </div>
+    <label style="height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 14px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; border-radius: 12px">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8A847B" stroke-width="1.8" stroke-linecap="round"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></svg>
+      <input placeholder="Поиск по библиотеке" aria-label="Поиск по библиотеке" style="flex-grow: 1; border: 0; background: transparent; color: #F3EFE8; font-size: 15px; outline: none">
+    </label>
+    <div style="display: flex; gap: 4px; padding: 4px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 12px"><button style="flex-grow: 1; height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: #2A2622; color: #F3EFE8; font-size: 13px; font-weight: 500">Сериалы</button><button style="flex-grow: 1; height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #A39C92; font-size: 13px">Фильмы</button><button style="flex-grow: 1; height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #A39C92; font-size: 13px">Аниме</button></div>
+    <div style="display: flex; gap: 8px; margin-right: -20px; overflow: hidden">
+      <sc-for list="{{filters}}" as="f" hint-placeholder-count="5">
+        <button onClick="{{f.pick}}" style="flex-shrink: 0; height: 36px; padding: 0 14px; display: flex; align-items: center; gap: 6px; border-radius: 18px; border: 1px solid {{f.border}}; background: {{f.bg}}; color: {{f.fg}}; font-size: 13px; font-weight: 500; cursor: pointer">{{f.label}}<span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; opacity: 0.75">{{f.n}}</span></button>
+      </sc-for>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 12px">
+      <sc-for list="{{shows}}" as="s" hint-placeholder-count="12">
+        <a href="MobileSeries.dc.html" style="display: flex; flex-direction: column; gap: 6px; min-width: 0; color: #F3EFE8; text-decoration: none">
+          <div style="position: relative; aspect-ratio: 2 / 3; border-radius: 12px; background: {{s.color}}; display: flex; align-items: flex-end; padding: 8px; box-sizing: border-box; overflow: hidden">
+            <span style="font-family: Unbounded, 'Segoe UI', sans-serif; font-size: 11px; font-weight: 600; line-height: 1.15; opacity: 0.85">{{s.title}}</span>
+            <span style="position: absolute; top: 6px; right: 6px; padding: 2px 5px; border-radius: 5px; background: rgba(18,17,16,0.82); font-size: 10px; font-weight: 600">{{s.q}}</span>
+            <sc-if value="{{s.fresh}}" hint-placeholder-val="{{ false }}"><span style="position: absolute; top: 6px; left: 6px; width: 10px; height: 10px; border-radius: 5px; background: #F0A442; border: 2px solid #121110"></span></sc-if>
+          </div>
+          <span style="font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{s.title}}</span>
+          <span style="font-size: 11px; line-height: 1.3; color: {{s.lc}}">{{s.line}}</span>
+        </a>
+      </sc-for>
+    </div>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px">
+    <dc-import name="MobileTabs" active="library" hint-size="390px,84px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1100}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { filter: 'all' }; }
+  renderVals() {
+    const A = '#F0A442', B = '#7FB2FF', M = '#8A847B';
+    const all = [
+      { title: 'Дэдлок', color: '#22394A', q: '1080p', line: 'S02E05 сегодня', lc: A, fresh: true, t: ['air', 'new'] },
+      { title: 'Уидоус-Бэй', color: '#24454D', q: '4K', line: 'качается 64%', lc: B, t: ['air'] },
+      { title: 'Криминальное прошлое', color: '#2F3B2E', q: '1080p', line: 'ждёт озвучку', lc: A, t: ['air', 'wait'] },
+      { title: 'Рик и Морти', color: '#2B3D2A', q: '4K', line: 'S09E03 сегодня', lc: A, fresh: true, t: ['air', 'new'] },
+      { title: 'Гриффины', color: '#2A3656', q: '1080p', line: 'S24E02 сегодня', lc: A, fresh: true, t: ['air', 'new'] },
+      { title: 'Джентльмены', color: '#3E3322', q: '1080p', line: 'ждёт озвучку', lc: A, t: ['air', 'wait'] },
+      { title: 'Соперники', color: '#3A2B2A', q: '4K', line: 'S02E03 завтра', lc: M, t: ['air'] },
+      { title: 'Истинное образование', color: '#2A3346', q: '4K', line: 'ждёт озвучку', lc: A, t: ['air', 'wait'] },
+      { title: 'Вместе до конца', color: '#4A3122', q: '4K', line: 'S01E04 · 3 окт', lc: M, t: ['air'] },
+      { title: 'Грызня', color: '#3A3A36', q: '4K', line: 'S03 объявлен', lc: A, t: ['air'] },
+      { title: 'Медведь', color: '#2C3548', q: '1080p', line: 'завершён', lc: M, t: ['done'] },
+      { title: 'Благие знамения', color: '#3B3526', q: '4K', line: 'завершён', lc: M, t: ['done'] }
+    ];
+    const defs = [{ id: 'all', label: 'Все' }, { id: 'air', label: 'В эфире' }, { id: 'wait', label: 'Ждут озвучку' }, { id: 'new', label: 'Свежие' }, { id: 'done', label: 'Завершены' }];
+    const cur = this.state.filter;
+    const filters = defs.map((d) => {
+      const on = d.id === cur;
+      return { ...d, n: d.id === 'all' ? all.length : all.filter((s) => s.t.includes(d.id)).length, bg: on ? '#F3EFE8' : 'transparent', fg: on ? '#121110' : '#D9D3C9', border: on ? '#F3EFE8' : '#2E2B28', pick: () => this.setState({ filter: d.id }) };
+    });
+    const shows = all.filter((s) => cur === 'all' || s.t.includes(cur)).map((s) => ({ ...s, fresh: !!s.fresh }));
+    return { filters, shows };
+  }
+}
+</script>
+</body>
+</html>

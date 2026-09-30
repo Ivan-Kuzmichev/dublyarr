@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — Хранилище (телефон)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#121110}
+a{color:#F0A442}a:hover{color:#FFC577}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1560px; background: #121110; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif; overflow: hidden">
+  <div style="padding: 24px 20px 110px; display: flex; flex-direction: column; gap: 18px">
+    <a href="MobileMore.dc.html" style="align-self: flex-start; display: flex; align-items: center; gap: 4px; color: #A39C92; font-size: 14px; text-decoration: none"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A39C92" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"></path></svg>Ещё</a>
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; color: #A39C92">NAS · /volume1/media</span><h1 style="margin: 0; font-family: Unbounded, 'Segoe UI', sans-serif; font-weight: 600; font-size: 30px; letter-spacing: -0.02em">Хранилище</h1></div>
+      
+    </div>
+    <section style="padding: 18px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 12px">
+      <div style="display: flex; align-items: baseline; gap: 10px"><span style="font-family: Unbounded, 'Segoe UI', sans-serif; font-size: 26px; font-weight: 600">6,2 ТБ</span><span style="font-size: 13px; color: #A39C92">из 8 · свободно 1,8</span></div>
+      <div style="height: 12px; border-radius: 6px; background: #2A2724; display: flex; gap: 2px; overflow: hidden">
+        <sc-for list="{{parts}}" as="p" hint-placeholder-count="4"><div style="width: {{p.w}}; background: {{p.c}}"></div></sc-for>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px">
+        <sc-for list="{{parts}}" as="p" hint-placeholder-count="4"><span style="display: flex; align-items: center; gap: 8px; font-size: 13px"><span style="width: 10px; height: 10px; border-radius: 3px; background: {{p.c}}"></span>{{p.name}}<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #A39C92">{{p.size}}</span></span></sc-for>
+      </div>
+    </section>
+    <section style="padding: 18px; background: #1F1B16; border: 1px solid #4A3A24; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+      <span style="font-size: 16px; font-weight: 600">Первая уборка по правилу сезонов</span>
+      <sc-for list="{{cleanup}}" as="c" hint-placeholder-count="4">
+        <label style="display: flex; align-items: flex-start; gap: 12px">
+          <input type="checkbox" checked="{{ true }}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0">
+          <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 500; line-height: 20px">{{c.title}}</span><span style="font-size: 12px; color: #8A847B">{{c.why}}</span></span>
+          <span style="width: 60px; flex-shrink: 0; text-align: right; white-space: nowrap; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 20px; color: #F0A442">{{c.size}}</span>
+        </label>
+      </sc-for>
+      <button style="height: 46px; border: 0; border-radius: 12px; background: #F0A442; color: #1A1206; font-size: 15px; font-weight: 600">Удалить отмеченное · 742 ГБ</button>
+    </section>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+      <div style="padding: 14px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: Unbounded, 'Segoe UI', sans-serif; font-size: 18px; font-weight: 600">+140 ГБ</span><span style="font-size: 12px; color: #A39C92">в неделю</span></div>
+      <div style="padding: 14px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 4px"><span style="font-family: Unbounded, 'Segoe UI', sans-serif; font-size: 18px; font-weight: 600">~13 нед</span><span style="font-size: 12px; color: #A39C92">до заполнения</span></div>
+    </div>
+    <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-size: 17px; font-weight: 600">По сериалам</span><a href="MobileMore.dc.html" style="font-size: 14px; text-decoration: none">Правила</a></div>
+    <div style="display: flex; flex-direction: column; border: 1px solid #2E2B28; border-radius: 16px; overflow: hidden">
+      <sc-for list="{{shows}}" as="s" hint-placeholder-count="6">
+        <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid #242220">
+          <span style="width: 26px; height: 39px; flex-shrink: 0; border-radius: 5px; background: {{s.color}}"></span>
+          <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 500">{{s.title}}</span><span style="font-size: 12px; color: {{s.rc}}">{{s.seasons}} · {{s.rule}}</span></span>
+          <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #D9D3C9; white-space: nowrap">{{s.size}}</span>
+          <button aria-label="Удалить сериал" style="width: 36px; height: 36px; flex-shrink: 0; border: 1px solid #2E2B28; border-radius: 9px; background: transparent; display: flex; align-items: center; justify-content: center"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B5AEA4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"></path></svg></button>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px">
+    <dc-import name="MobileTabs" active="more" hint-size="390px,84px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const parts = [
+      { name: 'Сериалы', size: '3,2 ТБ', w: '40%', c: '#D9D3C9' },
+      { name: 'Аниме', size: '0,7 ТБ', w: '8.75%', c: '#9C8F7E' },
+      { name: 'Фильмы', size: '0,6 ТБ', w: '7.5%', c: '#6E6962' },
+      { name: 'Не Dublyarr', size: '1,7 ТБ', w: '21.25%', c: '#4A4642' }
+    ];
+    const cleanup = [
+      { title: 'Гриффины · S01–S22', why: 'старше последнего сезона', size: '372 ГБ' },
+      { title: 'Рик и Морти · S01–S07', why: 'старше последнего сезона', size: '290 ГБ' },
+      { title: 'Рик и Морти · 1080p-копии', why: 'заменены версиями в 2160p', size: '42 ГБ' },
+      { title: 'Грызня · S01', why: 'S02 скачан целиком', size: '38 ГБ' }
+    ];
+    const A = '#F0A442', M = '#8A847B';
+    const shows = [
+      { title: 'Симпсоны', color: '#4A4222', seasons: 'S01–S36', rule: 'исключение', rc: M, size: '612 ГБ' },
+      { title: 'Гриффины', color: '#2A3656', seasons: 'S01–S24', rule: 'уйдёт 372 ГБ', rc: A, size: '418 ГБ' },
+      { title: 'Рик и Морти', color: '#2B3D2A', seasons: 'S01–S09', rule: 'уйдёт 332 ГБ', rc: A, size: '386 ГБ' },
+      { title: 'Благие знамения', color: '#3B3526', seasons: 'S01–S03', rule: 'завершён', rc: M, size: '214 ГБ' },
+      { title: 'Медведь', color: '#2C3548', seasons: 'S01–S04', rule: 'завершён', rc: M, size: '96 ГБ' },
+      { title: 'Грызня', color: '#3A3A36', seasons: 'S01–S02', rule: 'уйдёт 38 ГБ', rc: A, size: '88 ГБ' }
+    ];
+    return { parts, cleanup, shows };
+  }
+}
+</script>
+</body>
+</html>

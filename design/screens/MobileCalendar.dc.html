@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — Календарь (телефон)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#121110}
+a{color:#F0A442}a:hover{color:#FFC577}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1100px; background: #121110; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif; overflow: hidden">
+  <div style="padding: 24px 20px 110px; display: flex; flex-direction: column; gap: 18px">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 12px">
+      <div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; color: #A39C92">28 сентября — 4 октября</span><h1 style="margin: 0; font-family: Unbounded, 'Segoe UI', sans-serif; font-weight: 600; font-size: 30px; letter-spacing: -0.02em">Календарь</h1></div>
+      
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px">
+      <sc-for list="{{week}}" as="d" hint-placeholder-count="7">
+        <button style="height: 64px; border-radius: 12px; border: 1px solid {{d.border}}; background: {{d.bg}}; color: #F3EFE8; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 0">
+          <span style="font-size: 11px; color: #A39C92">{{d.wd}}</span>
+          <span style="font-family: Unbounded, 'Segoe UI', sans-serif; font-size: 16px; font-weight: 600; color: {{d.nc}}">{{d.num}}</span>
+          <span style="width: 5px; height: 5px; border-radius: 3px; background: {{d.dot}}"></span>
+        </button>
+      </sc-for>
+    </div>
+    <div style="display: flex; gap: 14px; font-size: 11px; color: #B5AEA4">
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; border: 1.5px solid #6E6962; box-sizing: border-box"></span>оригинал</span>
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; border: 1.5px dashed #F0A442; box-sizing: border-box"></span>прогноз озвучки</span>
+      <span style="display: flex; align-items: center; gap: 6px"><span style="width: 10px; height: 10px; border-radius: 3px; background: #D9D3C9"></span>скачано</span>
+    </div>
+    <sc-for list="{{days}}" as="d" hint-placeholder-count="3">
+      <section style="display: flex; flex-direction: column; gap: 8px">
+        <span style="font-size: 14px; font-weight: 600; color: {{d.hc}}">{{d.head}}</span>
+        <sc-for list="{{d.ev}}" as="e" hint-placeholder-count="2">
+          <div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-radius: 12px; background: {{e.bg}}; border: {{e.border}}; color: {{e.fg}}">
+            <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 600">{{e.show}}</span><span style="font-size: 12px; opacity: 0.85">{{e.sub}}</span></span>
+            <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; opacity: 0.85">{{e.ep}}</span>
+          </div>
+        </sc-for>
+      </section>
+    </sc-for>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px">
+    <dc-import name="MobileTabs" active="calendar" hint-size="390px,84px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const o = (show, ep, sub) => ({ show, ep, sub, bg: 'transparent', border: '1.5px solid #3A3632', fg: '#D9D3C9' });
+    const p = (show, ep, sub) => ({ show, ep, sub, bg: 'rgba(240,164,66,0.08)', border: '1.5px dashed #F0A442', fg: '#F3D5AA' });
+    const y = (show, ep, sub) => ({ show, ep, sub, bg: '#D9D3C9', border: '1.5px solid #D9D3C9', fg: '#121110' });
+    const week = [['пн', '28'], ['вт', '29'], ['ср', '30'], ['чт', '1'], ['пт', '2'], ['сб', '3'], ['вс', '4']].map(([wd, num], i) => ({
+      wd, num, bg: i === 2 ? '#2A2622' : 'transparent', border: i === 2 ? '#F0A442' : '#2E2B28', nc: i === 2 ? '#F0A442' : '#F3EFE8', dot: i === 6 ? 'transparent' : '#8A847B'
+    }));
+    const days = [
+      { head: 'Сегодня, среда', hc: '#F0A442', ev: [y('Дэдлок', 'S02E05', 'HDrezka · скачано'), y('Рик и Морти', 'S09E03', 'Сыендук · 4K'), y('Гриффины', 'S24E02', 'OMSKBIRD'), p('Криминальное прошлое', 'S02E04', 'HDrezka ≈ вечером')] },
+      { head: 'Завтра, четверг', hc: '#F3EFE8', ev: [o('Соперники', 'S02E03', 'оригинал в эфире'), p('Уидоус-Бэй', 'S01E07', 'Red Head Sound ≈ в тот же день')] },
+      { head: 'Пятница, 2 октября', hc: '#F3EFE8', ev: [p('Джентльмены', 'S02E06', 'любая студия ≈ +3 дня'), p('Криминальное прошлое', 'S02E04', 'LostFilm ≈ замена')] }
+    ];
+    return { week, days };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — Подписка на сериал</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#121110}
+a{color:#F0A442}a:hover{color:#FFC577}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 1000px; display: flex; background: #121110; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif; overflow: hidden">
+  <div style="width: 232px; flex-shrink: 0; background: #171614; border-right: 1px solid #2A2724">
+    <dc-import name="Sidebar" active="discover" hint-size="232px,1000px"></dc-import>
+  </div>
+  <div style="flex-grow: 1; padding: 96px 40px; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 20px; align-content: start">
+    <sc-for list="{{ghost}}" as="g" hint-placeholder-count="12">
+      <div style="aspect-ratio: 2 / 3; border-radius: 14px; background: {{g}}"></div>
+    </sc-for>
+  </div>
+
+  <div style="position: absolute; inset: 0; background: rgba(10,9,8,0.72); display: flex; align-items: center; justify-content: center">
+    <div role="dialog" aria-modal="true" aria-labelledby="sub-title" style="width: 1040px; background: #1B1A18; border: 1px solid #34302C; border-radius: 22px; overflow: hidden; display: flex; flex-direction: column">
+      <div style="display: flex; gap: 20px; padding: 24px 28px; border-bottom: 1px solid #2E2B28">
+        <div style="width: 64px; height: 96px; border-radius: 10px; background: #1F3440; flex-shrink: 0"></div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 8px; justify-content: center">
+          <h2 id="sub-title" style="margin: 0; font-family: Unbounded, sans-serif; font-weight: 600; font-size: 26px">Разделение</h2>
+          <div style="font-size: 14px; color: #A39C92">Severance · 2022 · 2 сезона, 19 серий · третий сезон в производстве</div>
+        </div>
+        <button aria-label="Закрыть" style="width: 40px; height: 40px; background: transparent; border: 1px solid #2E2B28; border-radius: 10px; display: flex; align-items: center; justify-content: center; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#D9D3C9" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"></path></svg></button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) 400px; gap: 0">
+        <section style="padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; border-right: 1px solid #2E2B28">
+          <div style="display: flex; justify-content: space-between; align-items: baseline">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 600">Озвучки на трекерах</h3>
+            <span style="font-size: 12px; color: #8A847B">нажми, чтобы задать порядок</span>
+          </div>
+          <div style="display: grid; grid-template-columns: 32px minmax(0, 1fr) 60px 124px 60px; gap: 12px; padding: 0 14px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #8A847B">
+            <span></span><span>Студия</span><span>Серии</span><span>Задержка</span><span>Макс.</span>
+          </div>
+          <sc-for list="{{studios}}" as="s" hint-placeholder-count="5">
+            <button onClick="{{s.toggle}}" style="display: grid; grid-template-columns: 32px minmax(0, 1fr) 60px 124px 60px; gap: 12px; align-items: center; height: 56px; padding: 0 14px; border-radius: 12px; border: 1px solid {{s.border}}; background: {{s.bg}}; color: #F3EFE8; text-align: left; cursor: pointer">
+              <span style="width: 26px; height: 26px; border-radius: 13px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 500; background: {{s.numBg}}; color: {{s.numFg}}">{{s.num}}</span>
+              <span style="font-size: 15px; font-weight: 500">{{s.name}}</span>
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #B5AEA4">{{s.cov}}</span>
+              <span style="display: flex; flex-direction: column; gap: 2px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: {{s.lagC}}">{{s.lag}}</span><span style="font-size: 11px; color: #8A847B">{{s.basis}}</span></span>
+              <span style="font-size: 13px; color: #B5AEA4">{{s.max}}</span>
+            </button>
+          </sc-for>
+          <div style="font-size: 13px; line-height: 1.5; color: #A39C92; padding-top: 4px">Студия и качество распознаны по названиям и тегам раздач с 11 трекеров Jackett. Задержку Dublyarr считает сам: запоминает, когда впервые увидел серию у студии.</div>
+        </section>
+
+        <section style="padding: 24px 28px; display: flex; flex-direction: column; gap: 22px">
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 600">Качество</h3>
+            <div style="display: flex; gap: 4px; padding: 4px; background: #242220; border-radius: 10px">
+              <button style="flex-grow: 1; height: 34px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">720p</button>
+              <button style="flex-grow: 1; height: 34px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">1080p</button>
+              <button style="flex-grow: 1; height: 34px; border: 0; border-radius: 7px; background: #F3EFE8; color: #121110; font-size: 13px; font-weight: 600">2160p</button>
+            </div>
+            <label style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: #D9D3C9"><input type="checkbox" checked="{{ true }}" style="width: 18px; height: 18px; margin: 0; accent-color: #F0A442">Если 2160p нет — брать 1080p</label>
+            <label style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: #D9D3C9"><input type="checkbox" style="width: 18px; height: 18px; margin: 0; accent-color: #F0A442">Предпочитать HDR / Dolby Vision</label>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 600">Что скачать</h3>
+            <sc-for list="{{scopes}}" as="sc" hint-placeholder-count="3">
+              <button onClick="{{sc.pick}}" style="display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: transparent; color: #D9D3C9; font-size: 14px; text-align: left; cursor: pointer">
+                <span style="width: 18px; height: 18px; flex-shrink: 0; box-sizing: border-box; border-radius: 9px; border: {{sc.ring}}"></span>{{sc.label}}
+              </button>
+            </sc-for>
+            <sc-if value="{{scopeFrom}}" hint-placeholder-val="{{ true }}">
+              <div style="padding: 12px; border-radius: 12px; background: #242220; display: flex; flex-direction: column; gap: 10px">
+                <div style="display: flex; justify-content: space-between; gap: 14px"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #A39C92">Сезон<span style="display: inline-flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; overflow: hidden"><button aria-label="Меньше" style="width: 30px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 15px; cursor: pointer">−</button><span style="min-width: 24px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #F3EFE8">2</span><button aria-label="Больше" style="width: 30px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 15px; cursor: pointer">+</button></span></span><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #A39C92">Серия<span style="display: inline-flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; overflow: hidden"><button aria-label="Меньше" style="width: 30px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 15px; cursor: pointer">−</button><span style="min-width: 24px; text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #F3EFE8">5</span><button aria-label="Больше" style="width: 30px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 15px; cursor: pointer">+</button></span></span></div>
+                <div style="display: flex; gap: 4px; padding: 4px; background: #242220; border-radius: 10px; background: #1B1A18"><button style="flex-grow: 1; height: 30px; padding: 0 10px; border: 0; border-radius: 7px; background: #F3EFE8; color: #121110; font-size: 13px; font-weight: 600">до конца сезона</button><button style="flex-grow: 1; height: 30px; padding: 0 10px; border: 0; border-radius: 7px; background: transparent; color: #A39C92; font-size: 13px">и дальше</button></div>
+              </div>
+            </sc-if>
+            <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.4; color: #D9D3C9; padding-top: 4px"><input type="checkbox" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0"><span style="display: flex; flex-direction: column; gap: 2px">Качать сезон целиком после финала<span style="font-size: 12px; color: #8A847B">Дождаться всех серий в нужной озвучке и скачать разом</span></span></label>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px">
+            <h3 style="margin: 0; font-size: 16px; font-weight: 600">Запасная озвучка</h3>
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 14px; color: #D9D3C9">
+              Ждать первую
+              <span style="display: flex; align-items: center; border: 1px solid #3A3632; border-radius: 9px; overflow: hidden">
+                <button aria-label="Меньше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px">−</button>
+                <span style="width: 32px; text-align: center; font-family: 'JetBrains Mono', monospace">2</span>
+                <button aria-label="Больше" style="width: 32px; height: 32px; border: 0; background: transparent; color: #F3EFE8; font-size: 16px">+</button>
+              </span>
+              дня
+            </div>
+            <label style="display: flex; align-items: flex-start; gap: 10px; font-size: 14px; line-height: 1.4; color: #D9D3C9"><input type="checkbox" checked="{{ true }}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0">Заменить, когда выйдет приоритетная</label>
+          </div>
+        </section>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 16px; padding: 18px 28px; border-top: 1px solid #2E2B28; background: #171614">
+        <div style="flex-grow: 1; font-size: 14px; color: #B5AEA4">{{summary}}</div>
+        <button style="height: 44px; padding: 0 18px; background: transparent; color: #D9D3C9; border: 1px solid #2E2B28; border-radius: 11px; font-size: 15px; cursor: pointer">Отмена</button>
+        <a href="Series.dc.html" style="height: 44px; padding: 0 22px; display: flex; align-items: center; background: #F0A442; color: #1A1206; border-radius: 11px; font-size: 15px; font-weight: 600; text-decoration: none">Подписаться</a>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+  constructor(p) { super(p); this.state = { order: ['lf', 'hdr'] }; }
+  renderVals() {
+    const base = [
+      { id: 'lf', name: 'LostFilm', cov: '19/19', lag: '+1,0 д', basis: 'по 12 сериям', max: '2160p' },
+      { id: 'hdr', name: 'HDrezka', cov: '19/19', lag: '+0,6 д', basis: 'по 12 сериям', max: '1080p' },
+      { id: 'kvk', name: 'Кубик в Кубе', cov: '19/19', lag: '≈ +3 д', basis: 'по датам раздач', max: '2160p' },
+      { id: 'tvs', name: 'TVShows', cov: '10/19', lag: 'нет данных', basis: 'только паки', max: '1080p' },
+      { id: 'orig', name: 'Оригинал + субтитры', cov: '19/19', lag: '0', basis: 'в день эфира', max: '2160p' }
+    ];
+    const scopeDefs = [{ id: 'all', label: 'Все сезоны' }, { id: 'new', label: 'Только новые серии' }, { id: 'from', label: 'Начиная с серии' }];
+    const scope = this.state.scope ?? 'from';
+    const scopes = scopeDefs.map((d) => ({ ...d, ring: d.id === scope ? '5px solid #F0A442' : '1.5px solid #6E6962', pick: () => this.setState({ scope: d.id }) }));
+    const order = this.state.order;
+    const studios = base.map((s) => {
+      const i = order.indexOf(s.id);
+      const on = i >= 0;
+      return {
+        ...s,
+        num: on ? String(i + 1) : '',
+        lagC: s.lag === 'нет данных' ? '#8A847B' : '#B5AEA4',
+        bg: on ? '#242220' : 'transparent',
+        border: on ? '#F0A442' : '#2E2B28',
+        numBg: on ? '#F0A442' : '#2A2724',
+        numFg: on ? '#1A1206' : '#6E6962',
+        toggle: () => this.setState({ order: on ? order.filter((x) => x !== s.id) : [...order, s.id] })
+      };
+    });
+    const names = order.map((id) => base.find((b) => b.id === id).name);
+    const summary = names.length
+      ? 'Порядок: ' + names.join(' → ') + '. Следующая серия ≈ через 1 день после эфира, ~6 ГБ.'
+      : 'Выбери хотя бы одну озвучку.';
+    const ghost = ['#22394A', '#2B3D2A', '#2A3656', '#3E3322', '#3A2B2A', '#2A3346', '#4A3122', '#4A2A22', '#4A2E40', '#233042', '#3A3A36', '#2C3548'];
+    return { studios, summary, ghost, scopes, scopeFrom: scope === 'from' };
+  }
+}
+</script>
+</body>
+</html>

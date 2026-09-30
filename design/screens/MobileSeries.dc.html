@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Dublyarr — Криминальное прошлое (телефон)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&amp;family=Unbounded:wght@500;600;700&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#121110}
+a{color:#F0A442}a:hover{color:#FFC577}
+button,input{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1860px; background: #121110; color: #F3EFE8; font-family: Onest, 'Segoe UI', system-ui, sans-serif; overflow: hidden">
+  <div style="position: relative; height: 260px; background: #243024; padding: 20px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: flex-start">
+    <a href="MobileLibrary.dc.html" aria-label="Назад" style="width: 40px; height: 40px; border-radius: 20px; background: rgba(18,17,16,0.6); display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F3EFE8" stroke-width="2" stroke-linecap="round"><path d="M15 6l-6 6 6 6"></path></svg></a>
+    <div style="display: flex; gap: 8px">
+      <button aria-label="Удалить сериал" style="width: 40px; height: 40px; border: 0; border-radius: 20px; background: rgba(18,17,16,0.6); display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F3EFE8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"></path></svg></button>
+      <button aria-label="Ещё" style="width: 40px; height: 40px; border: 0; border-radius: 20px; background: rgba(18,17,16,0.6); display: flex; align-items: center; justify-content: center"><svg width="18" height="18" viewBox="0 0 24 24" fill="#F3EFE8"><circle cx="5" cy="12" r="1.8"></circle><circle cx="12" cy="12" r="1.8"></circle><circle cx="19" cy="12" r="1.8"></circle></svg></button>
+    </div>
+    <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 120px; background: linear-gradient(to bottom, rgba(18,17,16,0), #121110)"></div>
+  </div>
+  <div style="padding: 0 20px 110px; margin-top: -90px; position: relative; display: flex; flex-direction: column; gap: 18px">
+    <div style="display: flex; gap: 16px; align-items: flex-end">
+      <div style="width: 96px; height: 144px; flex-shrink: 0; border-radius: 12px; background: #2F3B2E; border: 1px solid rgba(243,239,232,0.12)"></div>
+      <div style="display: flex; flex-direction: column; gap: 6px; padding-bottom: 2px">
+        <h1 style="margin: 0; font-family: Unbounded, 'Segoe UI', sans-serif; font-size: 22px; font-weight: 600; line-height: 1.15">Криминальное прошлое</h1>
+        <span style="font-size: 13px; color: #A39C92">2024 · 2 сезона · выходит по вторникам</span>
+      </div>
+    </div>
+    <div style="display: flex; gap: 8px">
+      <button style="flex-grow: 1; height: 46px; border: 0; border-radius: 12px; background: #F3EFE8; color: #121110; font-size: 15px; font-weight: 600">Проверить новые серии</button>
+      <a href="MobileActivity.dc.html" style="height: 46px; padding: 0 16px; display: flex; align-items: center; border: 1px solid #3A3632; border-radius: 12px; color: #F3EFE8; font-size: 15px; text-decoration: none; box-sizing: border-box">Поиск</a>
+    </div>
+    <div style="display: flex; gap: 4px; padding: 4px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 12px"><button style="flex-grow: 1; height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: #A39C92; font-size: 13px">Сезон 1 · 6/6</button><button style="flex-grow: 1; height: 34px; padding: 0 10px; border: 0; border-radius: 8px; background: #2A2622; color: #F3EFE8; font-size: 13px; font-weight: 500">Сезон 2 · 3/8</button></div>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 15px; font-size: 11px; color: #8A847B"><span>Серия</span><span style="display: flex; gap: 4px; font-family: 'JetBrains Mono', monospace; font-size: 10px"><span style="width: 34px; text-align: center">HDr</span><span style="width: 34px; text-align: center">LF</span><span style="width: 34px; text-align: center">TVS</span></span></div>
+    <div style="display: flex; flex-direction: column; border: 1px solid #2E2B28; border-radius: 16px; overflow: hidden">
+      <sc-for list="{{eps}}" as="e" hint-placeholder-count="8">
+        <div style="display: flex; flex-direction: column; gap: 10px; padding: 14px; border-top: 1px solid #242220; background: {{e.bg}}">
+          <div style="display: flex; align-items: center; gap: 12px">
+            <span style="width: 22px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #A39C92">{{e.n}}</span>
+            <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0">
+              <span style="font-size: 14px; font-weight: 500; color: {{e.tc}}">{{e.air}}</span>
+              <span style="font-size: 12px; color: {{e.sc}}">{{e.status}}</span>
+            </div>
+            <div style="display: flex; gap: 4px">
+              <sc-for list="{{e.dubs}}" as="d" hint-placeholder-count="3"><span style="width: 34px; height: 26px; box-sizing: border-box; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 10px; background: {{d.bg}}; color: {{d.fg}}; border: {{d.border}}">{{d.t}}</span></sc-for>
+            </div>
+          </div>
+          <sc-if value="{{e.hasAct}}" hint-placeholder-val="{{ false }}">
+            <button style="margin-left: 34px; height: 34px; border: 1px solid #3A3632; background: transparent; color: #F3EFE8; border-radius: 9px; font-size: 13px; font-weight: 500">{{e.act}}</button>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+
+    <section style="padding: 18px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+      <div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 17px; font-weight: 600">Подписка</span><button style="height: 32px; padding: 0 12px; border: 1px solid #3A3632; background: transparent; color: #F3EFE8; border-radius: 9px; font-size: 13px">Изменить</button></div>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px">
+        <span style="height: 30px; padding: 0 10px; display: flex; align-items: center; gap: 6px; border-radius: 8px; background: #242220; font-size: 13px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #F0A442">1</span>HDrezka</span>
+        <span style="height: 30px; padding: 0 10px; display: flex; align-items: center; gap: 6px; border-radius: 8px; background: #242220; font-size: 13px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #F0A442">2</span>LostFilm · 2 дн</span>
+        <span style="height: 30px; padding: 0 10px; display: flex; align-items: center; gap: 6px; border-radius: 8px; background: #242220; font-size: 13px"><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #F0A442">3</span>Любая · 5 дн</span>
+      </div>
+      <div style="display: flex; justify-content: space-between; font-size: 14px; color: #D9D3C9"><span>Качество</span><span style="color: #F3EFE8">1080p WEB-DL · до 4 ГБ</span></div>
+      <div style="height: 1px; background: #2A2724"></div>
+      <sc-for list="{{rules}}" as="r" hint-placeholder-count="4">
+        <label style="display: flex; align-items: flex-start; gap: 12px; font-size: 14px; line-height: 1.4; color: #D9D3C9"><input type="checkbox" checked="{{r.on}}" style="width: 18px; height: 18px; margin: 1px 0 0; accent-color: #F0A442; flex-shrink: 0">{{r.text}}</label>
+      </sc-for>
+      <button style="align-self: flex-start; border: 0; background: transparent; padding: 0; color: #F0A442; font-size: 14px">Ещё 3 правила</button>
+    </section>
+
+    <section style="padding: 18px; background: #1B1A18; border: 1px solid #2E2B28; border-radius: 16px; display: flex; flex-direction: column; gap: 14px">
+      <span style="font-size: 17px; font-weight: 600">Как быстро озвучивают</span>
+      <sc-for list="{{speed}}" as="s" hint-placeholder-count="3">
+        <div style="display: flex; flex-direction: column; gap: 6px">
+          <div style="display: flex; justify-content: space-between; font-size: 13px"><span style="font-weight: 500">{{s.name}}</span><span style="font-family: 'JetBrains Mono', monospace; color: #A39C92">{{s.v}}</span></div>
+          <div style="height: 6px; border-radius: 3px; background: #2E2B28"><div style="height: 6px; width: {{s.w}}; border-radius: 3px; background: {{s.c}}"></div></div>
+        </div>
+      </sc-for>
+      <span style="font-size: 12px; color: #8A847B">По 14 вышедшим сериям</span>
+    </section>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 84px">
+    <dc-import name="MobileTabs" active="library" hint-size="390px,84px"></dc-import>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1860}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const cell = (k, t) => (k === 'y' ? { t, bg: '#D9D3C9', fg: '#121110', border: '0' } : k === 'e' ? { t, bg: 'transparent', fg: '#F0A442', border: '1.5px dashed #F0A442' } : { t: '—', bg: '#242220', fg: '#6E6962', border: '0' });
+    const eps = [
+      { n: '01', air: '8 сентября', status: 'Скачана · HDrezka', sc: '#8A847B', dubs: [cell('y', '+1д'), cell('y', '+2д'), cell('y', '+4д')] },
+      { n: '02', air: '15 сентября', status: 'Скачана · HDrezka', sc: '#8A847B', dubs: [cell('y', '+1д'), cell('y', '+3д'), cell('y', '+4д')] },
+      { n: '03', air: '22 сентября', status: 'Застряла: нет сидов 6 ч', sc: '#FF8A7A', dubs: [cell('y', '+1д'), cell('y', '+2д'), cell('n')], act: 'Взять LostFilm', bg: '#1F1916' },
+      { n: '04', air: '29 сентября', status: 'Жду HDrezka ≈ сегодня', sc: '#F0A442', dubs: [cell('e', 'сег'), cell('e', 'пт'), cell('n')], act: 'Оригинал с субтитрами' },
+      { n: '05', air: '6 октября', status: 'Ещё не вышла', sc: '#8A847B', dubs: [cell('n'), cell('n'), cell('n')] },
+      { n: '06', air: '13 октября', status: '—', sc: '#6E6962', dubs: [cell('n'), cell('n'), cell('n')] },
+      { n: '07', air: '20 октября', status: '—', sc: '#6E6962', dubs: [cell('n'), cell('n'), cell('n')] },
+      { n: '08', air: '27 октября', status: 'Финал сезона', sc: '#6E6962', dubs: [cell('n'), cell('n'), cell('n')] }
+    ].map((e) => ({ ...e, hasAct: !!e.act, bg: e.bg ?? 'transparent', tc: e.sc === '#6E6962' ? '#8A847B' : '#F3EFE8' }));
+    const rules = [
+      { on: true, text: 'Заменить, когда выйдет озвучка выше по приоритету' },
+      { on: true, text: 'В файле только HDrezka и оригинал' },
+      { on: true, text: 'Подписаться на новый сезон, когда объявят' },
+      { on: false, text: 'Качать сезон целиком после финала' }
+    ];
+    const speed = [
+      { name: 'HDrezka', v: '+1,1 дня', w: '22%', c: '#F0A442' },
+      { name: 'LostFilm', v: '+2,4 дня', w: '48%', c: '#D9D3C9' },
+      { name: 'TVShows', v: '+4,0 дня', w: '80%', c: '#D9D3C9' }
+    ];
+    return { eps, rules, speed };
+  }
+}
+</script>
+</body>
+</html>
