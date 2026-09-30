@@ -1,16 +1,12 @@
 import { Logo } from '@/components/ui/Logo';
+import { POSTER_COLORS } from '@/lib/image-url';
 
-// Цвета постеров-заглушек — из Login.dc.html; в продукте здесь могли бы быть постеры библиотеки.
-const GHOST = [
-  '#22394A', '#2B3D2A', '#2A3656', '#3E3322', '#3A2B2A', '#2A3346', '#4A3122', '#4A2A22', '#4A2E40',
-  '#233042', '#3A3A36', '#2C3548', '#2F3B2E', '#24454D', '#3B3526', '#4A4222', '#3A2626', '#2E2A26',
-];
 
 function AuthAside() {
   return (
     <div className="relative hidden w-[760px] max-w-[53vw] shrink-0 overflow-hidden bg-sidebar lg:block" aria-hidden>
       <div className="absolute -top-[60px] -left-10 grid w-[900px] -rotate-6 grid-cols-6 gap-4 opacity-55">
-        {[...GHOST, ...GHOST].map((c, i) => (
+        {[...POSTER_COLORS, ...POSTER_COLORS].map((c, i) => (
           <div key={i} className="aspect-[2/3] rounded-[14px]" style={{ background: c }} />
         ))}
       </div>
