@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+import { writeFileSync } from 'node:fs';
+import path from 'node:path';
 import { totpAt, currentStep } from '../../src/lib/auth/totp';
 
 test('первый запуск → 2FA → выход → вход с кодом → доверенное устройство', async ({ page, context }) => {
@@ -23,6 +25,7 @@ test('первый запуск → 2FA → выход → вход с кодо�
   await page.goto('/settings/security');
   await page.getByRole('button', { name: 'Включить' }).click();
   const secret = (await page.getByTestId('totp-secret').innerText()).replace(/\s/g, '');
+  writeFileSync(path.join(process.env.E2E_DIR!, 'totp-secret'), secret); // для следующих сценариев
   await page.getByLabel('Код из приложения').fill(totpAt(secret, currentStep(Date.now())));
   await page.getByRole('button', { name: 'Подтвердить' }).click();
   await expect(page.getByText('Включена')).toBeVisible();

@@ -59,6 +59,17 @@ Self-hosted сервис для одного пользователя: подп�
 - Доменная логика — в `src/lib/*`, функции принимают `db` параметром (тесты на `:memory:` через `tests/unit/helpers.ts`).
 - Server actions возвращают введённые значения (`src/lib/form-values.ts`): React 19 сбрасывает форму после action.
 
+## Решения (фаза 1a — каталог)
+
+- TMDB: `src/lib/tmdb/*` — клиент (`client.ts`, ключ v3 или токен v4, `ru-RU` + `en-US` для пустого описания, 429 → одна пауза ≤ 5 с),
+  маппинг (`map.ts`), настройки и прокси (`index.ts`, `undici.ProxyAgent`). Ключ — `app_settings['tmdb']`, зашифрован.
+- Каталог: `titles/seasons/episodes`, синхронизация — `src/lib/catalog.ts`. Аниме = жанр 16 + страна JP; ручной тип (`kind_manual`) обновление не трогает.
+- Воркер: `scheduleDaily` + задача `tmdb.refresh-all` (выходящие — ежедневно, завершённые — раз в 30 дней). Карточка освежается при открытии, если старше 12 ч.
+- Картинки только через `/api/image/{size}/{file}` с кэшем в `${DATA_DIR}/cache/images`; хелперы для клиента — `src/lib/image-url.ts` (без node-модулей).
+- Фильмов в интерфейсе нет до фазы 3. Библиотека — в 1b.
+- Тесты: фикстуры TMDB в `tests/fixtures/tmdb/`, заглушка `tests/e2e/tmdb-stub.mjs` (порт 3199); env `TMDB_BASE_URL`, `TMDB_IMAGE_BASE_URL`.
+  e2e идут по порядку имён файлов (`01-…`, `02-…`) на одной базе; секрет TOTP 01 пишет в `$E2E_DIR/totp-secret`.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
