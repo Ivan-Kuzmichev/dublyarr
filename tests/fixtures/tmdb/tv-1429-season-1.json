@@ -1,0 +1,7 @@
+{
+  "season_number": 1,
+  "episodes": [
+    { "episode_number": 1, "name": "Тебе, спустя 2000 лет", "air_date": "2013-04-07", "runtime": 24 },
+    { "episode_number": 2, "name": "В тот день", "air_date": "2013-04-14", "runtime": 24 }
+  ]
+}

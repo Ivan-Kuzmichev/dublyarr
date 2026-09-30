@@ -1,0 +1,9 @@
+{
+  "page": 1,
+  "results": [
+    { "id": 1429, "name": "Атака титанов", "original_name": "進撃の巨人", "first_air_date": "2013-04-07", "poster_path": "/hTP1DtLGFamjfu8WqjnuQdP1n4i.jpg", "genre_ids": [16, 10759], "origin_country": ["JP"] },
+    { "id": 1399, "name": "Игра престолов", "original_name": "Game of Thrones", "first_air_date": "2011-04-17", "poster_path": "/1XS1oqL89opfnbLl8WnZY1O1uJx.jpg", "genre_ids": [10765, 18], "origin_country": ["US"] },
+    { "id": 94605, "name": "Аркейн", "original_name": "Arcane", "first_air_date": "2021-11-06", "poster_path": null, "genre_ids": [16, 10765], "origin_country": ["US"] }
+  ],
+  "total_results": 3
+}

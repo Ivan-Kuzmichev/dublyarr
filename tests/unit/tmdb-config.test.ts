@@ -1,0 +1,16 @@
+import { expect, test } from 'vitest';
+import { randomBytes } from 'node:crypto';
+import { testDb } from './helpers';
+import { getTmdb, getTmdbSettings, saveTmdbSettings } from '@/lib/tmdb';
+import { appSettings } from '@/lib/db/schema';
+
+process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
+
+test('ключ TMDB хранится зашифрованным; без ключа клиента нет', () => {
+  const db = testDb();
+  expect(getTmdb(db)).toBeNull();
+  saveTmdbSettings(db, { apiKey: 'SECRET-TMDB-KEY', proxy: '' });
+  expect(getTmdbSettings(db)).toEqual({ apiKey: 'SECRET-TMDB-KEY' });
+  expect(db.select().from(appSettings).get()!.value).not.toContain('SECRET');
+  expect(getTmdb(db)).not.toBeNull();
+});

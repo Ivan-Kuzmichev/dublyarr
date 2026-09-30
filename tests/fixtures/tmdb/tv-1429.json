@@ -1,0 +1,31 @@
+{
+  "id": 1429,
+  "name": "Атака титанов",
+  "original_name": "進撃の巨人",
+  "original_language": "ja",
+  "overview": "Много лет назад человечество было почти истреблено титанами.",
+  "first_air_date": "2013-04-07",
+  "last_air_date": "2023-11-05",
+  "status": "Ended",
+  "genres": [
+    { "id": 16, "name": "мультфильм" },
+    { "id": 10759, "name": "Боевик и Приключения" }
+  ],
+  "origin_country": ["JP"],
+  "networks": [{ "id": 614, "name": "NHK" }],
+  "poster_path": "/hTP1DtLGFamjfu8WqjnuQdP1n4i.jpg",
+  "backdrop_path": "/rqbCbjB19amtOtFQbb3K2lgm2zv.jpg",
+  "number_of_seasons": 1,
+  "next_episode_to_air": null,
+  "seasons": [
+    { "season_number": 1, "name": "Сезон 1", "air_date": "2013-04-07", "episode_count": 2, "poster_path": null }
+  ],
+  "alternative_titles": {
+    "results": [
+      { "iso_3166_1": "JP", "title": "Shingeki no Kyojin", "type": "Romaji" },
+      { "iso_3166_1": "US", "title": "Attack on Titan", "type": "" },
+      { "iso_3166_1": "RU", "title": "Атака титанов", "type": "" }
+    ]
+  },
+  "external_ids": { "imdb_id": "tt2560140", "tvdb_id": 267440 }
+}

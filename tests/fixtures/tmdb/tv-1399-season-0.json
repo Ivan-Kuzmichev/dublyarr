@@ -1,0 +1,7 @@
+{
+  "season_number": 0,
+  "episodes": [
+    { "episode_number": 1, "name": "Как снималась «Игра престолов»", "air_date": "2010-12-05", "runtime": 15 },
+    { "episode_number": 2, "name": "Эпизод 2", "air_date": "2011-03-27", "runtime": 30 }
+  ]
+}

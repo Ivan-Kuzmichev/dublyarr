@@ -1,0 +1,8 @@
+{
+  "season_number": 1,
+  "episodes": [
+    { "episode_number": 1, "name": "Зима близко", "air_date": "2011-04-17", "runtime": 62 },
+    { "episode_number": 2, "name": "Королевский тракт", "air_date": "2011-04-24", "runtime": 56 },
+    { "episode_number": 3, "name": "Лорд Сноу", "air_date": "", "runtime": null }
+  ]
+}
