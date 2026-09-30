@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 /** Время — миллисекунды unix. */
 const ts = (name: string) => integer(name, { mode: 'number' });
@@ -97,3 +97,66 @@ export const heartbeats = sqliteTable('heartbeats', {
   info: text('info'),
   at: ts('at').notNull(),
 });
+
+// Каталог TMDB (фаза 1a)
+
+const json = <T>(name: string) => text(name, { mode: 'json' }).$type<T>();
+
+export const titles = sqliteTable('titles', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  tmdbId: integer('tmdb_id').notNull().unique(),
+  kind: text('kind', { enum: ['series', 'anime'] }).notNull(),
+  kindManual: integer('kind_manual', { mode: 'boolean' }).notNull().default(false),
+  nameRu: text('name_ru').notNull(),
+  nameOriginal: text('name_original').notNull(),
+  originalLanguage: text('original_language').notNull(),
+  altNames: json<string[]>('alt_names').notNull().default([]),
+  year: integer('year'),
+  status: text('status', { enum: ['returning', 'ended', 'canceled', 'in_production', 'planned'] }).notNull(),
+  overview: text('overview').notNull().default(''),
+  genres: json<string[]>('genres').notNull().default([]),
+  originCountries: json<string[]>('origin_countries').notNull().default([]),
+  networks: json<string[]>('networks').notNull().default([]),
+  posterPath: text('poster_path'),
+  backdropPath: text('backdrop_path'),
+  nextAirDate: text('next_air_date'),
+  lastAirDate: text('last_air_date'),
+  refreshedAt: ts('refreshed_at').notNull(),
+  createdAt: ts('created_at').notNull(),
+});
+
+export const seasons = sqliteTable(
+  'seasons',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    titleId: integer('title_id')
+      .notNull()
+      .references(() => titles.id, { onDelete: 'cascade' }),
+    number: integer('number').notNull(),
+    name: text('name').notNull(),
+    airDate: text('air_date'),
+    episodeCount: integer('episode_count').notNull().default(0),
+    posterPath: text('poster_path'),
+  },
+  (t) => [uniqueIndex('seasons_title_number').on(t.titleId, t.number)],
+);
+
+export const episodes = sqliteTable(
+  'episodes',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    titleId: integer('title_id')
+      .notNull()
+      .references(() => titles.id, { onDelete: 'cascade' }),
+    season: integer('season').notNull(),
+    number: integer('number').notNull(),
+    name: text('name').notNull(),
+    airDate: text('air_date'),
+    runtime: integer('runtime'),
+  },
+  (t) => [uniqueIndex('episodes_title_season_number').on(t.titleId, t.season, t.number)],
+);
+
+export type Title = typeof titles.$inferSelect;
+export type Season = typeof seasons.$inferSelect;
+export type Episode = typeof episodes.$inferSelect;
