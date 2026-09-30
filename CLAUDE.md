@@ -54,6 +54,10 @@ Self-hosted сервис для одного пользователя: подп�
 - Тесты: Vitest (unit), Playwright (e2e входа). Образ Docker только `linux/amd64`.
 - TypeScript 6.0 (не 7: typescript-eslint пока не поддерживает TS 7), ESLint 9 (плагины eslint-config-next не поддерживают 10).
 - Миграции данных из старого Dublyarr не будет — начинаем с нуля.
+- Env: `DATA_DIR` (/data), `PORT` (3000), `LAYA_PORT` (8765), `DUBLYARR_SECRET_KEY`, `LOG_LEVEL`.
+- Точка входа контейнера — `src/entry/main.ts` → `dist/supervisor.cjs`; воркер `src/worker/main.ts`, CLI `src/cli/main.ts` (esbuild, `esbuild.mjs`).
+- Доменная логика — в `src/lib/*`, функции принимают `db` параметром (тесты на `:memory:` через `tests/unit/helpers.ts`).
+- Server actions возвращают введённые значения (`src/lib/form-values.ts`): React 19 сбрасывает форму после action.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

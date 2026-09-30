@@ -1,0 +1,14 @@
+node_modules
+.next
+dist
+.data
+.data-*
+.git
+.superpowers
+tests
+design
+docs
+playwright-report
+test-results
+*.tsbuildinfo
+.env*

@@ -1,0 +1,16 @@
+services:
+  dublyarr:
+    image: dublyarr:dev
+    container_name: dublyarr
+    platform: linux/amd64
+    ports:
+      - "3000:3000"
+    environment:
+      # openssl rand -base64 32 — храните вместе с бэкапом базы
+      DUBLYARR_SECRET_KEY: "<ключ>"
+      TZ: Europe/Moscow
+    volumes:
+      - /volume1/docker/dublyarr:/data
+      - /volume1/downloads:/downloads
+      - /volume1/media:/media
+    restart: unless-stopped
