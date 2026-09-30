@@ -23,6 +23,13 @@ export function migrateDb(db: Db): void {
 }
 
 const g = globalThis as unknown as { __dublyarrDb?: Db };
+
+/** Общее подключение процесса. Миграции идемпотентны: супервизор уже применил их, в dev это страховка. */
 export function getDb(): Db {
-  return (g.__dublyarrDb ??= openDb(getConfig().dbPath));
+  if (!g.__dublyarrDb) {
+    const db = openDb(getConfig().dbPath);
+    migrateDb(db);
+    g.__dublyarrDb = db;
+  }
+  return g.__dublyarrDb;
 }
