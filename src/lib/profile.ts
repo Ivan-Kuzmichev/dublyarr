@@ -1,3 +1,7 @@
+import type { Db } from './db/client';
+import { getSetting, setSetting } from './settings';
+import { findStudioByAlias, listStudios } from './studios';
+
 // Профиль подписки: порядок озвучек, качество, что скачивать. Он же — профиль по умолчанию.
 
 export type DubPosition =
@@ -20,3 +24,170 @@ export type Profile = {
   replaceWithHigher: boolean;
   autoNextSeason: boolean;
 };
+
+// --- проверка ---
+
+export type ValidationResult = { ok: true; profile: Profile } | { ok: false; error: string };
+
+class Invalid extends Error {}
+const BAD = 'Неверные данные профиля';
+const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null && !Array.isArray(v);
+const bool = (v: unknown) => {
+  if (typeof v !== 'boolean') throw new Invalid(BAD);
+  return v;
+};
+const int = (v: unknown) => {
+  if (typeof v !== 'number' || !Number.isInteger(v)) throw new Invalid(BAD);
+  return v;
+};
+
+function dubsOf(raw: unknown, known: Set<number>): DubPosition[] {
+  if (!Array.isArray(raw)) throw new Invalid(BAD);
+  if (raw.length === 0) throw new Invalid('Выберите хотя бы одну озвучку');
+  const out: DubPosition[] = [];
+  const studiosSeen = new Set<number>();
+  let original = false;
+  raw.forEach((d, i) => {
+    if (!isObj(d)) throw new Invalid(BAD);
+    const waitDays = i === 0 ? 0 : int(d.waitDays);
+    if (waitDays < 0 || waitDays > 60) throw new Invalid('Ожидание — от 0 до 60 дней');
+    if (i > 0 && out[i - 1].kind === 'any') throw new Invalid('«Любая» — только одна и последней');
+    if (d.kind === 'studio') {
+      const studioId = int(d.studioId);
+      if (!known.has(studioId)) throw new Invalid('Неизвестная студия');
+      if (studiosSeen.has(studioId)) throw new Invalid('Студия выбрана дважды');
+      studiosSeen.add(studioId);
+      out.push({ kind: 'studio', studioId, waitDays });
+    } else if (d.kind === 'any') {
+      out.push({ kind: 'any', waitDays });
+    } else if (d.kind === 'original') {
+      if (original) throw new Invalid('«Оригинал» выбран дважды');
+      original = true;
+      out.push({ kind: 'original', waitDays });
+    } else throw new Invalid(BAD);
+  });
+  return out;
+}
+
+function qualityOf(raw: unknown): Quality {
+  if (!isObj(raw)) throw new Invalid(BAD);
+  if (raw.target !== 720 && raw.target !== 1080 && raw.target !== 2160) throw new Invalid('Качество — 720p, 1080p или 2160p');
+  let maxSizeGb: number | null = null;
+  if (raw.maxSizeGb !== null) {
+    if (typeof raw.maxSizeGb !== 'number' || !(raw.maxSizeGb >= 0.5 && raw.maxSizeGb <= 200)) throw new Invalid('Лимит — от 0,5 до 200 ГБ');
+    maxSizeGb = raw.maxSizeGb;
+  }
+  return { target: raw.target, allowLower: bool(raw.allowLower), preferHdr: bool(raw.preferHdr), maxSizeGb };
+}
+
+function scopeOf(raw: unknown): Scope {
+  if (!isObj(raw)) throw new Invalid(BAD);
+  if (raw.mode === 'all' || raw.mode === 'new') return { mode: raw.mode };
+  if (raw.mode !== 'from' || (raw.until !== 'season_end' && raw.until !== 'onward')) throw new Invalid(BAD);
+  const season = int(raw.season);
+  const episode = int(raw.episode);
+  if (season < 1 || episode < 1) throw new Invalid('Сезон и серия — с 1');
+  return { mode: 'from', season, episode, until: raw.until };
+}
+
+/** Строит профиль заново только из известных полей; всё, что пришло от клиента, проверяется. */
+export function validateProfile(raw: unknown, knownStudioIds: Set<number>): ValidationResult {
+  try {
+    if (!isObj(raw)) throw new Invalid(BAD);
+    return {
+      ok: true,
+      profile: {
+        dubs: dubsOf(raw.dubs, knownStudioIds),
+        quality: qualityOf(raw.quality),
+        scope: scopeOf(raw.scope),
+        wholeSeasonAfterFinale: bool(raw.wholeSeasonAfterFinale),
+        replaceWithHigher: bool(raw.replaceWithHigher),
+        autoNextSeason: bool(raw.autoNextSeason),
+      },
+    };
+  } catch (e) {
+    if (e instanceof Invalid) return { ok: false, error: e.message };
+    throw e;
+  }
+}
+
+export function parseProfileJson(json: string, knownStudioIds: Set<number>): ValidationResult {
+  let raw: unknown;
+  try {
+    raw = JSON.parse(json);
+  } catch {
+    return { ok: false, error: BAD };
+  }
+  return validateProfile(raw, knownStudioIds);
+}
+
+// --- профили по умолчанию ---
+
+const BUILTIN: Record<'series' | 'anime', string[]> = {
+  series: ['LostFilm', 'HDrezka Studio'],
+  anime: ['AniDUB', 'AniLibria'],
+};
+const BUILTIN_WAITS = [0, 2];
+const ANY_WAIT = 5;
+
+const knownIds = (db: Db) => new Set(listStudios(db).map((s) => s.id));
+
+/** Встроенный профиль; студии, которых нет в словаре, пропускаются. */
+export function builtinProfile(db: Db, kind: 'series' | 'anime'): Profile {
+  const dubs: DubPosition[] = [];
+  BUILTIN[kind].forEach((name, i) => {
+    const s = findStudioByAlias(db, name);
+    if (s) dubs.push({ kind: 'studio', studioId: s.id, waitDays: dubs.length === 0 ? 0 : BUILTIN_WAITS[i] });
+  });
+  dubs.push({ kind: 'any', waitDays: dubs.length === 0 ? 0 : ANY_WAIT });
+  return {
+    dubs,
+    quality: { target: 2160, allowLower: true, preferHdr: true, maxSizeGb: null },
+    scope: { mode: 'new' },
+    wholeSeasonAfterFinale: false,
+    replaceWithHigher: true,
+    autoNextSeason: true,
+  };
+}
+
+export function getDefaultProfile(db: Db, kind: 'series' | 'anime'): Profile {
+  const saved = getSetting<Profile>(db, `profile.${kind}`);
+  if (!saved) return builtinProfile(db, kind);
+  const known = knownIds(db);
+  const dubs = saved.dubs.filter((d) => d.kind !== 'studio' || known.has(d.studioId));
+  const r = validateProfile({ ...saved, dubs }, known);
+  return r.ok ? r.profile : builtinProfile(db, kind);
+}
+
+export function saveDefaultProfile(db: Db, kind: 'series' | 'anime', p: Profile) {
+  setSetting(db, `profile.${kind}`, p);
+}
+
+// --- описание ---
+
+export function dubLabel(d: DubPosition, studioName: (id: number) => string | undefined): string {
+  if (d.kind === 'any') return 'Любая';
+  if (d.kind === 'original') return 'Оригинал с субтитрами';
+  return studioName(d.studioId) ?? 'Студия удалена';
+}
+
+export function describeProfile(p: Profile, studioName: (id: number) => string | undefined) {
+  const chain = p.dubs.map((d, i) => dubLabel(d, studioName) + (i > 0 ? ` (${d.waitDays} дн)` : '')).join(' → ');
+  const q = p.quality;
+  const quality = [
+    `${q.target}p${q.allowLower ? ', иначе ниже' : ''}`,
+    q.preferHdr ? 'HDR' : null,
+    q.maxSizeGb !== null ? `до ${String(q.maxSizeGb).replace('.', ',')} ГБ` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+  const s = p.scope;
+  const code = (a: number, b: number) => `S${String(a).padStart(2, '0')}E${String(b).padStart(2, '0')}`;
+  const scope =
+    s.mode === 'all'
+      ? 'Все сезоны'
+      : s.mode === 'new'
+        ? 'Только новые серии'
+        : `С ${code(s.season, s.episode)} ${s.until === 'season_end' ? 'до конца сезона' : 'и дальше'}`;
+  return { chain, quality, scope };
+}
