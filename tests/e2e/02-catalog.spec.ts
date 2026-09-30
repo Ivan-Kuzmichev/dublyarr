@@ -1,20 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { readFileSync } from 'node:fs';
-import path from 'node:path';
-import { totpAt, currentStep } from '../../src/lib/auth/totp';
+import { loginWithCode } from './helpers';
 
 test('ключ TMDB в настройках → тренды → поиск → карточка → смена типа', async ({ page }) => {
-  const secret = readFileSync(path.join(process.env.E2E_DIR!, 'totp-secret'), 'utf8');
-  await page.goto('/login');
-  await page.getByLabel('Логин').fill('admin');
-  await page.getByLabel('Пароль', { exact: true }).fill('очень-длинный-пароль');
-  await page.getByRole('button', { name: 'Войти' }).click();
-  await expect(page.getByRole('heading', { name: 'Код подтверждения' })).toBeVisible();
-  // Сценарий 01 использовал коды вплоть до «текущий шаг + 1». Ждём новое 30-секундное окно
-  // и берём код следующего шага: он новее всех использованных и ещё в допустимом окне ±1.
-  await page.waitForTimeout(30_000 - (Date.now() % 30_000) + 500);
-  await page.getByLabel('Код из приложения').fill(totpAt(secret, currentStep(Date.now()) + 1));
-  await expect(page.getByRole('heading', { name: 'Сегодня' })).toBeVisible();
+  await loginWithCode(page);
 
   await page.goto('/discover');
   await expect(page.getByText('Добавьте ключ TMDB')).toBeVisible();

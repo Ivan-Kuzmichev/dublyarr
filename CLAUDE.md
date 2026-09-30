@@ -70,6 +70,17 @@ Self-hosted сервис для одного пользователя: подп�
 - Тесты: фикстуры TMDB в `tests/fixtures/tmdb/`, заглушка `tests/e2e/tmdb-stub.mjs` (порт 3199); env `TMDB_BASE_URL`, `TMDB_IMAGE_BASE_URL`.
   e2e идут по порядку имён файлов (`01-…`, `02-…`) на одной базе; секрет TOTP 01 пишет в `$E2E_DIR/totp-secret`.
 
+## Решения (фаза 1b — подписки и студии)
+
+- Словарь студий: `src/lib/studios.ts` (нормализация написаний `normalizeStudio`, засев `STUDIO_SEED` один раз за жизнь базы в `getDb`,
+  запрет удаления используемой студии). Имена и варианты уникальны во всём словаре.
+- Профиль: чистая часть (типы, `validateProfile`, `describeProfile`) — `src/lib/profile-core.ts` (годится для клиента);
+  профили по умолчанию — `src/lib/profile.ts`, `app_settings['profile.series' | 'profile.anime']`, иначе встроенные.
+  Подписка хранит свою копию профиля (JSON). Всё, что приходит из формы, проверяется на сервере.
+- `wantedEpisodes(subscription, episodes, today)` в `src/lib/subscriptions.ts` — точка входа для поиска (1c).
+- Окно подписки = `ProfileEditor` + `SubscribeDialog` (то же для профилей по умолчанию); модалка/шторка — `ui/Modal`.
+- e2e: вход с кодом — `tests/e2e/helpers.ts` (`loginWithCode`); сценарии идут на одной базе и учитывают изменения предыдущих.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
