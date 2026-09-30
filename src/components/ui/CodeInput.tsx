@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Props = { name: string; onComplete?: (code: string) => void; autoFocus?: boolean; label?: string };
 
@@ -11,6 +11,12 @@ type Props = { name: string; onComplete?: (code: string) => void; autoFocus?: bo
 export function CodeInput({ name, onComplete, autoFocus, label = 'Код из приложения' }: Props) {
   const [digits, setDigits] = useState<string[]>(Array(6).fill(''));
   const refs = useRef<(HTMLInputElement | null)[]>([]);
+  const code = digits.join('');
+
+  // После рендера: скрытое поле уже содержит полный код, форму можно отправлять.
+  useEffect(() => {
+    if (code.length === 6) onComplete?.(code);
+  }, [code, onComplete]);
 
   function put(from: number, raw: string) {
     const incoming = raw.replace(/\D/g, '').slice(0, 6 - from).split('');
@@ -20,8 +26,6 @@ export function CodeInput({ name, onComplete, autoFocus, label = 'Код из п
     setDigits(next);
     const last = Math.min(from + incoming.length, 5);
     refs.current[last]?.focus();
-    const code = next.join('');
-    if (code.length === 6 && onComplete) onComplete(code);
   }
 
   function onKeyDown(i: number, e: React.KeyboardEvent<HTMLInputElement>) {
@@ -37,7 +41,7 @@ export function CodeInput({ name, onComplete, autoFocus, label = 'Код из п
 
   return (
     <div role="group" aria-label="Шесть цифр кода" className="flex justify-between gap-2">
-      <input type="hidden" name={name} value={digits.join('')} />
+      <input type="hidden" name={name} value={code} />
       {digits.map((d, i) => (
         <input
           key={i}
