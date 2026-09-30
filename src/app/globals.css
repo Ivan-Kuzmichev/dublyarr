@@ -1,0 +1,52 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-bg: #121110;
+  --color-surface: #1b1a18;
+  --color-surface-2: #242220;
+  --color-surface-3: #1f1d1b;
+  --color-sidebar: #171614;
+  --color-line: #2e2b28;
+  --color-line-soft: #242220;
+  --color-line-strong: #3a3632;
+  --color-line-nav: #2a2724;
+  --color-field-line: #34302c;
+  --color-nav-active: #2a2622;
+  --color-text: #f3efe8;
+  --color-text-2: #d9d3c9;
+  --color-text-3: #b5aea4;
+  --color-muted: #a39c92;
+  --color-faint: #8a847b;
+  --color-accent: #f0a442;
+  --color-accent-hover: #ffc577;
+  --color-on-accent: #1a1206;
+  --color-progress: #7fb2ff;
+  --color-danger: #ff8a7a;
+  --color-danger-bg: #1f1916;
+  --color-danger-line: #4a2f28;
+  --color-destructive: #e5654f;
+  --font-sans: var(--font-onest), 'Segoe UI', system-ui, sans-serif;
+  --font-display: var(--font-unbounded), 'Segoe UI', sans-serif;
+  --font-mono: var(--font-mono-jb), ui-monospace, monospace;
+}
+
+html {
+  color-scheme: dark;
+}
+body {
+  margin: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+}
+a {
+  color: var(--color-accent);
+}
+a:hover {
+  color: var(--color-accent-hover);
+}
+button,
+input,
+select {
+  font-family: inherit;
+}

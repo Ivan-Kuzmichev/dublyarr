@@ -9,3 +9,8 @@ coverage/
 test-results/
 playwright-report/
 .DS_Store
+.superpowers/
+.data/
+.data-*/
+next-env.d.ts
+*.tsbuildinfo

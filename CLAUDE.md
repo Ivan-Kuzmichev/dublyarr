@@ -52,4 +52,5 @@ Self-hosted сервис для одного пользователя: подп�
 - Вход: argon2 (`@node-rs/argon2`), TOTP — своя реализация на `node:crypto` (RFC 6238), сеансы — хэш токена в БД.
   Резервных кодов нет. Восстановление — CLI `dublyarr reset-password [--disable-2fa]`.
 - Тесты: Vitest (unit), Playwright (e2e входа). Образ Docker только `linux/amd64`.
+- TypeScript 6.0 (не 7: typescript-eslint пока не поддерживает TS 7), ESLint 9 (плагины eslint-config-next не поддерживают 10).
 - Миграции данных из старого Dublyarr не будет — начинаем с нуля.
