@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { PageTitle } from '@/components/shell/PageTitle';
-import { Button, buttonClass } from '@/components/ui/Button';
+import { buttonClass } from '@/components/ui/Button';
 import { Icon, ICONS } from '@/components/ui/Icon';
 import { Poster } from '@/components/catalog/Poster';
 import { getDb } from '@/lib/db/client';
@@ -13,6 +13,11 @@ import { formatAirDate, pickDefaultSeason, todayIso } from '@/lib/dates';
 import type { Title } from '@/lib/db/schema';
 import { KindSwitch } from './KindSwitch';
 import { RefreshButton } from './RefreshButton';
+import { SubscribeButton } from './SubscribeButton';
+import { SubscriptionPanel } from './SubscriptionPanel';
+import { getSubscription } from '@/lib/subscriptions';
+import { getDefaultProfile } from '@/lib/profile';
+import { listStudios } from '@/lib/studios';
 
 export const dynamic = 'force-dynamic';
 
@@ -70,6 +75,10 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
   const regular = seasons.filter((s) => s.number > 0).length;
   const ordered = [...seasons.filter((s) => s.number > 0), ...seasons.filter((s) => s.number === 0)];
   const backdrop = imageUrl('w1280', t.backdropPath);
+  const sub = getSubscription(db, t.id);
+  const studios = listStudios(db, t.kind).map((s) => ({ id: s.id, name: s.name }));
+  const studioNames = Object.fromEntries(listStudios(db).map((s) => [s.id, s.name]));
+  const episodeTotal = seasons.filter((s) => s.number > 0).reduce((n, s) => n + s.episodeCount, 0);
   const meta = [
     t.nameOriginal !== t.nameRu ? t.nameOriginal : null,
     t.year,
@@ -103,20 +112,30 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <Button disabled title="Подписки — в следующем обновлении">
-              Подписаться
-            </Button>
+            <SubscribeButton
+              tmdbId={t.tmdbId}
+              subscribed={!!sub}
+              title={t.nameRu}
+              subtitle={[t.nameOriginal !== t.nameRu ? t.nameOriginal : null, t.year, `${regular} ${plural(regular, 'сезон', 'сезона', 'сезонов')}, ${episodeTotal} ${plural(episodeTotal, 'серия', 'серии', 'серий')}`, STATUS[t.status]].filter(Boolean).join(' · ')}
+              studios={studios}
+              profile={sub?.profile ?? getDefaultProfile(db, t.kind)}
+            />
             <RefreshButton tmdbId={t.tmdbId} />
             <KindSwitch tmdbId={t.tmdbId} kind={t.kind} />
           </div>
-          <span className="text-[13px] text-faint">Подписки — в следующем обновлении</span>
         </div>
       </section>
 
       {loaded.r.stale && <p className="m-0 text-sm text-accent">TMDB не ответил, данные от {refreshedLabel(t.refreshedAt)}</p>}
       {t.overview && <p className="m-0 max-w-[760px] text-[15px] leading-relaxed text-text-2">{t.overview}</p>}
 
-      <section className="flex flex-col gap-4">
+      <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_340px]">
+      {sub && (
+        <div className="lg:order-2">
+          <SubscriptionPanel profile={sub.profile} studioNames={studioNames} />
+        </div>
+      )}
+      <section className="flex min-w-0 flex-col gap-4 lg:order-1">
         <nav aria-label="Сезоны" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 sm:mx-0 sm:flex-wrap sm:px-0">
           {ordered.map((s) => {
             const on = s.number === current;
@@ -160,6 +179,7 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
           </div>
         )}
       </section>
+      </div>
     </div>
   );
 }
