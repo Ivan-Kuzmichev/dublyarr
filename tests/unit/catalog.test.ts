@@ -102,3 +102,47 @@ test('кого обновлять и что скоро выходит', async ()
   expect(upcomingTitles(db, '2026-09-30', 10)).toEqual([]);
   expect(getTitleByTmdbId(db, 7)?.status).toBe('returning');
 });
+
+test('смена типа во время обновления не теряется', async () => {
+  const db = testDb();
+  const { tmdb } = got();
+  const t = await syncTitle(db, tmdb, 1399, { now: T0 });
+  const racing: Tmdb = {
+    ...tmdb,
+    season: async (id, n) => {
+      const s = await tmdb.season(id, n);
+      setKind(db, t.id, 'anime'); // пользователь переключил тип, пока грузились сезоны
+      return s;
+    },
+  };
+  const after = await syncTitle(db, racing, 1399, { now: T0 + 1 });
+  expect(after).toMatchObject({ kind: 'anime', kindManual: true });
+});
+
+test('два одновременных открытия нового сериала не падают', async () => {
+  const db = testDb();
+  const { tmdb } = got();
+  const [a, b] = await Promise.all([syncTitle(db, tmdb, 1399, { now: T0 }), syncTitle(db, tmdb, 1399, { now: T0 })]);
+  expect(a.id).toBe(b.id);
+  expect(listSeasons(db, a.id)).toHaveLength(2);
+});
+
+test('после неудачного обновления карточка 10 минут не ждёт TMDB', async () => {
+  const db = testDb();
+  const { tmdb } = got();
+  await syncTitle(db, tmdb, 1399, { now: T0 });
+  let calls = 0;
+  const hanging: Tmdb = {
+    ...tmdb,
+    details: async () => {
+      calls++;
+      throw new TmdbError('TMDB не отвечает: timeout', 'network');
+    },
+  };
+  const t1 = T0 + STALE_MS + 1;
+  expect((await openTitle(db, hanging, 1399, t1)).stale).toBe(true);
+  expect((await openTitle(db, hanging, 1399, t1 + 5 * 60_000)).stale).toBe(true);
+  expect(calls).toBe(1);
+  await openTitle(db, hanging, 1399, t1 + 11 * 60_000);
+  expect(calls).toBe(2);
+});

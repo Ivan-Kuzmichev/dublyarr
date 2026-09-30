@@ -45,21 +45,17 @@ export async function syncTitle(db: Db, tmdb: Tmdb, tmdbId: number, opts: { allS
   const fetched: TmdbSeason[] = [];
   for (const n of toFetch) fetched.push(await tmdb.season(tmdbId, n));
 
-  // Все запросы сделаны — пишем одной транзакцией.
+  // Все запросы сделаны — пишем одной транзакцией. Строку перечитываем внутри: пока шли запросы,
+  // пользователь мог сменить тип, а параллельное открытие — уже вставить сериал.
   return db.transaction((tx) => {
-    const kind = existing?.kindManual ? existing.kind : fields.kind;
-    const row = existing
-      ? tx
-          .update(titles)
-          .set({ ...fields, kind, refreshedAt: now })
-          .where(eq(titles.id, existing.id))
-          .returning()
-          .get()
-      : tx
-          .insert(titles)
-          .values({ ...fields, kind, refreshedAt: now, createdAt: now })
-          .returning()
-          .get();
+    const current = tx.select().from(titles).where(eq(titles.tmdbId, tmdbId)).get();
+    const kind = current?.kindManual ? current.kind : fields.kind;
+    const row = tx
+      .insert(titles)
+      .values({ ...fields, kind, refreshedAt: now, createdAt: now })
+      .onConflictDoUpdate({ target: titles.tmdbId, set: { ...fields, kind, refreshedAt: now } })
+      .returning()
+      .get();
     const numbers = newSeasons.map((s) => s.number);
     tx.delete(seasons)
       .where(and(eq(seasons.titleId, row.id), notInArray(seasons.number, numbers)))
@@ -98,6 +94,15 @@ export async function syncTitle(db: Db, tmdb: Tmdb, tmdbId: number, opts: { allS
   });
 }
 
+// Если TMDB не ответил, карточка какое-то время не ждёт его снова (иначе каждое открытие — таймаут).
+const RETRY_AFTER_FAILURE_MS = 10 * 60_000;
+const failuresByDb = new WeakMap<Db, Map<number, { at: number; error: string }>>();
+const failuresOf = (db: Db) => {
+  let m = failuresByDb.get(db);
+  if (!m) failuresByDb.set(db, (m = new Map()));
+  return m;
+};
+
 export type OpenResult = { title: Title; stale: false } | { title: Title; stale: true; error: string };
 
 /** Для карточки: из базы, при необходимости освежив; TMDB недоступен — показываем сохранённое. */
@@ -108,10 +113,17 @@ export async function openTitle(db: Db, tmdb: Tmdb | null, tmdbId: number, now =
     return { title: await syncTitle(db, tmdb, tmdbId, { allSeasons: true, now }), stale: false };
   }
   if (now - existing.refreshedAt < STALE_MS || !tmdb) return { title: existing, stale: false };
+  const recentFailures = failuresOf(db);
+  const failed = recentFailures.get(tmdbId);
+  if (failed && now - failed.at < RETRY_AFTER_FAILURE_MS) return { title: existing, stale: true, error: failed.error };
   try {
-    return { title: await syncTitle(db, tmdb, tmdbId, { now }), stale: false };
+    const title = await syncTitle(db, tmdb, tmdbId, { now });
+    recentFailures.delete(tmdbId);
+    return { title, stale: false };
   } catch (e) {
-    return { title: existing, stale: true, error: e instanceof Error ? e.message : String(e) };
+    const error = e instanceof Error ? e.message : String(e);
+    recentFailures.set(tmdbId, { at: now, error });
+    return { title: existing, stale: true, error };
   }
 }
 
