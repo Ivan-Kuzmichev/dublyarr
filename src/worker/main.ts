@@ -2,12 +2,12 @@ import { getDb } from '../lib/db/client';
 import { getConfig } from '../lib/config';
 import { log } from '../lib/log';
 import { beat } from '../lib/heartbeat';
-import { runOnce, requeueStale, type Handler } from './jobs';
-
-// Обработчики задач появятся в фазе 1 (поиск, загрузки).
-const handlers: Record<string, Handler> = {};
+import { runOnce, requeueStale } from './jobs';
+import { buildHandlers } from './handlers';
+import { scheduleDaily } from './schedule';
 
 const db = getDb();
+const handlers = buildHandlers(db);
 let stopping = false;
 let lastLaya = 0;
 let layaOk = false;
@@ -33,6 +33,7 @@ async function loop() {
       lastLaya = Date.now();
       await checkLaya();
     }
+    scheduleDaily(db, 'tmdb.refresh-all');
     while (!stopping && (await runOnce(db, handlers))) {
       // разбираем очередь до конца
     }

@@ -7,7 +7,7 @@ const common = {
   platform: 'node',
   target: 'node24',
   format: 'cjs',
-  external: ['better-sqlite3', '@node-rs/argon2', 'pino'],
+  external: ['better-sqlite3', '@node-rs/argon2', 'pino', 'undici'],
   alias: { '@': path.resolve('src') },
   logLevel: 'info',
 };
