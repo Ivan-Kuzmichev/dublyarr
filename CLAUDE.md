@@ -17,7 +17,7 @@ Self-hosted сервис для одного пользователя: подп�
 ## Стек (решено)
 
 - Next.js (App Router) + TypeScript, строгий режим.
-- SQLite (файл на томе `/data`), миграции через ORM (Drizzle или Prisma — выбрать в фазе 0 и зафиксировать здесь).
+- SQLite (файл на томе `/data`, WAL) через `better-sqlite3` + **Drizzle** (SQL-миграции `drizzle-kit` в `drizzle/`, применяются при старте).
 - Один Docker-образ: Node + Python (Laya) + MKVToolNix + ffprobe.
   Точка входа на Node запускает: веб-сервер Next.js, фоновый воркер задач, laya-serve дочерним процессом на 127.0.0.1.
 - Интеграции: TMDB API, несколько Torznab-источников (Jackett, при желании Prowlarr), qBittorrent WebAPI v2,
@@ -44,7 +44,12 @@ Self-hosted сервис для одного пользователя: подп�
 
 Папки медиа и загрузок — отдельные тома, пути задаются в настройках.
 
-## Открытые вопросы
+## Решения (фаза 0)
 
-- Стек текущей версии Dublyarr и нужна ли миграция подписок/истории — уточнить у владельца.
-- ORM: Drizzle vs Prisma.
+- pnpm, Next.js 16 (App Router, `output: 'standalone'`), Tailwind v4 (токены в `@theme`), шрифты через `next/font`.
+- Точка входа `src/entry/supervisor.ts`: миграции → дочерние процессы Next, воркер, laya-serve; перезапуск упавших, проброс SIGTERM.
+- Секреты: AES-256-GCM, ключ из `DUBLYARR_SECRET_KEY` или сгенерированный `/data/secret.key` (0600). Логгер pino с redact.
+- Вход: argon2 (`@node-rs/argon2`), TOTP реализован сами на `node:crypto` (RFC 6238), сеансы — хэш токена в БД.
+  Резервных кодов нет. Восстановление — CLI `dublyarr reset-password [--disable-2fa]`.
+- Тесты: Vitest (unit), Playwright (e2e входа). Образ Docker только `linux/amd64`.
+- Миграции данных из старого Dublyarr не будет — начинаем с нуля.
