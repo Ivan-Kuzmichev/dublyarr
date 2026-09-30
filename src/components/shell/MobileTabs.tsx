@@ -8,6 +8,7 @@ import { MOBILE_TABS } from './nav';
 function activeTab(pathname: string) {
   const seg = pathname.split('/')[1] ?? '';
   if (seg === 'more' || seg === 'settings' || seg === 'storage' || seg === 'discover') return 'more';
+  if (seg === 'series') return 'library';
   return MOBILE_TABS.find((t) => t.href !== '/' && t.href === `/${seg}`)?.id ?? 'today';
 }
 

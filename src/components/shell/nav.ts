@@ -38,6 +38,7 @@ export type SettingsSectionId = (typeof SETTINGS_SECTIONS)[number]['id'];
 export function activeNavId(pathname: string): NavId {
   const seg = pathname.split('/')[1] ?? '';
   if (seg === 'more') return 'settings';
+  if (seg === 'series') return 'library';
   const hit = DESKTOP_NAV.find((n) => n.href !== '/' && n.href === `/${seg}`);
   return (hit?.id as NavId | undefined) ?? 'today';
 }
