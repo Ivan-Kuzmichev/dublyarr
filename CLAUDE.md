@@ -46,10 +46,10 @@ Self-hosted сервис для одного пользователя: подп�
 
 ## Решения (фаза 0)
 
-- pnpm, Next.js 16 (App Router, `output: 'standalone'`), Tailwind v4 (токены в `@theme`), шрифты через `next/font`.
+- pnpm, Next.js 16 (App Router; в образе `next start` из prod-`node_modules`, без standalone), Tailwind v4 (токены в `@theme`), шрифты через `next/font`.
 - Точка входа `src/entry/supervisor.ts`: миграции → дочерние процессы Next, воркер, laya-serve; перезапуск упавших, проброс SIGTERM.
 - Секреты: AES-256-GCM, ключ из `DUBLYARR_SECRET_KEY` или сгенерированный `/data/secret.key` (0600). Логгер pino с redact.
-- Вход: argon2 (`@node-rs/argon2`), TOTP реализован сами на `node:crypto` (RFC 6238), сеансы — хэш токена в БД.
+- Вход: argon2 (`@node-rs/argon2`), TOTP — своя реализация на `node:crypto` (RFC 6238), сеансы — хэш токена в БД.
   Резервных кодов нет. Восстановление — CLI `dublyarr reset-password [--disable-2fa]`.
 - Тесты: Vitest (unit), Playwright (e2e входа). Образ Docker только `linux/amd64`.
 - Миграции данных из старого Dublyarr не будет — начинаем с нуля.

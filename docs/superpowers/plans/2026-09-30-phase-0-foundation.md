@@ -6,7 +6,7 @@
 адаптивная оболочка (боковая/нижняя навигация) с дизайн-токенами, SQLite + миграции, шифрование секретов,
 супервизор с воркером и заглушкой laya-serve.
 
-**Architecture:** один pnpm-пакет. Next.js 16 (App Router) рендерит интерфейс и выполняет server actions; доменная логика —
+**Architecture:** один pnpm-пакет. Next.js 16 (App Router, без `standalone`: в образе `next start` из `node_modules`) рендерит интерфейс и выполняет server actions; доменная логика —
 чистые модули в `src/lib/*`, принимающие `db` параметром (тестируются на `:memory:`). Супервизор `src/entry/supervisor.ts`
 применяет миграции и запускает дочерние процессы: `next start`, воркер (`src/worker`), `laya/serve.py`. Процессы делят
 SQLite в режиме WAL. Воркер и CLI собираются esbuild в `dist/*.cjs`.
@@ -42,7 +42,7 @@ better-sqlite3, @node-rs/argon2, qrcode, pino, Vitest, Playwright, esbuild, Pyth
 ## Структура файлов
 
 ```
-package.json, pnpm-workspace.yaml (не нужен), tsconfig.json, next.config.ts, eslint.config.mjs,
+package.json, tsconfig.json, next.config.ts, eslint.config.mjs,
 vitest.config.ts, playwright.config.ts, drizzle.config.ts, postcss.config.mjs, esbuild.mjs, Dockerfile, .dockerignore
 drizzle/                       сгенерированные SQL-миграции
 laya/serve.py                  заглушка laya-serve (/health)
@@ -700,7 +700,7 @@ export function getSecretSetting<T>(db: Db, key: string): T | undefined {
 **Interfaces:**
 - Produces:
   - `hashPassword(p: string): Promise<string>`, `verifyPassword(hash: string, p: string): Promise<boolean>` (ложь при битом хэше, без исключения).
-  - `validateNewPassword(p: string): string | null` — текст ошибки на русском или `null`. Правило: ≥ 10 символов, не только цифры... — **только** «не короче 10 символов» (не усложняем).
+  - `validateNewPassword(p: string): string | null` — текст ошибки на русском или `null`. Правило одно: не короче 10 символов.
   - `newToken(): string` (32 байта base64url), `hashToken(t: string): string` (sha256 hex).
 
 - [ ] **Step 1: Failing test**
@@ -889,7 +889,7 @@ export function otpauthUri(secretB32: string, username: string): string {
     - `createSession(db, { userId, persistent, userAgent, ip }, now): { token: string; expiresAt: number }`
     - `validateSession(db, token, now): { session: Session; user: User } | null` — продлевает `lastSeenAt` и `expiresAt` (скользящее окно), удаляет просроченный.
     - `revokeSession(db, token)`, `revokeSessionById(db, id)`, `revokeAllSessions(db, userId, exceptId?: string)`, `listSessions(db, userId, now): Session[]` (только живые, по `lastSeenAt` desc).
-    - `createPendingLogin(db, userId, remember, now): string`; `consumePendingLogin(db, token, now): { userId: number; remember: boolean } | null` (не удаляет — удаление через `deletePendingLogin(db, token)` после успешного кода, чтобы при неверном коде можно было повторить); `peekPendingLogin` = то же, что consume без удаления → **одна функция `getPendingLogin`** + `deletePendingLogin`.
+    - `createPendingLogin(db, userId, remember, now): string`; `getPendingLogin(db, token, now): { userId: number; remember: boolean } | null` (не удаляет, чтобы при неверном коде можно было повторить); `deletePendingLogin(db, token)` — после успешного кода.
     - `createTrustedDevice(db, userId, userAgent, now): { token: string; expiresAt: number }`; `isTrustedDevice(db, token, userId, now): boolean`; `revokeTrustedDevices(db, userId)`.
   - `ratelimit.ts`: `MAX_FAILURES = 10`, `WINDOW_MS = 15 минут`; `recordFailure(db, keys: string[], now)`; `isBlocked(db, keys: string[], now): boolean`; `clearFailures(db, keys: string[])`; `prune(db, now)`.
 
@@ -1550,7 +1550,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 Вёрстка строго по `design/screens/Login.dc.html`, `Login2FA.dc.html`, `MobileLogin.dc.html`, `MobileLogin2FA.dc.html`:
 - `layout.tsx`: `≥ lg` — слева `AuthAside` 760 px (`bg-sidebar`, сетка 6 колонок повёрнутых на −6° постеров-заглушек цветами `ghost` из макета, `opacity-55`, затемнение `rgba(18,17,16,0.55)`, внизу `Logo size="lg"` и «Сериалы в нужной озвучке и качестве — сами, по мере выхода серий.»), справа форма по центру шириной 400 px. `< lg` — одна колонка `px-6 pt-12`, `Logo` сверху с `mb-6`.
 - Вход: `h1` «Вход» (32 px desktop / 26 px mobile), подпись «Твой Dublyarr на NAS», поля «Логин» (`autocomplete=username`), «Пароль» (`PasswordField`), чекбокс «Запомнить это устройство» (по умолчанию включён), кнопка «Войти» `size=lg`, внизу «Забыл пароль? Сбросить можно из контейнера: `dublyarr reset-password`». Ошибка — строка `text-danger` 14 px над кнопкой. Кнопка во время отправки — `disabled` + «Входим…».
-- Код: ссылка «‹ admin» (имя из pending → передать через `searchParams`? **Нет**: страница — серверный компонент, читает `dy_pending` и берёт `username` из БД), `h1` «Код подтверждения», текст «Открой приложение-аутентификатор и введи 6 цифр для Dublyarr.», `CodeInput`, чекбокс «Не спрашивать на этом устройстве 30 дней», кнопка «Подтвердить». Справа снизу счётчик «новый код через N с» (клиентский, `30 - (секунды % 30)`). Ссылки «Использовать резервный код» нет. Ввод 6-й цифры отправляет форму автоматически.
+- Код: ссылка «‹ admin» на `/login` (серверный компонент читает `dy_pending`, имя — через `getPendingUsername`), `h1` «Код подтверждения», текст «Открой приложение-аутентификатор и введи 6 цифр для Dublyarr.», `CodeInput`, чекбокс «Не спрашивать на этом устройстве 30 дней», кнопка «Подтвердить». Справа снизу счётчик «новый код через N с» (клиентский, `30 - (секунды % 30)`). Ссылки «Использовать резервный код» нет. Ввод 6-й цифры отправляет форму автоматически.
 
 Добавить в `src/lib/auth/sessions.ts` функцию `getPendingUsername(db, token, now): string | null` (join pending → users) с тестом:
 
@@ -1681,7 +1681,6 @@ test('проверка папки', async () => {
   expect(await checkWritableDir(path.join(dir, 'nope'))).toEqual({ ok: false, error: 'Папка не найдена' });
   const f = path.join(dir, 'file'); writeFileSync(f, '');
   expect(await checkWritableDir(f)).toEqual({ ok: false, error: 'Это не папка' });
-  const ro = path.join(dir, 'ro'); mkdtempSync(ro); // создаёт ro + суффикс
 });
 
 test.skipIf(process.getuid?.() === 0)('нет прав на запись', async () => {
@@ -1691,8 +1690,6 @@ test.skipIf(process.getuid?.() === 0)('нет прав на запись', async
   chmodSync(dir, 0o700);
 });
 ```
-
-(Строку `mkdtempSync(ro)` в первом тесте удалить — она лишняя; права проверяются во втором тесте.)
 
 ```ts
 // tests/unit/setup.test.ts
@@ -2178,7 +2175,7 @@ if (require.main === module) {
 
 ```ts
 // src/worker/jobs.ts
-import { eq, sql } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import type { Db } from '../lib/db/client';
 import { jobs } from '../lib/db/schema';
 import { log } from '../lib/log';
@@ -2219,10 +2216,9 @@ export async function runOnce(db: Db, handlers: Record<string, Handler>, now = D
 }
 
 export const requeueStale = (db: Db) => db.update(jobs).set({ status: 'queued' }).where(eq(jobs.status, 'running')).run();
-void sql;
 ```
 
-(Тест ожидает `runAt = t + 120 000` после первой неудачи: attempts станет 1 при claim → `60 000 * 2^1`. Строку `void sql` и импорт `sql` убрать, если не нужен.)
+(Тест ожидает `runAt = t + 120 000` после первой неудачи: при claim attempts становится 1 → `60 000 * 2^1`.)
 
 ```ts
 // src/lib/heartbeat.ts
@@ -2356,7 +2352,7 @@ await Promise.all([
 
 **Files:**
 - Create: `Dockerfile`, `.dockerignore`, `docker-compose.example.yml`, `playwright.config.ts`, `tests/e2e/auth.spec.ts`, `README.md`
-- Modify: `CLAUDE.md` (итоговые решения: без `output: 'standalone'` — образ запускает `next start` из `node_modules`; порты; env)
+- Modify: `CLAUDE.md` (env-переменные)
 
 **Interfaces:**
 - Consumes: всё выше.
@@ -2428,10 +2424,7 @@ process.env.E2E_DIR = dir;
 export default defineConfig({
   testDir: 'tests/e2e',
   use: { baseURL: 'http://127.0.0.1:3100' },
-  projects: [
-    { name: 'desktop', use: { viewport: { width: 1440, height: 900 } } },
-    { name: 'mobile', use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true } },
-  ],
+  projects: [{ name: 'desktop', use: { viewport: { width: 1440, height: 900 } } }],
   workers: 1,
   webServer: {
     command: 'pnpm build && node dist/supervisor.cjs',
@@ -2442,7 +2435,7 @@ export default defineConfig({
 });
 ```
 
-(Проекты desktop и mobile делят один сервер и одну БД — второй прогон упадёт на «аккаунт уже создан». Поэтому `workers: 1` и в тесте в начале: если `/` ведёт на `/login`, проект пропускается через `test.skip(...)` — **вместо этого** запускать по одному проекту: скрипт `"e2e": "playwright test --project=desktop && E2E_FRESH=1 playwright test --project=mobile"` не решает общий сервер. Решение: для mobile — отдельный `webServer`-инстанс нельзя по проектам, значит mobile-проект запускает свой сценарий `tests/e2e/mobile-login.spec.ts` (вход уже созданным пользователем через `/login` с кодом из `E2E_SECRET` не получить). **Итог: один проект `desktop` для полного сценария; мобильная вёрстка проверяется скриншотами вручную.** Удалить проект `mobile` из конфига.)
+Сценарий один и создаёт пользователя в свежей БД, поэтому проект один (desktop); мобильная вёрстка проверяется скриншотами 390×844 вручную.
 
 - [ ] **Step 2: Run** `pnpm exec playwright install chromium && pnpm e2e` — после доводки селекторов PASS.
 
@@ -2512,7 +2505,7 @@ docker stop dy
 ```
 Expected: `{"ok":true}`, версии mkvmerge/ffprobe, справка CLI, `healthy`, остановка < 10 с.
 
-- [ ] **Step 5: README.md** — запуск на Synology (compose выше, генерация ключа, первый запуск, сброс пароля `docker exec -it dublyarr dublyarr reset-password [--disable-2fa]`). CLAUDE.md — обновить раздел «Решения (фаза 0)»: убрать `output: 'standalone'`, дописать env-переменные `DATA_DIR, PORT, LAYA_PORT, DUBLYARR_SECRET_KEY, LOG_LEVEL`.
+- [ ] **Step 5: README.md** — запуск на Synology (compose выше, генерация ключа, первый запуск, сброс пароля `docker exec -it dublyarr dublyarr reset-password [--disable-2fa]`). CLAUDE.md — в раздел «Решения (фаза 0)» дописать env-переменные `DATA_DIR, PORT, LAYA_PORT, DUBLYARR_SECRET_KEY, LOG_LEVEL`.
 
 - [ ] **Step 6: Финальная проверка** `pnpm lint && pnpm typecheck && pnpm test && pnpm e2e`.
 - [ ] **Step 7: Commit** `feat: Docker-образ, e2e входа, документация`.
