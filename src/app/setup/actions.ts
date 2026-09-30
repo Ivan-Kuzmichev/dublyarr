@@ -8,7 +8,7 @@ import { validateNewPassword } from '@/lib/auth/password';
 import { createSession } from '@/lib/auth/sessions';
 import { COOKIE_SESSION, cookieOptions } from '@/lib/auth/cookies';
 import { requestContext } from '@/lib/auth/current';
-import { getSecretSetting, setSecretSetting, setSetting } from '@/lib/settings';
+import { tryGetSecretSetting, setSecretSetting, setSetting } from '@/lib/settings';
 import { markStep, completeSetup } from '@/lib/setup';
 import { checkQbittorrent, type QbitConfig } from '@/lib/integrations/qbittorrent';
 import { checkTorznab } from '@/lib/integrations/torznab';
@@ -50,7 +50,7 @@ export async function qbittorrentAction(_prev: StepState, form: FormData): Promi
     markStep(db, 'qbittorrent', 'skipped');
     redirect('/setup/sources');
   }
-  const saved = getSecretSetting<QbitConfig>(db, 'qbittorrent');
+  const saved = tryGetSecretSetting<QbitConfig>(db, 'qbittorrent');
   const cfg: QbitConfig = {
     url: str(form, 'url'),
     username: str(form, 'username'),

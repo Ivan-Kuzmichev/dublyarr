@@ -1,5 +1,5 @@
 import { getDb } from '@/lib/db/client';
-import { getSecretSetting } from '@/lib/settings';
+import { tryGetSecretSetting } from '@/lib/settings';
 import type { QbitConfig } from '@/lib/integrations/qbittorrent';
 import { Steps, StepHeading } from '../Steps';
 import { requireSetupSession } from '../guard';
@@ -7,7 +7,7 @@ import { QbitForm } from './QbitForm';
 
 export default async function SetupQbitPage() {
   await requireSetupSession();
-  const saved = getSecretSetting<QbitConfig>(getDb(), 'qbittorrent');
+  const saved = tryGetSecretSetting<QbitConfig>(getDb(), 'qbittorrent');
   return (
     <>
       <Steps current="qbittorrent" />

@@ -17,3 +17,12 @@ test('обычные и секретные настройки', () => {
   expect(raw.value).not.toContain('pw');
   expect(getSetting(db, 'nope')).toBeUndefined();
 });
+
+test('секрет под чужим ключом читается как «не сохранён»', async () => {
+  const db = testDb();
+  const { encrypt } = await import('@/lib/crypto/secretbox');
+  db.insert(appSettings).values({ key: 'qbittorrent', value: encrypt('{"url":"x"}', randomBytes(32)), encrypted: true, updatedAt: 1 }).run();
+  const { tryGetSecretSetting } = await import('@/lib/settings');
+  expect(tryGetSecretSetting(db, 'qbittorrent')).toBeUndefined();
+  expect(() => getSecretSetting(db, 'qbittorrent')).toThrow();
+});

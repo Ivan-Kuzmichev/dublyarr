@@ -2,6 +2,7 @@ import type { Db } from '../db/client';
 import { findUserByName, getUser, getTotpSecret, markTotpStep } from './users';
 import { hashPassword, verifyPassword } from './password';
 import { verifyTotp } from './totp';
+import { SecretDecryptError } from '../crypto/secretbox';
 import { isBlocked, recordFailure, clearFailures } from './ratelimit';
 import {
   createSession,
@@ -15,6 +16,7 @@ import {
 type Ctx = { ip: string; userAgent: string | null; trustToken: string | null; now?: number };
 
 const BLOCKED = 'Слишком много попыток. Подождите 15 минут.';
+const WRONG_KEY = 'Ключ шифрования не подходит к базе. Выключите 2FA: dublyarr reset-password --disable-2fa';
 
 // Для несуществующего логина всё равно считаем argon2 — время ответа не выдаёт, есть ли такой пользователь.
 let dummyHash: Promise<string> | undefined;
@@ -34,12 +36,12 @@ export async function passwordStep(
   const username = i.username.trim();
   const keys = [`ip:${ctx.ip}`, `user:${username}`];
   if (isBlocked(db, keys, now)) return { kind: 'error', message: BLOCKED };
+  // Попытка считается неудачной заранее, до await: иначе параллельные запросы
+  // успевают пройти isBlocked, пока считается argon2. При успехе счётчик сбрасывается.
+  recordFailure(db, keys, now);
   const user = findUserByName(db, username);
   const ok = await verifyPassword(user?.passwordHash ?? (await getDummyHash()), i.password);
-  if (!user || !ok) {
-    recordFailure(db, keys, now);
-    return { kind: 'error', message: 'Неверный логин или пароль' };
-  }
+  if (!user || !ok) return { kind: 'error', message: 'Неверный логин или пароль' };
   if (user.totpEnabled && !(ctx.trustToken && isTrustedDevice(db, ctx.trustToken, user.id, now))) {
     return { kind: 'need-code', pendingToken: createPendingLogin(db, user.id, i.remember, now) };
   }
@@ -59,7 +61,13 @@ export function codeStep(db: Db, i: { pendingToken: string; code: string; trustD
   if (!p || !user) return { kind: 'error', message: 'Вход устарел, начните заново' };
   const keys = [`ip:${ctx.ip}`, `user:${user.username}`];
   if (isBlocked(db, keys, now)) return { kind: 'error', message: BLOCKED };
-  const secret = getTotpSecret(user);
+  let secret: string | null;
+  try {
+    secret = getTotpSecret(user);
+  } catch (e) {
+    if (e instanceof SecretDecryptError) return { kind: 'error', message: WRONG_KEY };
+    throw e;
+  }
   const v = secret ? verifyTotp(secret, i.code, now, user.totpLastStep) : ({ ok: false } as const);
   if (!v.ok) {
     recordFailure(db, keys, now);

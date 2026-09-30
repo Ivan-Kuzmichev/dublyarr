@@ -77,3 +77,24 @@ test('с 2FA: шаг кода, повтор кода отклоняется, д�
   const r3 = await passwordStep(db, { username: 'admin', password: 'пароль-длинный', remember: false }, ctx({ trustToken: trust.token }));
   expect(r3.kind).toBe('session');
 });
+
+test('параллельный перебор не проскакивает мимо лимита', async () => {
+  const { db } = await setup(false);
+  const results = await Promise.all(
+    Array.from({ length: 25 }, () => passwordStep(db, { username: 'admin', password: 'нет', remember: false }, ctx())),
+  );
+  const tried = results.filter((r) => r.kind === 'error' && r.message === 'Неверный логин или пароль').length;
+  expect(tried).toBe(10);
+});
+
+test('секрет 2FA зашифрован другим ключом — понятная ошибка, а не падение', async () => {
+  const { db, u } = await setup(true);
+  const { users } = await import('@/lib/db/schema');
+  const { encrypt } = await import('@/lib/crypto/secretbox');
+  const { eq } = await import('drizzle-orm');
+  db.update(users).set({ totpSecretEnc: encrypt(SECRET, randomBytes(32)) }).where(eq(users.id, u.id)).run();
+  const r1 = await passwordStep(db, { username: 'admin', password: 'пароль-длинный', remember: false }, ctx());
+  if (r1.kind !== 'need-code') throw new Error('ожидался need-code');
+  const r = codeStep(db, { pendingToken: r1.pendingToken, code: '123456', trustDevice: false }, ctx());
+  expect(r).toEqual({ kind: 'error', message: 'Ключ шифрования не подходит к базе. Выключите 2FA: dublyarr reset-password --disable-2fa' });
+});
