@@ -12,6 +12,8 @@ test('порядок шагов мастера', async () => {
   const db = testDb();
   expect(getSetupState(db).step).toBe('account');
   await createUser(db, 'admin', 'пароль-длинный');
+  expect(getSetupState(db).step).toBe('tmdb');
+  markStep(db, 'tmdb', 'skipped');
   expect(getSetupState(db).step).toBe('qbittorrent');
   markStep(db, 'qbittorrent', 'skipped');
   expect(getSetupState(db).step).toBe('sources');
@@ -19,7 +21,7 @@ test('порядок шагов мастера', async () => {
   markStep(db, 'folders', 'done');
   expect(getSetupState(db).step).toBe('folders'); // пока не завершён явно
   completeSetup(db);
-  expect(getSetupState(db)).toEqual({ step: 'done', completed: ['account', 'qbittorrent', 'sources', 'folders'] });
+  expect(getSetupState(db)).toEqual({ step: 'done', completed: ['account', 'tmdb', 'qbittorrent', 'sources', 'folders'] });
 });
 
 test('ключ источника хранится зашифрованным и не отдаётся в списке', () => {

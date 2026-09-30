@@ -8,6 +8,8 @@ test('первый запуск → 2FA → выход → вход с кодо�
   await page.getByLabel('Пароль', { exact: true }).fill('очень-длинный-пароль');
   await page.getByLabel('Повторите пароль').fill('очень-длинный-пароль');
   await page.getByRole('button', { name: 'Создать аккаунт' }).click();
+  await expect(page).toHaveURL(/\/setup\/tmdb$/);
+  await page.getByRole('button', { name: 'Пропустить' }).click(); // TMDB
   await expect(page).toHaveURL(/\/setup\/qbittorrent$/);
   await page.getByRole('button', { name: 'Пропустить' }).click(); // qBittorrent
   await expect(page).toHaveURL(/\/setup\/sources$/);

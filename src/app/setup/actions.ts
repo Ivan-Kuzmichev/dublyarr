@@ -15,6 +15,7 @@ import { checkTorznab } from '@/lib/integrations/torznab';
 import { addSource, listSources, removeSource } from '@/lib/sources';
 import { checkWritableDir } from '@/lib/fs-check';
 import { requireSetupSession } from './guard';
+import { checkAndSaveTmdb } from '@/lib/tmdb/form';
 import { formValues } from '@/lib/form-values';
 
 export type StepState = { error?: string; ok?: string; fieldErrors?: Record<string, string>; values?: Record<string, string> };
@@ -40,6 +41,19 @@ export async function createAccountAction(_prev: StepState, form: FormData): Pro
   const ctx = await requestContext();
   const s = createSession(db, { userId, persistent: true, userAgent: ctx.userAgent, ip: ctx.ip });
   (await cookies()).set(COOKIE_SESSION, s.token, cookieOptions(ctx.secure, s.expiresAt));
+  redirect('/setup/tmdb');
+}
+
+export async function tmdbSetupAction(_prev: StepState, form: FormData): Promise<StepState> {
+  await requireSetupSession();
+  const db = getDb();
+  if (form.get('intent') === 'skip') {
+    markStep(db, 'tmdb', 'skipped');
+    redirect('/setup/qbittorrent');
+  }
+  const r = await checkAndSaveTmdb(db, form);
+  if ('error' in r || form.get('intent') === 'check') return r;
+  markStep(db, 'tmdb', 'done');
   redirect('/setup/qbittorrent');
 }
 

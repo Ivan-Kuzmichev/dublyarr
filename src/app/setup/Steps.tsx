@@ -2,6 +2,7 @@ import { Icon, ICONS } from '@/components/ui/Icon';
 
 const STEPS = [
   { id: 'account', label: 'Аккаунт' },
+  { id: 'tmdb', label: 'TMDB' },
   { id: 'qbittorrent', label: 'qBittorrent' },
   { id: 'sources', label: 'Источники' },
   { id: 'folders', label: 'Папки' },
