@@ -148,3 +148,9 @@ test('«Требует внимания»: уборка загрузок ждё�
   setSetting(db, 'cleanup.pending', { count: 0, size: 0 });
   expect(todayData(db, today, NOW).attention.some((a) => a.href === '/cleanup')).toBe(false);
 });
+
+test('подстрока файла: HDR и «пересобран»', () => {
+  const { db, t } = setup();
+  db.update(episodeFiles).set({ hdr: true, processed: true }).run();
+  expect(episodeStatuses(db, t.id, today).get('1:1')).toMatchObject({ detail: 'HDrezka Studio · 1080p HDR · 2 ГБ · пересобран' });
+});
