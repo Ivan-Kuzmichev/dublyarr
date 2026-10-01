@@ -4,7 +4,10 @@ import { log } from '../lib/log';
 import { beat } from '../lib/heartbeat';
 import { runOnce, requeueStale, pruneJobs } from './jobs';
 import { buildHandlers } from './handlers';
-import { SEARCH_EVERY } from '../lib/autosearch';
+import { getSchedule } from '../lib/schedule';
+
+// поиск по расписанию: раз в 5 минут решается, каким подпискам пора
+const TICK_EVERY = 5 * 60_000;
 import { PACK_CHECK_EVERY } from '../lib/pack-watch';
 import { backfillSightings } from '../lib/sightings';
 import { scheduleDaily, scheduleEvery } from './schedule';
@@ -43,8 +46,8 @@ async function loop() {
     }
     scheduleDaily(db, 'tmdb.refresh-all');
     scheduleEvery(db, 'downloads.sync', 60_000);
-    scheduleEvery(db, 'subscriptions.search', SEARCH_EVERY);
-    scheduleEvery(db, 'packs.check', PACK_CHECK_EVERY);
+    scheduleEvery(db, 'subscriptions.tick', TICK_EVERY);
+    if (getSchedule(db).packChecks) scheduleEvery(db, 'packs.check', PACK_CHECK_EVERY);
     pruneJobs(db);
     while (!stopping && (await runOnce(db, handlers))) {
       // разбираем очередь до конца

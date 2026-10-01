@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { episodes, studioSightings } from './db/schema';
+import { episodes, studioSightings, subscriptions, wantedState } from './db/schema';
 import { dubLabel, type Profile } from './profile-core';
 import { addDays, formatShortDate } from './dates';
 import { plural } from './plural';
@@ -127,3 +127,23 @@ export function forecastEpisode(
 
 /** Наблюдения сериала — для прогноза и колонок карточки. */
 export const titleSightings = (db: Db, titleId: number) => db.select().from(studioSightings).where(eq(studioSightings.titleId, titleId)).all();
+
+/** Сериалы, у которых серия ждёт озвучку, а прогноз — сегодня или уже прошёл («чаще в день прогноза», spec §5). */
+export function eagerTitles(db: Db, today: string): Set<number> {
+  const out = new Set<number>();
+  const rows = db
+    .select({ w: wantedState, profile: subscriptions.profile, airDate: episodes.airDate })
+    .from(wantedState)
+    .innerJoin(subscriptions, eq(subscriptions.titleId, wantedState.titleId))
+    .innerJoin(episodes, and(eq(episodes.titleId, wantedState.titleId), eq(episodes.season, wantedState.season), eq(episodes.number, wantedState.number)))
+    .where(eq(wantedState.state, 'waiting'))
+    .all();
+  const cache = new Map<number, Map<number, StudioDelay>>();
+  for (const { w, profile, airDate } of rows) {
+    if (!airDate || out.has(w.titleId)) continue;
+    if (!cache.has(w.titleId)) cache.set(w.titleId, studioDelays(db, w.titleId));
+    const f = forecastEpisode(profile, { season: w.season, number: w.number, airDate }, cache.get(w.titleId)!, [], () => undefined, today);
+    if (f.eta && f.eta <= today) out.add(w.titleId);
+  }
+  return out;
+}

@@ -13,10 +13,11 @@ import { activeDownloads, enableFiles, releaseStalled, startRelease, type Downlo
 import type { Qbit } from './qbit';
 import { todayIso } from './dates';
 import { log } from './log';
+import { eagerTitles } from './forecast';
+import { getSchedule, searchDue, type ScheduleSettings } from './schedule';
 
 // Поиск и загрузка по подпискам (воркер, раз в час и по кнопке «Искать сейчас»).
 
-export const SEARCH_EVERY = 3_600_000;
 
 export type AutoDeps = {
   qbit: Qbit | null;
@@ -237,18 +238,41 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   return res;
 }
 
-/** Все подписки по очереди; ошибка одной не мешает остальным. */
-export async function searchAll(db: Db, deps: AutoDeps) {
+async function searchTitles(db: Db, deps: AutoDeps, ids: number[], now: number) {
   const res = { titles: 0, started: 0, errors: 0 };
-  const subs = db.select({ titleId: subscriptions.titleId }).from(subscriptions).innerJoin(titles, eq(titles.id, subscriptions.titleId)).all();
-  for (const s of subs) {
+  for (const titleId of ids) {
     res.titles++;
     try {
-      res.started += (await searchSubscription(db, s.titleId, deps)).started;
+      res.started += (await searchSubscription(db, titleId, deps)).started;
     } catch (e) {
       res.errors++;
-      log.warn({ titleId: s.titleId, err: e instanceof Error ? e.message : String(e) }, 'subscription search failed');
+      log.warn({ titleId, err: e instanceof Error ? e.message : String(e) }, 'subscription search failed');
     }
+    // время попытки — и при ошибке, чтобы не повторять сбойный поиск каждые 5 минут
+    db.update(subscriptions).set({ lastSearchedAt: now }).where(eq(subscriptions.titleId, titleId)).run();
   }
   return res;
+}
+
+/** Все подписки по очереди («Искать сейчас»); ошибка одной не мешает остальным. */
+export async function searchAll(db: Db, deps: AutoDeps) {
+  const ids = db.select({ titleId: subscriptions.titleId }).from(subscriptions).innerJoin(titles, eq(titles.id, subscriptions.titleId)).all().map((s) => s.titleId);
+  return searchTitles(db, deps, ids, deps.now ?? Date.now());
+}
+
+/** Подписки, которым пора искать по расписанию (spec §5). */
+export function dueTitles(db: Db, now: Date, settings: ScheduleSettings): number[] {
+  const eager = settings.eager ? eagerTitles(db, now.toLocaleDateString('sv-SE')) : new Set<number>();
+  return db
+    .select({ titleId: subscriptions.titleId, last: subscriptions.lastSearchedAt })
+    .from(subscriptions)
+    .innerJoin(titles, eq(titles.id, subscriptions.titleId))
+    .all()
+    .filter((s) => searchDue({ lastSearchedAt: s.last, now, settings, eagerToday: eager.has(s.titleId) }))
+    .map((s) => s.titleId);
+}
+
+/** Поиск по расписанию (задача воркера раз в 5 минут). */
+export async function searchDueTitles(db: Db, deps: AutoDeps, now = new Date()) {
+  return searchTitles(db, { ...deps, today: deps.today ?? now.toLocaleDateString('sv-SE') }, dueTitles(db, now, getSchedule(db)), now.getTime());
 }

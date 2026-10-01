@@ -1,4 +1,4 @@
-import { expect, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { testDb } from './helpers';
@@ -9,9 +9,10 @@ import { seedStudios, findStudioByAlias } from '@/lib/studios';
 import { addSource } from '@/lib/sources';
 import { builtinProfile, type Profile } from '@/lib/profile';
 import { subscribe } from '@/lib/subscriptions';
-import { searchSubscription, searchAll } from '@/lib/autosearch';
+import { searchSubscription, searchAll, dueTitles, searchDueTitles } from '@/lib/autosearch';
+import { DEFAULT_SCHEDULE } from '@/lib/schedule';
 import { bencode } from '@/lib/torrent-file';
-import { downloads, wantedState, episodeFiles, episodes as episodesT, type Release } from '@/lib/db/schema';
+import { downloads, wantedState, episodeFiles, studioSightings, subscriptions, titles, episodes as episodesT, type Release } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 import type { TmdbSeason, TmdbTvDetails } from '@/lib/tmdb/types';
 
@@ -256,4 +257,36 @@ test('лучшая раздача — та же, из которой файл: �
   await searchSubscription(db, t.id, deps);
   expect(fq.calls).not.toContain('start');
   expect(db.select().from(downloads).get()!.state).toBe('imported');
+});
+
+describe('поиск по расписанию', () => {
+  const NOW = new Date(2026, 8, 30, 12, 0);
+  const MIN = 60_000;
+  test('пора — только тем, у кого прошёл интервал; после поиска время записано', async () => {
+    const { db, t, deps, profile } = await setup();
+    subscribe(db, t.id, profile(), 1);
+    const t2 = db.insert(titles).values({ tmdbId: 2, kind: 'series', nameRu: 'B', nameOriginal: 'B', originalLanguage: 'en', status: 'returning', createdAt: 1, refreshedAt: 1 }).returning().get();
+    subscribe(db, t2.id, profile(), 1);
+    db.update(subscriptions).set({ lastSearchedAt: NOW.getTime() - 10 * MIN }).where(eq(subscriptions.titleId, t.id)).run();
+    db.update(subscriptions).set({ lastSearchedAt: NOW.getTime() - 120 * MIN }).where(eq(subscriptions.titleId, t2.id)).run();
+    expect(dueTitles(db, NOW, DEFAULT_SCHEDULE)).toEqual([t2.id]);
+    await searchDueTitles(db, { ...deps, now: NOW.getTime() }, NOW);
+    expect(db.select().from(subscriptions).where(eq(subscriptions.titleId, t2.id)).get()!.lastSearchedAt).toBe(NOW.getTime());
+    expect(dueTitles(db, NOW, DEFAULT_SCHEDULE)).toEqual([]);
+  });
+
+  test('в день прогноза — через 30 минут', async () => {
+    const { db, t, profile } = await setup();
+    subscribe(db, t.id, profile(), 1);
+    const lf = findStudioByAlias(db, 'LostFilm')!.id;
+    setAir(db, t.id, 1, '2026-09-20');
+    setAir(db, t.id, 2, '2026-09-27');
+    setAir(db, t.id, 3, '2026-09-29');
+    for (const [n, d] of [[1, '2026-09-21'], [2, '2026-09-28']] as const)
+      db.insert(studioSightings).values({ titleId: t.id, studioId: lf, season: 1, number: n, seenAt: Date.parse(`${d}T00:00:00Z`), basis: 'seen', fromPack: false }).run();
+    db.insert(wantedState).values({ titleId: t.id, season: 1, number: 3, state: 'waiting', reason: 'Рано', until: '2026-10-01', checkedAt: 1 }).run();
+    db.update(subscriptions).set({ lastSearchedAt: NOW.getTime() - 31 * MIN }).run();
+    expect(dueTitles(db, NOW, DEFAULT_SCHEDULE)).toEqual([t.id]);
+    expect(dueTitles(db, NOW, { ...DEFAULT_SCHEDULE, eager: false })).toEqual([]);
+  });
 });

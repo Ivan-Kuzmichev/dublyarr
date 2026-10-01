@@ -6,7 +6,8 @@ import { log } from '../lib/log';
 import type { Handler } from './jobs';
 import { getQbit } from '../lib/qbit';
 import { fetchTorrentFile, syncDownloads, type Paths } from '../lib/downloads';
-import { searchAll } from '../lib/autosearch';
+import { searchAll, searchDueTitles } from '../lib/autosearch';
+import { getSchedule } from '../lib/schedule';
 import { checkPacks } from '../lib/pack-watch';
 import { getSetting } from '../lib/settings';
 import { beat } from '../lib/heartbeat';
@@ -46,6 +47,14 @@ export async function syncJob(db: Db) {
   }
 }
 
+async function packsJob(db: Db) {
+  const qbit = getQbit(db);
+  const paths = getSetting<Paths>(db, 'paths');
+  if (!qbit || !paths) return;
+  const r = await checkPacks(db, { qbit, fetchTorrent: (rel) => fetchTorrentFile(rel), paths: { qbitDownloads: paths.qbitDownloads ?? paths.downloads } });
+  if (r.checked) log.info(r, 'packs check done');
+}
+
 export const buildHandlers = (db: Db): Record<string, Handler> => ({
   'downloads.sync': () => syncJob(db),
   'subscriptions.search': async () => {
@@ -54,13 +63,15 @@ export const buildHandlers = (db: Db): Record<string, Handler> => ({
     const r = await searchAll(db, { qbit: getQbit(db), fetchTorrent: (rel) => fetchTorrentFile(rel), paths });
     log.info(r, 'subscriptions search done');
   },
-  'packs.check': async () => {
-    const qbit = getQbit(db);
+  'subscriptions.tick': async () => {
     const paths = getSetting<Paths>(db, 'paths');
-    if (!qbit || !paths) return;
-    const r = await checkPacks(db, { qbit, fetchTorrent: (rel) => fetchTorrentFile(rel), paths: { qbitDownloads: paths.qbitDownloads ?? paths.downloads } });
-    if (r.checked) log.info(r, 'packs check done');
+    if (!paths) return;
+    const r = await searchDueTitles(db, { qbit: getQbit(db), fetchTorrent: (rel) => fetchTorrentFile(rel), paths });
+    if (r.titles) log.info(r, 'scheduled search done');
+    // проверка паков выключена отдельно — паки проверяются вместе с поиском
+    if (r.titles && !getSchedule(db).packChecks) await packsJob(db);
   },
+  'packs.check': () => packsJob(db),
   'tmdb.refresh-all': async () => {
     const r = await refreshAll(db, getTmdb(db));
     log.info(r, 'tmdb refresh done');
