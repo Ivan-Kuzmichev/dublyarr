@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, lt } from 'drizzle-orm';
 import type { Db } from '../lib/db/client';
 import { jobs } from '../lib/db/schema';
 import { log } from '../lib/log';
@@ -61,3 +61,7 @@ export async function runOnce(db: Db, handlers: Record<string, Handler>, now = D
 
 /** После перезапуска воркера «running» — это прерванные задачи. */
 export const requeueStale = (db: Db) => db.update(jobs).set({ status: 'queued' }).where(eq(jobs.status, 'running')).run();
+
+/** Выполненные задачи старше суток не нужны (синхронизация ставит задачу каждую минуту). */
+export const pruneJobs = (db: Db, now = Date.now()) =>
+  db.delete(jobs).where(and(eq(jobs.status, 'done'), lt(jobs.updatedAt, now - 86_400_000))).run();

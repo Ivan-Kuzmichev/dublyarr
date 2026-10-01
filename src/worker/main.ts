@@ -2,9 +2,9 @@ import { getDb } from '../lib/db/client';
 import { getConfig } from '../lib/config';
 import { log } from '../lib/log';
 import { beat } from '../lib/heartbeat';
-import { runOnce, requeueStale } from './jobs';
+import { runOnce, requeueStale, pruneJobs } from './jobs';
 import { buildHandlers } from './handlers';
-import { scheduleDaily } from './schedule';
+import { scheduleDaily, scheduleEvery } from './schedule';
 
 const db = getDb();
 const handlers = buildHandlers(db);
@@ -34,6 +34,8 @@ async function loop() {
       await checkLaya();
     }
     scheduleDaily(db, 'tmdb.refresh-all');
+    scheduleEvery(db, 'downloads.sync', 60_000);
+    pruneJobs(db);
     while (!stopping && (await runOnce(db, handlers))) {
       // разбираем очередь до конца
     }

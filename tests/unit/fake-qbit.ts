@@ -15,7 +15,9 @@ export function fakeQbit() {
       torrents.set(meta.infohash, {
         hash: meta.infohash, name: meta.name, state: o.paused ? 'stoppedDL' : 'downloading', progress: 0, dlspeed: 0, eta: 0,
         size: meta.files.reduce((n, f) => n + f.size, 0), num_seeds: 5, save_path: o.savePath, content_path: `${o.savePath}/${meta.name}`, category: o.category,
-        files: meta.files.map((f) => ({ index: f.index, name: f.path, size: f.size, progress: 0, priority: 1 })), paused: o.paused,
+        // как настоящий qBittorrent: у многофайловой раздачи имена с корневой папкой
+        files: meta.files.map((f) => ({ index: f.index, name: meta.files.length > 1 || f.path !== meta.name ? `${meta.name}/${f.path}` : f.path, size: f.size, progress: 0, priority: 1 })),
+        paused: o.paused,
       });
     },
     list: async (category) => [...torrents.values()].filter((t) => t.category === category),

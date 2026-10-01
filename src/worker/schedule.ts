@@ -7,9 +7,12 @@ import { enqueue } from './jobs';
 const DAY = 86_400_000;
 
 /** Ставит задачу раз в сутки; пока предыдущая в очереди или выполняется — вторую не ставит. */
-export function scheduleDaily(db: Db, type: string, now = Date.now()): boolean {
+export const scheduleDaily = (db: Db, type: string, now = Date.now()) => scheduleEvery(db, type, DAY, now);
+
+/** Ставит задачу не чаще раза в интервал и не пока предыдущая в очереди или выполняется. */
+export function scheduleEvery(db: Db, type: string, intervalMs: number, now = Date.now()): boolean {
   const last = getSetting<number>(db, `schedule.${type}`);
-  if (last !== undefined && now - last < DAY) return false;
+  if (last !== undefined && now - last < intervalMs) return false;
   const pending = db
     .select()
     .from(jobs)

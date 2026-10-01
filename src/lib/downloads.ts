@@ -1,6 +1,9 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { downloads, type Download, type DownloadFile, type EpisodeRef, type Release } from './db/schema';
+import path from 'node:path';
+import { downloads, episodeFiles, titles, wantedState, type Download, type DownloadFile, type EpisodeRef, type Release } from './db/schema';
+import { DEFAULT_TEMPLATE, PathError, renderTemplate, toLocalPath } from './library-path';
+import { importFile } from './importer';
 import type { Qbit } from './qbit';
 import { parseTorrent, magnetHash, TorrentFileError } from './torrent-file';
 import { filesForEpisodes } from './episode-file';
@@ -137,4 +140,75 @@ export async function enableFiles(db: Db, deps: DownloadDeps, downloadId: number
     files: d.files.map((f) => (idx.includes(f.index) ? { ...f, priority: 1 } : f)),
     ...(idx.length && d.state === 'completed' ? { state: 'downloading' as const } : {}),
   });
+}
+
+// --- синхронизация и импорт ---
+
+export type Paths = { qbitDownloads?: string; downloads: string; media: string; template?: string };
+const DAY = 86_400_000;
+
+/** Состояние загрузок из qBittorrent; завершённые — импорт нужных файлов в медиатеку. */
+export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; now?: number }) {
+  const now = deps.now ?? Date.now();
+  const res = { updated: 0, imported: 0, errors: 0 };
+  const active = db.select().from(downloads).where(inArray(downloads.state, [...ACTIVE])).all();
+  if (!active.length) return res;
+  const byHash = new Map((await deps.qbit.list(CATEGORY)).map((t) => [t.hash, t]));
+  for (const d of active) {
+    const t = byHash.get(d.hash);
+    if (!t) {
+      update(db, d.id, { state: 'removed' });
+      res.updated++;
+      continue;
+    }
+    const qfiles = await deps.qbit.files(d.hash);
+    const wanted = d.kind === 'pack' ? qfiles.filter((f) => f.priority > 0) : qfiles;
+    const total = wanted.reduce((n, f) => n + f.size, 0);
+    const progress = d.kind === 'pack' && total > 0 ? wanted.reduce((n, f) => n + f.progress * f.size, 0) / total : t.progress;
+    const done = d.kind === 'pack' ? wanted.length > 0 && wanted.every((f) => f.progress >= 1) : t.progress >= 1;
+    const lastSeededAt = t.num_seeds > 0 ? now : d.lastSeededAt;
+    const paused = /^(stopped|paused)/i.test(t.state);
+    const stalled = !done && t.num_seeds === 0 && now - (lastSeededAt ?? d.addedAt) > DAY;
+    const state = done ? 'completed' : paused ? 'paused' : stalled ? 'stalled' : 'downloading';
+    update(db, d.id, { progress, dlSpeed: t.dlspeed, eta: t.eta, contentPath: t.content_path, lastSeededAt, state, ...(done && !d.completedAt ? { completedAt: now } : {}) });
+    res.updated++;
+    if (!done) continue;
+    try {
+      await importDownload(db, d, t.save_path, qfiles, deps.paths, now);
+      update(db, d.id, { state: 'imported', importedAt: now, lastError: null });
+      res.imported++;
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      update(db, d.id, { lastError: e instanceof PathError ? msg : `Ошибка импорта: ${msg}` });
+      log.warn({ download: d.id, err: msg }, 'import failed');
+      res.errors++;
+    }
+  }
+  return res;
+}
+
+async function importDownload(db: Db, d: Download, savePath: string, files: { index: number; name: string; size: number }[], paths: Paths, now: number) {
+  const title = db.select().from(titles).where(eq(titles.id, d.titleId)).get();
+  if (!title) throw new Error('Сериал удалён');
+  const map = filesForEpisodes(files, d.season, d.episodes.filter((e) => e.season === d.season).map((e) => e.number));
+  for (const ep of d.episodes) {
+    const idx = map.get(ep.number)?.[0];
+    const file = idx === undefined ? undefined : files.find((f) => f.index === idx);
+    if (!file) throw new Error(`нет файла ${code(ep)}`);
+    const src = toLocalPath(`${savePath.replace(/\/+$/, '')}/${file.name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
+    const rel = renderTemplate(
+      paths.template || DEFAULT_TEMPLATE,
+      { name: title.nameRu, original: title.nameOriginal, year: title.year, season: ep.season, episode: ep.number, studio: d.studioLabel ?? '', quality: d.resolution ? `${d.resolution}p` : '' },
+      path.extname(file.name),
+    );
+    const r = await importFile(src, paths.media, rel);
+    const row = { titleId: d.titleId, season: ep.season, number: ep.number, path: rel, size: file.size, downloadId: d.id, studioLabel: d.studioLabel, resolution: d.resolution, method: r.method, importedAt: now };
+    db.insert(episodeFiles)
+      .values(row)
+      .onConflictDoUpdate({ target: [episodeFiles.titleId, episodeFiles.season, episodeFiles.number], set: row })
+      .run();
+    db.delete(wantedState)
+      .where(and(eq(wantedState.titleId, d.titleId), eq(wantedState.season, ep.season), eq(wantedState.number, ep.number)))
+      .run();
+  }
 }

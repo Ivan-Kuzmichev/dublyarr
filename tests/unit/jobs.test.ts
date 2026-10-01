@@ -2,6 +2,7 @@ import { expect, test } from 'vitest';
 import { testDb } from './helpers';
 import { enqueue, runOnce, requeueStale } from '@/worker/jobs';
 import { jobs } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 test('задача выполняется один раз, ошибка → повтор с задержкой, после 3 попыток failed', async () => {
   const db = testDb();
@@ -39,4 +40,17 @@ test('неизвестный тип — failed сразу; зависшие runn
   db.update(jobs).set({ status: 'running' }).run();
   requeueStale(db);
   expect(db.select().from(jobs).all().every((j) => j.status === 'queued')).toBe(true);
+});
+
+test('старые выполненные задачи удаляются, ошибки и свежие — остаются', async () => {
+  const { pruneJobs } = await import('@/worker/jobs');
+  const db = testDb();
+  const DAY = 86_400_000;
+  enqueue(db, 'a', {}, 0);
+  enqueue(db, 'b', {}, 0);
+  enqueue(db, 'c', {}, 0);
+  db.update(jobs).set({ status: 'done', updatedAt: 0 }).where(eq(jobs.type, 'a')).run();
+  db.update(jobs).set({ status: 'failed', updatedAt: 0 }).where(eq(jobs.type, 'b')).run();
+  pruneJobs(db, 2 * DAY);
+  expect(db.select().from(jobs).all().map((j) => j.type).sort()).toEqual(['b', 'c']);
 });

@@ -20,3 +20,12 @@ test('задача ещё в очереди — вторую не ставим, 
   scheduleDaily(db, 'tmdb.refresh-all', t);
   expect(scheduleDaily(db, 'tmdb.refresh-all', t + 25 * 3_600_000)).toBe(false);
 });
+
+test('scheduleEvery: интервал и без дублей', async () => {
+  const { scheduleEvery } = await import('@/worker/schedule');
+  const db = testDb();
+  expect(scheduleEvery(db, 'downloads.sync', 60_000, 0)).toBe(true);
+  expect(scheduleEvery(db, 'downloads.sync', 60_000, 30_000)).toBe(false);
+  db.update(jobs).set({ status: 'done' }).run();
+  expect(scheduleEvery(db, 'downloads.sync', 60_000, 60_000)).toBe(true);
+});
