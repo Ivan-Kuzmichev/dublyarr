@@ -11,7 +11,7 @@ import { builtinProfile, type Profile } from '@/lib/profile';
 import { subscribe } from '@/lib/subscriptions';
 import { searchSubscription, searchAll } from '@/lib/autosearch';
 import { bencode } from '@/lib/torrent-file';
-import { downloads, wantedState, episodes as episodesT, type Release } from '@/lib/db/schema';
+import { downloads, wantedState, episodeFiles, episodes as episodesT, type Release } from '@/lib/db/schema';
 import { and, eq } from 'drizzle-orm';
 import type { TmdbSeason, TmdbTvDetails } from '@/lib/tmdb/types';
 
@@ -80,6 +80,7 @@ test('нет подходящих — «нет», без qBittorrent — не к
 test('сезон целиком после финала: до финала ждём, после — одна загрузка сезона', async () => {
   const { db, t, deps, profile } = await setup();
   subscribe(db, t.id, profile({ wholeSeasonAfterFinale: true }), 1);
+  db.update(episodesT).set({ airDate: '2026-10-05' }).where(and(eq(episodesT.titleId, t.id), eq(episodesT.number, 3))).run();
   await searchSubscription(db, t.id, deps);
   expect(db.select().from(downloads).all()).toHaveLength(0);
   expect(db.select().from(wantedState).all().every((w) => w.reason === 'Ждём финал сезона')).toBe(true);
@@ -151,4 +152,45 @@ test('застрявшая без замены остаётся как есть'
   expect(db.select().from(downloads).where(eq(downloads.id, stuck.id)).get()!.state).toBe('stalled');
   expect(fq.torrents.has(stuck.hash)).toBe(true);
   expect(db.select().from(wantedState).all()).toEqual([]);
+});
+
+const setAir = (db: Awaited<ReturnType<typeof setup>>['db'], titleId: number, n: number, airDate: string | null) =>
+  db.update(episodesT).set({ airDate }).where(and(eq(episodesT.titleId, titleId), eq(episodesT.number, n))).run();
+
+test('сезон целиком учитывает «начиная с серии» и скачанные серии', async () => {
+  const { db, t, deps, profile } = await setup();
+  setAir(db, t.id, 3, '2011-05-01');
+  subscribe(db, t.id, profile({ wholeSeasonAfterFinale: true, scope: { mode: 'from', season: 1, episode: 2, until: 'season_end' } }), 1);
+  db.insert(episodeFiles).values({ titleId: t.id, season: 1, number: 2, path: 'x/2.mkv', size: 1, method: 'hardlink', importedAt: 1 }).run();
+  await searchSubscription(db, t.id, deps);
+  expect(db.select().from(downloads).get()).toMatchObject({ kind: 'season', episodes: [{ season: 1, number: 3 }] });
+});
+
+test('серия без даты: сезон закончен, если пак заявляет весь сезон', async () => {
+  const { db, t, deps, profile } = await setup();
+  subscribe(db, t.id, profile({ wholeSeasonAfterFinale: true }), 1);
+  await searchSubscription(db, t.id, deps); // E3 без даты, паки «S1E1-10 of 10»
+  expect(db.select().from(downloads).get()).toMatchObject({ kind: 'season', episodes: [1, 2, 3].map((number) => ({ season: 1, number })) });
+});
+
+test('устаревшие статусы серий убираются при поиске', async () => {
+  const { db, t, deps, profile } = await setup();
+  subscribe(db, t.id, profile({ scope: { mode: 'from', season: 1, episode: 3, until: 'season_end' } }), 1);
+  db.insert(wantedState).values({ titleId: t.id, season: 1, number: 1, state: 'waiting', reason: 'Рано', until: '2026-10-03', checkedAt: 1 }).run();
+  await searchSubscription(db, t.id, deps);
+  expect(db.select().from(wantedState).all().filter((w) => w.number === 1)).toEqual([]);
+});
+
+test('сбой включения файла у одной серии не мешает остальным', async () => {
+  const { db, t, fq, deps, profile } = await setup();
+  subscribe(db, t.id, profile(), 1);
+  await searchSubscription(db, t.id, deps);
+  const d = db.select().from(downloads).get()!;
+  // в паке качается только E1; E2 и E3 надо включить
+  db.update(downloads).set({ episodes: [{ season: 1, number: 1 }], files: d.files!.map((f) => ({ ...f, priority: f.index === 0 ? 1 : 0 })) }).run();
+  setAir(db, t.id, 3, '2011-05-01');
+  const qbit = { ...fq.qbit, setFilePriority: async (...a: Parameters<typeof fq.qbit.setFilePriority>) => { if (a[1].includes(1)) throw new Error('qBittorrent не отвечает'); return fq.qbit.setFilePriority(...a); } };
+  await searchSubscription(db, t.id, { ...deps, qbit });
+  expect(db.select().from(wantedState).all()).toEqual([expect.objectContaining({ number: 2, state: 'missing', reason: 'qBittorrent не отвечает' })]);
+  expect(db.select().from(downloads).get()!.episodes).toEqual([{ season: 1, number: 1 }, { season: 1, number: 3 }]);
 });

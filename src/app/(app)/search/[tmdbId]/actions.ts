@@ -6,8 +6,8 @@ import { requireSession } from '@/lib/auth/current';
 import { getTitleByTmdbId } from '@/lib/catalog';
 import { answerMatch, assignStudio } from '@/lib/manual-search';
 import { StudioError, listStudios } from '@/lib/studios';
-import { eq } from 'drizzle-orm';
-import { releases } from '@/lib/db/schema';
+import { and, eq } from 'drizzle-orm';
+import { releases, wantedState } from '@/lib/db/schema';
 import { listEpisodes } from '@/lib/catalog';
 import { getQbit } from '@/lib/qbit';
 import { getSetting } from '@/lib/settings';
@@ -96,6 +96,8 @@ export async function downloadAction(_prev: DownloadState, form: FormData): Prom
       label,
     );
     if (d.state === 'error') return { error: d.lastError ?? 'Ошибка загрузки' };
+    for (const e of want)
+      db.delete(wantedState).where(and(eq(wantedState.titleId, t.title.id), eq(wantedState.season, e.season), eq(wantedState.number, e.number))).run();
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
   }

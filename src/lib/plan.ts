@@ -51,10 +51,21 @@ export function planEpisode(ep: EpisodeRef, verdicts: Verdict[], releasesById: M
   return { action: 'none', reason: `Нет подходящих: ${top.charAt(0).toLowerCase()}${top.slice(1)}` };
 }
 
-/** Сезон закончился: все его серии с датами и последняя уже вышла. */
-export function seasonFinished(season: number, episodes: { season: number; number: number; airDate: string | null }[], today: string): boolean {
+/**
+ * Сезон закончился: все серии с датой уже вышли и либо серий без даты нет,
+ * либо есть пак, заявляющий весь сезон («Серии: 1–N из N»), и N не меньше числа серий в TMDB.
+ */
+export function seasonFinished(season: number, episodes: { season: number; number: number; airDate: string | null }[], today: string, claimedTotal?: number): boolean {
   const eps = episodes.filter((e) => e.season === season);
-  return eps.length > 0 && eps.every((e) => e.airDate && e.airDate <= today);
+  if (!eps.length || eps.some((e) => e.airDate && e.airDate > today)) return false;
+  if (eps.every((e) => e.airDate)) return true;
+  return claimedTotal !== undefined && claimedTotal >= eps.length;
+}
+
+/** Сколько серий в сезоне заявляет пак «Серии: 1–N из N» (иначе undefined). */
+export function claimedSeasonTotal(p: ParsedRelease, season: number): number | undefined {
+  if (!p.seasons.includes(season) || p.seasons.length > 1 || !p.totalInSeason || !p.episodes) return undefined;
+  return p.episodes.from <= 1 && p.episodes.to >= p.totalInSeason ? p.totalInSeason : undefined;
 }
 
 export function coversWholeSeason(p: ParsedRelease, season: number, episodeCount: number): boolean {

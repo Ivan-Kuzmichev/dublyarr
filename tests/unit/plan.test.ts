@@ -59,3 +59,14 @@ test('пак покрывает весь сезон', () => {
   expect(coversWholeSeason(parsed({ episodes: { from: 1, to: 9 }, pack: true }), 1, 10)).toBe(false);
   expect(coversWholeSeason(parsed({ seasons: [2], episodes: null }), 1, 10)).toBe(false);
 });
+
+test('сезон закончен по паку, заявляющему весь сезон, даже если у серии нет даты', () => {
+  const eps = [
+    { season: 1, number: 1, airDate: '2026-09-01' },
+    { season: 1, number: 2, airDate: null },
+  ];
+  expect(seasonFinished(1, eps, '2026-09-30')).toBe(false);
+  expect(seasonFinished(1, eps, '2026-09-30', 2)).toBe(true);
+  expect(seasonFinished(1, eps, '2026-09-30', 1)).toBe(false);
+  expect(seasonFinished(1, [...eps, { season: 1, number: 3, airDate: '2026-10-05' }], '2026-09-30', 10)).toBe(false);
+});

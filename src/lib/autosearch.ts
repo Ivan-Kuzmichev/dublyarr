@@ -7,7 +7,7 @@ import { listStudios } from './studios';
 import type { Profile } from './profile-core';
 import { searchTitle, type SearchOptions } from './search';
 import { evaluateReleases, type Verdict } from './evaluate';
-import { planEpisode, seasonFinished, coversWholeSeason } from './plan';
+import { planEpisode, seasonFinished, coversWholeSeason, claimedSeasonTotal } from './plan';
 import { activeDownloads, enableFiles, releaseStalled, startRelease, type DownloadDeps, type Paths } from './downloads';
 import type { Qbit } from './qbit';
 import { todayIso } from './dates';
@@ -62,23 +62,33 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   const stalled = activeDownloads(db, titleId).filter((d) => d.state === 'stalled');
   const stuck = new Set(stalled.flatMap((d) => d.episodes.map(key)));
   const busy = new Set(activeDownloads(db, titleId).filter((d) => d.state !== 'stalled').flatMap((d) => d.episodes.map(key)));
-  let need = wantedEpisodes(sub, eps, today).filter((e) => !have.has(key(e)) && !busy.has(key(e)));
+  const wanted = wantedEpisodes(sub, eps, today).filter((e) => !have.has(key(e)));
+  let need = wanted.filter((e) => !busy.has(key(e)));
+  // статусы серий, которые больше не нужны (сменилась подписка, скачали вручную), — убрать
+  const wantedKeys = new Set(wanted.map(key));
+  for (const w of db.select().from(wantedState).where(eq(wantedState.titleId, titleId)).all())
+    if (!wantedKeys.has(key(w))) clearWanted(db, titleId, w);
   if (!need.length) return res;
 
   // «Сезон целиком после финала»: незаконченные сезоны ждут, законченные качаются одним паком.
-  const seasonTargets: number[] = [];
+  // Сезон с сериями без даты решается после поиска — по паку, заявляющему весь сезон.
+  const finished: number[] = [];
+  const maybe: number[] = [];
+  const waitFinale = (s: number) => {
+    for (const e of need.filter((x) => x.season === s)) {
+      setWanted(db, titleId, e, 'waiting', 'Ждём финал сезона', null, now);
+      res.waiting++;
+    }
+  };
   if (profile.wholeSeasonAfterFinale) {
     for (const s of [...new Set(need.map((e) => e.season))]) {
-      if (seasonFinished(s, eps, today)) seasonTargets.push(s);
-      else
-        for (const e of need.filter((x) => x.season === s)) {
-          setWanted(db, titleId, e, 'waiting', 'Ждём финал сезона', null, now);
-          res.waiting++;
-        }
+      if (seasonFinished(s, eps, today)) finished.push(s);
+      else if (seasonFinished(s, eps, today, Infinity)) maybe.push(s);
+      else waitFinale(s);
     }
     need = [];
   }
-  if (!need.length && !seasonTargets.length) return res;
+  if (!need.length && !finished.length && !maybe.length) return res;
 
   const { releases } = await searchTitle(db, titleId, deps.searchOpts);
   // отвергнутые раздачи: убранная из клиента — целиком, с ошибкой «нет файла» — только для тех серий
@@ -103,11 +113,20 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   // Что запустить: раздача → серии (серии одного пака — одной загрузкой).
   const starts = new Map<number, { release: Release; eps: EpisodeRef[]; kind: 'episode' | 'pack' | 'season'; label: string | null }>();
 
+  const seasonTargets = [...finished];
+  for (const s of maybe) {
+    const claims = usable.map((r) => claimedSeasonTotal(r.parsed, s)).filter((n): n is number => n !== undefined);
+    if (claims.length && seasonFinished(s, eps, today, Math.max(...claims))) seasonTargets.push(s);
+    else waitFinale(s);
+  }
   for (const s of seasonTargets) {
     const count = eps.filter((e) => e.season === s).length;
     const verdicts = evaluateReleases(usable, ctx, { season: s }).filter((v) => v.ok && coversWholeSeason(byId.get(v.releaseId)!.parsed, s, count));
     const best = verdicts.find((v) => v.best) ?? verdicts[0];
-    const seasonEps = eps.filter((e) => e.season === s && e.airDate && e.airDate <= today).map((e) => ({ season: e.season, number: e.number }));
+    // серии сезона по подписке, без файла и не в другой загрузке; серии без даты закончившегося сезона — тоже
+    const dated = eps.map((e) => (e.season === s && !e.airDate ? { ...e, airDate: today } : e));
+    const seasonEps = wantedEpisodes(sub, dated, today).filter((e) => e.season === s && !have.has(key(e)) && !busy.has(key(e)));
+    if (!seasonEps.length) continue;
     if (!best) {
       for (const e of seasonEps) setWanted(db, titleId, e, 'missing', 'Нет полного пака сезона', null, now);
       res.missing += seasonEps.length;
@@ -140,9 +159,14 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
       continue;
     }
     if (plan.action === 'enable-file') {
-      await enableFiles(db, dl, plan.downloadId, [ep]);
-      clearWanted(db, titleId, ep);
-      res.started++;
+      try {
+        await enableFiles(db, dl, plan.downloadId, [ep]);
+        clearWanted(db, titleId, ep);
+        res.started++;
+      } catch (e) {
+        setWanted(db, titleId, ep, 'missing', e instanceof Error ? e.message : String(e), null, now);
+        res.missing++;
+      }
       continue;
     }
     const r = byId.get(plan.releaseId)!;
