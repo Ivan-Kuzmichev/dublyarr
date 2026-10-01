@@ -40,6 +40,7 @@ function tick() {
   for (const t of torrents.values()) {
     if (t.paused || t.progress >= 1) continue;
     t.progress = Math.min(1, t.progress + step);
+    if (t.progress >= 1) t.completion_on = Math.floor(Date.now() / 1000);
     if (t.progress >= 1)
       for (const f of t.files) {
         if (f.priority === 0) continue;
@@ -82,7 +83,7 @@ http
       const paused = parts.paused?.toString() === 'true';
       torrents.set(meta.hash, {
         hash: meta.hash, name: meta.name, category: parts.category.toString(), save_path: parts.savepath.toString(),
-        content_path: `${parts.savepath}/${meta.name}`, progress: 0, dlspeed: 5_000_000, eta: 120, num_seeds: 10, paused,
+        content_path: `${parts.savepath}/${meta.name}`, progress: 0, dlspeed: 5_000_000, eta: 120, num_seeds: 10, paused, ratio: 0, completion_on: -1, dl_limit: 0,
         size: meta.files.reduce((n, f) => n + f.size, 0), files: meta.files.map((f, i) => ({ index: i, name: f.name, size: f.size, progress: 0, priority: 1 })),
       });
       return res.end('Ok.');
@@ -101,6 +102,10 @@ http
     }
     if (p === '/api/v2/torrents/start' || p === '/api/v2/torrents/stop') {
       for (const h of hashes) if (torrents.has(h)) torrents.get(h).paused = p.endsWith('stop');
+      return res.end('');
+    }
+    if (p === '/api/v2/torrents/setDownloadLimit') {
+      for (const h of hashes) if (torrents.has(h)) torrents.get(h).dl_limit = Number(form.get('limit'));
       return res.end('');
     }
     if (p === '/api/v2/torrents/delete') {

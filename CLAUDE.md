@@ -132,6 +132,16 @@ Self-hosted сервис для одного пользователя: подп�
 - Новые сезоны — `subscriptions.max_season` (граница подписки), `extendSeasons` в конце `syncTitle`; заметки — таблица `notices`, «Новости» на «Сегодня» (3 дня).
 - e2e: `POST /__add2160` в заглушке Jackett — пак LostFilm 2160p.
 
+## Решения (фаза 2c — расписание и уборка)
+
+- Расписание — `src/lib/schedule.ts` (чистые `searchDue`, `speedAt`, `speedSummary`, разбор форм); настройки `app_settings['schedule' | 'speed' | 'cleanup']`.
+  Воркер: `subscriptions.tick` раз в 5 мин ищет только подписки, которым пора (`subscriptions.last_searched_at`); «чаще в день прогноза» — `eagerTitles` (forecast.ts).
+- Скорость — только торренты Dublyarr (решение владельца), `src/lib/speed.ts` в `downloads.sync`: лимит делится поровну между качающимися (у qBittorrent нет лимита на категорию),
+  пауза отмечает свои загрузки (`downloads.paused_by_schedule`) и будит только их.
+- Уборка — `src/lib/cleanup.ts`, задача `cleanup.run` раз в час: файлы удаляет Dublyarr (торрент из клиента — без файлов), только внутри `{downloads}/dublyarr`,
+  кроме файлов живых торрентов. Первое срабатывание — страница `/cleanup` (флаги `cleanup.files.confirmed`, `cleanup.orphans.confirmed`), сводка для «Требует внимания» — `app_settings['cleanup.pending']`.
+- `downloads.files` хранит имена файлов как qBittorrent (с корневой папкой многофайловой раздачи).
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

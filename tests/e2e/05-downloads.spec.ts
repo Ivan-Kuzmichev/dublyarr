@@ -11,7 +11,7 @@ test('qBittorrent и папки → подписка → «Искать сейч
   await loginWithCode(page);
 
   await page.goto('/settings/download');
-  const qbit = page.locator('section', { has: page.getByRole('heading', { name: 'qBittorrent' }) });
+  const qbit = page.locator('section', { has: page.getByRole('heading', { name: 'qBittorrent', exact: true }) });
   await qbit.getByLabel('Адрес').fill('http://127.0.0.1:3197');
   await qbit.getByLabel('Пароль', { exact: true }).fill('bad');
   await qbit.getByRole('button', { name: 'Проверить' }).click();
