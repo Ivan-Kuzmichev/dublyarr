@@ -194,3 +194,14 @@ test('сбой включения файла у одной серии не ме�
   expect(db.select().from(wantedState).all()).toEqual([expect.objectContaining({ number: 2, state: 'missing', reason: 'qBittorrent не отвечает' })]);
   expect(db.select().from(downloads).get()!.episodes).toEqual([{ season: 1, number: 1 }, { season: 1, number: 3 }]);
 });
+
+test('сезон без дат: «весь сезон» заявляют только отклонённые раздачи — ждём финал', async () => {
+  const { db, t, deps, profile } = await setup();
+  const p = profile({ wholeSeasonAfterFinale: true });
+  subscribe(db, t.id, { ...p, quality: { ...p.quality, maxSizeGb: 0.5 } }, 1); // все паки больше лимита
+  await searchSubscription(db, t.id, deps);
+  expect(db.select().from(downloads).all()).toEqual([]);
+  const ws = db.select().from(wantedState).all();
+  expect(ws.length).toBeGreaterThan(0);
+  expect(ws.every((w) => w.reason === 'Ждём финал сезона')).toBe(true);
+});

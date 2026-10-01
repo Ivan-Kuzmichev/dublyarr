@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { testDb } from './helpers';
@@ -171,4 +171,22 @@ test('чужой файл по пути в медиатеке не затира�
   await syncDownloads(db, { qbit: fq.qbit, paths, now: 2 * HOUR });
   expect(db.select().from(downloads).get()!.state).toBe('imported');
   expect(readFileSync(path.join(media, rel), 'utf8')).toBe('video');
+});
+
+test('часть серий пака не импортировалась — уже импортированные не копируются заново', async () => {
+  const { db, mk, fq, files, deps, paths, media, finish } = setup();
+  const r = mk('Игра престолов S01', {});
+  files.set(r.id, torrent('GoT S01', ['GoT.S01E01.mkv', 'GoT.S01E02.mkv']));
+  const d = await startRelease(db, deps, r, [1, 2].map((number) => ({ season: 1, number })), 'pack', 'X');
+  const rel = (n: number) => `Игра престолов (2011)/Season 01/Игра престолов S01E0${n} [X 1080p].mkv`;
+  mkdirSync(path.dirname(path.join(media, rel(2))), { recursive: true });
+  writeFileSync(path.join(media, rel(2)), 'чужое');
+  finish(d.hash);
+  await syncDownloads(db, { qbit: fq.qbit, paths, now: HOUR });
+  expect(db.select().from(episodeFiles).all().map((f) => f.number)).toEqual([1]);
+  expect(db.select().from(downloads).get()).toMatchObject({ state: 'completed' });
+  rmSync(path.join(media, rel(1))); // новый файл (другой inode), чтобы повторная ссылка была заметна
+  writeFileSync(path.join(media, rel(1)), 'изменён после импорта');
+  await syncDownloads(db, { qbit: fq.qbit, paths, now: 2 * HOUR });
+  expect(readFileSync(path.join(media, rel(1)), 'utf8')).toBe('изменён после импорта');
 });

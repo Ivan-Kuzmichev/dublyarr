@@ -53,3 +53,11 @@ test('по пути уже лежит файл — без замены отка�
   expect(readFileSync(path.join(media, 'S', 'x.mkv'), 'utf8')).toBe('чужое');
   expect(links).toBe(0);
 });
+
+test('медиатека без жёстких ссылок — копия кладётся и без замены', async () => {
+  const { src, media } = tmp();
+  const fsx = { link: async () => { throw Object.assign(new Error('not supported'), { code: 'EPERM' }); } };
+  const r = await importFile(src, media, 'S/y.mkv', fsx);
+  expect(r.method).toBe('copy');
+  expect(readFileSync(r.path, 'utf8')).toBe('video');
+});

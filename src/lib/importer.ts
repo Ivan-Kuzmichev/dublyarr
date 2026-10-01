@@ -37,10 +37,16 @@ export async function importFile(src: string, mediaRoot: string, relPath: string
     if (opts.replace) await rename(tmp, target);
     else {
       // без замены: ссылка не перезаписывает существующий файл (EEXIST), временный убираем
-      await fsLink(tmp, target).catch((e: NodeJS.ErrnoException) => {
-        throw e.code === 'EEXIST' ? taken() : e;
-      });
-      await rm(tmp, { force: true });
+      await fsx.link(tmp, target).then(
+        () => rm(tmp, { force: true }),
+        async (e: NodeJS.ErrnoException) => {
+          if (e.code === 'EEXIST') throw taken();
+          if (!NO_LINK.has(e.code ?? '')) throw e;
+          // медиатека без жёстких ссылок (SMB, exFAT): проверить ещё раз и переименовать
+          if (await exists(target)) throw taken();
+          await rename(tmp, target);
+        },
+      );
     }
   } catch (e) {
     await rm(tmp, { force: true });

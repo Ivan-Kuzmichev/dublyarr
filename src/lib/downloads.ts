@@ -6,7 +6,7 @@ import { DEFAULT_TEMPLATE, PathError, renderTemplate, toLocalPath } from './libr
 import { importFile } from './importer';
 import type { Qbit } from './qbit';
 import { parseTorrent, magnetHash, TorrentFileError } from './torrent-file';
-import { filesForEpisodes } from './episode-file';
+import { filesForEpisodes, filesForEpisodesStrict, otherSeasonInPath } from './episode-file';
 import { decrypt } from './crypto/secretbox';
 import type { ActiveDownload } from './plan';
 import { log, redactUrl } from './log';
@@ -80,8 +80,8 @@ export async function startRelease(
   // уже скачанная (или убранная только у нас) раздача всё ещё в клиенте — повторный add qBittorrent отвергнет
   if (existing && (await deps.qbit.list(CATEGORY)).some((t) => t.hash === existing.hash)) return resume(db, deps, existing, want);
   // новая версия уже скачиваемого топика — не второй торрент рядом, а смена версии
-  const prev = Buffer.isBuffer(torrent) && !existing ? topicDownload(db, release) : undefined;
-  if (prev && Buffer.isBuffer(torrent)) {
+  const prev = Buffer.isBuffer(torrent) && !existing ? topicDownload(db, release, want[0]?.season) : undefined;
+  if (prev && Buffer.isBuffer(torrent) && want.every((w) => w.season === prev.season)) {
     const res = await switchTorrent(db, deps, prev, torrent, want);
     if (res.switched) return res.download;
     if (res.reason === 'no-new-episodes') throw new DownloadError(`В раздаче нет файла ${code(want[0])}`);
@@ -170,13 +170,14 @@ async function resume(db: Db, deps: DownloadDeps, d: Download, want: EpisodeRef[
 const LIVE: Download['state'][] = ['adding', 'downloading', 'paused', 'stalled', 'completed', 'imported'];
 
 /** Живая загрузка-пак сериала с раздачей того же топика (того же адреса на трекере). */
-export function topicDownload(db: Db, release: Release): Download | undefined {
+export function topicDownload(db: Db, release: Release, season?: number): Download | undefined {
   if (!release.detailsUrl) return undefined;
+  if (season === undefined) return undefined;
   return db
     .select({ d: downloads })
     .from(downloads)
     .innerJoin(releases, eq(releases.id, downloads.releaseId))
-    .where(and(eq(downloads.titleId, release.titleId), eq(downloads.kind, 'pack'), eq(releases.detailsUrl, release.detailsUrl), inArray(downloads.state, LIVE)))
+    .where(and(eq(downloads.titleId, release.titleId), eq(downloads.kind, 'pack'), eq(downloads.season, season), eq(releases.detailsUrl, release.detailsUrl), inArray(downloads.state, LIVE)))
     .orderBy(desc(downloads.addedAt))
     .get()?.d;
 }
@@ -206,15 +207,30 @@ export async function switchTorrent(db: Db, deps: DownloadDeps, old: Download, t
   const carry = old.state === 'imported' ? [] : old.episodes.filter((e) => !have.has(`${e.season}:${e.number}`));
   const all = merge(carry, want);
   const files: DownloadFile[] = meta.files.map((f) => ({ index: f.index, name: f.path, size: f.size, priority: 1 }));
-  const map = filesForEpisodes(files, old.season, all.filter((e) => e.season === old.season).map((e) => e.number));
+  // топик могли переделать под другой сезон: строгое сопоставление и проверка имени раздачи
+  if (otherSeasonInPath(meta.name, old.season)) return { switched: false, reason: 'no-new-episodes' };
+  const map = filesForEpisodesStrict(files, old.season, all.filter((e) => e.season === old.season).map((e) => e.number));
   const found = all.filter((e) => e.season === old.season && map.has(e.number));
   if (!found.length) return { switched: false, reason: 'no-new-episodes' };
+  // эта версия уже есть у нас — дополняем её, а не добавляем заново
+  const known = db.select().from(downloads).where(eq(downloads.hash, meta.infohash)).get();
+  if (known) {
+    await enableFiles(db, deps, known.id, found);
+    return { switched: false, reason: 'same-hash' };
+  }
 
   const savePath = `${deps.paths.qbitDownloads.replace(/\/+$/, '')}/${CATEGORY}`;
   await deps.qbit.ensureCategory(CATEGORY, savePath);
-  await deps.qbit.add(torrent, { savePath, category: CATEGORY, paused: true });
+  // прерванная прошлая смена могла оставить торрент в клиенте без записи — подхватываем его
+  if (!(await deps.qbit.list(CATEGORY)).some((t) => t.hash === meta.infohash)) await deps.qbit.add(torrent, { savePath, category: CATEGORY, paused: true });
   const keep = new Set(found.flatMap((e) => map.get(e.number)!));
-  await deps.qbit.setFilePriority(meta.infohash, files.filter((f) => !keep.has(f.index)).map((f) => f.index), 0);
+  try {
+    await deps.qbit.setFilePriority(meta.infohash, files.filter((f) => !keep.has(f.index)).map((f) => f.index), 0);
+  } catch (e) {
+    // не оставлять в клиенте торрент без записи: следующая попытка начнёт заново
+    await deps.qbit.remove([meta.infohash]).catch(() => undefined);
+    throw e;
+  }
   const now = deps.now ?? Date.now();
   const fresh = db
     .insert(downloads)
@@ -357,28 +373,48 @@ async function importDownload(db: Db, d: Download, savePath: string, files: { in
       .onConflictDoUpdate({ target: [wantedState.titleId, wantedState.season, wantedState.number], set: row })
       .run();
   }
+  // каждая серия отдельно: сбой одной не мешает остальным, уже импортированные этой загрузкой не копируются заново
+  let failure: unknown = null;
   for (const ep of found) {
-    const file = files.find((f) => f.index === map.get(ep.number)![0])!;
-    const src = toLocalPath(`${savePath.replace(/\/+$/, '')}/${file.name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
-    const rel = renderTemplate(
-      paths.template || DEFAULT_TEMPLATE,
-      { name: title.nameRu, original: title.nameOriginal, year: title.year, season: ep.season, episode: ep.number, studio: d.studioLabel ?? '', quality: d.resolution ? `${d.resolution}p` : '' },
-      path.extname(file.name),
-    );
-    const own = db
-      .select()
-      .from(episodeFiles)
-      .where(and(eq(episodeFiles.titleId, d.titleId), eq(episodeFiles.season, ep.season), eq(episodeFiles.number, ep.number)))
-      .get();
-    const r = await importFile(src, paths.media, rel, undefined, { replace: own?.path === rel });
-    const row = { titleId: d.titleId, season: ep.season, number: ep.number, path: rel, size: file.size, downloadId: d.id, studioLabel: d.studioLabel, resolution: d.resolution, method: r.method, importedAt: now };
-    db.insert(episodeFiles)
-      .values(row)
-      .onConflictDoUpdate({ target: [episodeFiles.titleId, episodeFiles.season, episodeFiles.number], set: row })
-      .run();
-    db.delete(wantedState)
-      .where(and(eq(wantedState.titleId, d.titleId), eq(wantedState.season, ep.season), eq(wantedState.number, ep.number)))
-      .run();
+    try {
+      await importEpisode(db, d, ep, title, savePath, files.find((f) => f.index === map.get(ep.number)![0])!, paths, now);
+    } catch (e) {
+      failure ??= e;
+    }
   }
+  if (failure) throw failure;
   return found;
+}
+
+async function importEpisode(
+  db: Db,
+  d: Download,
+  ep: EpisodeRef,
+  title: typeof titles.$inferSelect,
+  savePath: string,
+  file: { index: number; name: string; size: number },
+  paths: Paths,
+  now: number,
+) {
+  const src = toLocalPath(`${savePath.replace(/\/+$/, '')}/${file.name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
+  const rel = renderTemplate(
+    paths.template || DEFAULT_TEMPLATE,
+    { name: title.nameRu, original: title.nameOriginal, year: title.year, season: ep.season, episode: ep.number, studio: d.studioLabel ?? '', quality: d.resolution ? `${d.resolution}p` : '' },
+    path.extname(file.name),
+  );
+  const own = db
+    .select()
+    .from(episodeFiles)
+    .where(and(eq(episodeFiles.titleId, d.titleId), eq(episodeFiles.season, ep.season), eq(episodeFiles.number, ep.number)))
+    .get();
+  if (own?.downloadId === d.id && own.path === rel) return;
+  const r = await importFile(src, paths.media, rel, undefined, { replace: own?.path === rel });
+  const row = { titleId: d.titleId, season: ep.season, number: ep.number, path: rel, size: file.size, downloadId: d.id, studioLabel: d.studioLabel, resolution: d.resolution, method: r.method, importedAt: now };
+  db.insert(episodeFiles)
+    .values(row)
+    .onConflictDoUpdate({ target: [episodeFiles.titleId, episodeFiles.season, episodeFiles.number], set: row })
+    .run();
+  db.delete(wantedState)
+    .where(and(eq(wantedState.titleId, d.titleId), eq(wantedState.season, ep.season), eq(wantedState.number, ep.number)))
+    .run();
 }

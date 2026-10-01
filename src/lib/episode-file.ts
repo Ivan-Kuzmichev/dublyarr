@@ -48,3 +48,23 @@ export function filesForEpisodes(files: { index: number; name: string; size: num
   }
   return out;
 }
+
+/** В пути (папки, имя раздачи) указан другой сезон: «Season 2», «Сезон 2», «2 сезон», «S02». */
+export function otherSeasonInPath(p: string, season: number): boolean {
+  const re = /(?:season|сезон)[\s._-]*(\d{1,2})(?!\d)|(?<![\d])(\d{1,2})[\s._-]*(?:season|сезон)|(?:^|[\s._\-/\[(])S(\d{1,2})(?=$|[\s._\-/\])E])/gi;
+  for (const m of p.matchAll(re)) {
+    const n = Number(m[1] ?? m[2] ?? m[3]);
+    if (n !== season) return true;
+  }
+  return false;
+}
+
+/** Строгое сопоставление для смены версии топика: без «один файл — одна серия», без файлов из папок другого сезона. */
+export function filesForEpisodesStrict(files: { index: number; name: string; size: number }[], season: number, episodes: number[]): Map<number, number[]> {
+  const out = new Map<number, number[]>();
+  for (const f of files.filter((x) => isVideo(x.name) && !isSample(x.name) && !otherSeasonInPath(path.dirname(x.name), season))) {
+    const n = episodeFromFilename(f.name, season);
+    if (n !== null && episodes.includes(n)) out.set(n, [...(out.get(n) ?? []), f.index]);
+  }
+  return out;
+}

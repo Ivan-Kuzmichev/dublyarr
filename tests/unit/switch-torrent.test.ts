@@ -87,9 +87,58 @@ test('startRelease: другая раздача того же топика — �
   db.update(downloads).set({ state: 'imported' }).run();
   const r2 = mk('A S01 1-3 из 8');
   files.set(r2.id, v2);
-  expect(topicDownload(db, r2)?.id).toBe(old.id);
+  expect(topicDownload(db, r2, 1)?.id).toBe(old.id);
+  expect(topicDownload(db, r2, 2)).toBeUndefined();
   const d = await startRelease(db, deps, r2, [ep(3)], 'pack', 'LostFilm');
   expect(d.episodes).toEqual([ep(3)]);
   expect(fq.torrents.size).toBe(1);
   expect(db.select().from(downloads).where(eq(downloads.id, old.id)).get()!.state).toBe('replaced');
+});
+
+test('топик переделан под другой сезон с файлами «01.mkv» — не переключаемся', async () => {
+  const { db, deps, old } = await setup();
+  const s2 = (() => {
+    const info = new Map<string, unknown>([['name', b('A Season 2')], ['piece length', 9], ['pieces', Buffer.alloc(20)]]);
+    info.set('files', ['01.mkv', '02.mkv', '03.mkv'].map((f) => new Map<string, unknown>([['length', 100], ['path', [b('Season 2'), b(f)]]])));
+    return bencode(new Map<string, unknown>([['info', info]]));
+  })();
+  expect(await switchTorrent(db, deps, old, s2, [ep(3)])).toEqual({ switched: false, reason: 'no-new-episodes' });
+  const one = (() => {
+    const info = new Map<string, unknown>([['name', b('A.mkv')], ['piece length', 7], ['pieces', Buffer.alloc(20)], ['length', 100]]);
+    return bencode(new Map<string, unknown>([['info', info]]));
+  })();
+  db.update(downloads).set({ state: 'imported' }).run();
+  expect(await switchTorrent(db, deps, db.select().from(downloads).get()!, one, [ep(3)])).toEqual({ switched: false, reason: 'no-new-episodes' });
+});
+
+test('нужна серия другого сезона — обычное добавление, пак первого сезона не трогаем', async () => {
+  const { db, mk, fq, files, deps, old } = await setup();
+  db.update(downloads).set({ state: 'imported' }).run();
+  const r2 = mk('A S01-02');
+  const info = new Map<string, unknown>([['name', b('A S02')], ['piece length', 5], ['pieces', Buffer.alloc(20)]]);
+  info.set('files', ['A.S02E01.mkv', 'A.S02E02.mkv'].map((f) => new Map<string, unknown>([['length', 100], ['path', [b(f)]]])));
+  files.set(r2.id, bencode(new Map<string, unknown>([['info', info]])));
+  const d = await startRelease(db, deps, r2, [{ season: 2, number: 1 }], 'pack', null);
+  expect(d).toMatchObject({ season: 2, state: 'downloading', episodes: [{ season: 2, number: 1 }] });
+  expect(db.select().from(downloads).where(eq(downloads.id, old.id)).get()!.state).toBe('imported');
+  expect(fq.torrents.size).toBe(2);
+});
+
+test('сбой после добавления — новый торрент убран, записи нет; следующая попытка проходит', async () => {
+  const { db, fq, deps, old } = await setup();
+  const qbit = { ...fq.qbit, setFilePriority: async () => { throw new Error('qBittorrent не отвечает'); } };
+  await expect(switchTorrent(db, { ...deps, qbit }, old, v2, [ep(3)])).rejects.toThrow('qBittorrent не отвечает');
+  expect(fq.torrents.has(parseTorrent(v2).infohash)).toBe(false);
+  expect(db.select().from(downloads).all()).toHaveLength(1);
+  expect(db.select().from(downloads).get()!.state).toBe('downloading');
+  expect((await switchTorrent(db, deps, old, v2, [ep(3)])).switched).toBe(true);
+});
+
+test('новая версия уже в клиенте без записи (прерванная смена) — не добавляем повторно', async () => {
+  const { db, fq, deps, old } = await setup();
+  await fq.qbit.add(v2, { savePath: '/downloads/dublyarr', category: 'dublyarr', paused: true });
+  fq.calls.length = 0;
+  const res = await switchTorrent(db, deps, old, v2, [ep(3)]);
+  expect(res.switched).toBe(true);
+  expect(fq.calls).not.toContain('add');
 });

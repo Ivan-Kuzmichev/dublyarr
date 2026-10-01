@@ -74,8 +74,9 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   // Сезон с сериями без даты решается после поиска — по паку, заявляющему весь сезон.
   const finished: number[] = [];
   const maybe: number[] = [];
+  const forFinale = need;
   const waitFinale = (s: number) => {
-    for (const e of need.filter((x) => x.season === s)) {
+    for (const e of forFinale.filter((x) => x.season === s)) {
       setWanted(db, titleId, e, 'waiting', 'Ждём финал сезона', null, now);
       res.waiting++;
     }
@@ -115,7 +116,12 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
 
   const seasonTargets = [...finished];
   for (const s of maybe) {
-    const claims = usable.map((r) => claimedSeasonTotal(r.parsed, s)).filter((n): n is number => n !== undefined);
+    // «весь сезон» — только от подходящих раздач (не отклонённых по сериалу, качеству, размеру)
+    const okIds = new Set(evaluateReleases(usable, ctx, { season: s }).filter((v) => v.ok).map((v) => v.releaseId));
+    const claims = usable
+      .filter((r) => okIds.has(r.id))
+      .map((r) => claimedSeasonTotal(r.parsed, s))
+      .filter((n): n is number => n !== undefined);
     if (claims.length && seasonFinished(s, eps, today, Math.max(...claims))) seasonTargets.push(s);
     else waitFinale(s);
   }
