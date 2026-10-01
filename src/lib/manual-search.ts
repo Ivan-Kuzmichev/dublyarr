@@ -1,10 +1,12 @@
 import { isMovieProfile } from './movie-profile';
 import { eq } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { releases, type Release } from './db/schema';
+import { releases, titles, type Release } from './db/schema';
 import { getTitleByTmdbId, listEpisodes, listSeasons } from './catalog';
 import { getSubscription } from './subscriptions';
-import { getDefaultProfile } from './profile';
+import { getDefaultProfile, getMovieDefault } from './profile';
+import { evaluateMovie } from './movie-evaluate';
+import { digitalReleased } from './movies';
 import { createStudio, listStudios, updateStudio } from './studios';
 import { normalizeStudio } from './studios-normalize';
 import { searchTitle, reparseReleases, type SearchOptions, type SourceStatus } from './search';
@@ -28,6 +30,28 @@ export async function runManualSearch(db: Db, tmdbId: number, target: Target, op
   const names = new Map(listStudios(db).map((s) => [s.id, s.name]));
   const episodes = listSeasons(db, title.id).flatMap((s) => listEpisodes(db, title.id, s.number));
   const verdicts = evaluateReleases(found, { profile, episodes, studioName: (id) => names.get(id), today: opts.today ?? todayIso() }, target);
+  const byId = new Map(verdicts.map((v) => [v.releaseId, v]));
+  const rows = found
+    .map((release) => ({
+      release,
+      verdict: byId.get(release.id)!,
+      dubs: release.parsed.dubs.map((d) => ({ label: d.label, studioName: d.studioId !== null ? names.get(d.studioId) : undefined, by: d.by })),
+    }))
+    .sort((a, b) => TONE_ORDER.indexOf(a.verdict.tone) - TONE_ORDER.indexOf(b.verdict.tone) || (b.release.seeders ?? 0) - (a.release.seeders ?? 0));
+  return { rows, sources, profileSource: sub ? 'subscription' : 'default' };
+}
+
+/** Ручной поиск фильма: те же строки, вердикты — по профилю фильма и дате цифрового релиза. */
+export async function runManualMovieSearch(db: Db, tmdbId: number, opts: SearchOptions & { today?: string } = {}): Promise<ManualResult> {
+  const title = getTitleByTmdbId(db, tmdbId, 'movie');
+  if (!title) throw new Error('Фильм не найден');
+  const { releases: found, sources } = await searchTitle(db, title.id, opts);
+  const fresh = db.select().from(titles).where(eq(titles.id, title.id)).get()!; // поиск мог отметить цифровой релиз
+  const sub = getSubscription(db, title.id);
+  const profile = sub && isMovieProfile(sub.profile) ? sub.profile : getMovieDefault(db);
+  const today = opts.today ?? todayIso();
+  const verdicts = evaluateMovie(found, { profile, digital: digitalReleased(fresh, today), today });
+  const names = new Map(listStudios(db).map((s) => [s.id, s.name]));
   const byId = new Map(verdicts.map((v) => [v.releaseId, v]));
   const rows = found
     .map((release) => ({

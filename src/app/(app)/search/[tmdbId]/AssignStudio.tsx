@@ -5,9 +5,9 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { assignStudioAction, type AssignState } from './actions';
 
-type Props = { tmdbId: number; label: string; studios: { id: number; name: string }[] };
+type Props = { tmdbId: number; label: string; studios: { id: number; name: string }[]; movie?: boolean };
 
-function Body({ tmdbId, label, studios, onClose }: Props & { onClose: () => void }) {
+function Body({ tmdbId, label, studios, onClose, movie }: Props & { onClose: () => void }) {
   const titleId = useId();
   const [state, action, pending] = useActionState<AssignState, FormData>(assignStudioAction, {});
   const [choice, setChoice] = useState('');
@@ -20,6 +20,7 @@ function Body({ tmdbId, label, studios, onClose }: Props & { onClose: () => void
     <Modal open onClose={onClose} labelledBy={titleId} width={560}>
       <form action={action} className="flex min-h-0 flex-col gap-4 overflow-y-auto p-5 md:p-7">
         <input type="hidden" name="tmdbId" value={tmdbId} />
+        {movie && <input type="hidden" name="type" value="movie" />}
         <input type="hidden" name="label" value={label} />
         <h2 id={titleId} className="m-0 font-display text-[22px] font-semibold">
           Чья это озвучка?

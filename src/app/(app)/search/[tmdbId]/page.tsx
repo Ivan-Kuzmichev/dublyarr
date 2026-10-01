@@ -6,7 +6,8 @@ import { Icon, ICONS } from '@/components/ui/Icon';
 import { getDb } from '@/lib/db/client';
 import { getTmdb } from '@/lib/tmdb';
 import { listSeasons, openTitle } from '@/lib/catalog';
-import { runManualSearch, type ManualRow } from '@/lib/manual-search';
+import { runManualMovieSearch, runManualSearch, type ManualResult, type ManualRow } from '@/lib/manual-search';
+import { openMovie } from '@/lib/movies';
 import { listStudios } from '@/lib/studios';
 import { pickDefaultSeason, todayIso } from '@/lib/dates';
 import { formatSize, qualityLabel } from '@/lib/format';
@@ -25,7 +26,7 @@ const GENERIC = /^(?:DUB|MVO|DVO|VO|AVO)$/;
 // Как распознана озвучка раздачи: по самому надёжному из способов.
 const recognizedBy = (dubs: ManualRow['dubs']) => (['tracker', 'title', 'tag'] as const).find((b) => dubs.some((d) => d.by === b && (d.studioName || b === 'tag'))) ?? 'none';
 
-function Row({ row, tmdbId, studios, season, episode }: { row: ManualRow; tmdbId: number; studios: { id: number; name: string }[]; season: number; episode?: number }) {
+function Row({ row, tmdbId, studios, season, episode, movie = false }: { row: ManualRow; tmdbId: number; studios: { id: number; name: string }[]; season: number; episode?: number; movie?: boolean }) {
   const { release: r, verdict: v, dubs } = row;
   const unknown = dubs.find((d) => !d.studioName && d.by !== 'tag' && !GENERIC.test(d.label));
   const dim = v.tone === 'reject' ? 'opacity-60' : '';
@@ -55,12 +56,13 @@ function Row({ row, tmdbId, studios, season, episode }: { row: ManualRow; tmdbId
       </div>
       <span className={`text-[13px] ${TONE[v.tone]}`}>{v.reason}</span>
       <div className="flex flex-wrap items-center gap-2">
-        {(v.tone === 'best' || v.tone === 'ok') && <DownloadButton tmdbId={tmdbId} releaseId={r.id} season={season} episode={episode} />}
-        {unknown && <AssignStudio tmdbId={tmdbId} label={unknown.label} studios={studios} />}
+        {(v.tone === 'best' || v.tone === 'ok') && <DownloadButton tmdbId={tmdbId} releaseId={r.id} season={season} episode={episode} movie={movie} />}
+        {unknown && !movie && <AssignStudio tmdbId={tmdbId} label={unknown.label} studios={studios} />}
         {(canConfirm || canReject) && (
           <form action={answerMatchAction} className="flex gap-1">
             <input type="hidden" name="tmdbId" value={tmdbId} />
             <input type="hidden" name="releaseId" value={r.id} />
+            {movie && <input type="hidden" name="type" value="movie" />}
             {canConfirm && (
               <button type="submit" name="verdict" value="match" className="h-11 cursor-pointer rounded-[10px] border border-line-strong px-3 text-[13px] text-text-2 hover:text-text">
                 Это он
@@ -68,7 +70,7 @@ function Row({ row, tmdbId, studios, season, episode }: { row: ManualRow; tmdbId
             )}
             {canReject && v.tone !== 'reject' && (
               <button type="submit" name="verdict" value="reject" className="h-11 cursor-pointer rounded-[10px] px-2 text-[13px] text-faint hover:text-danger">
-                Не тот сериал
+                {movie ? 'Не тот фильм' : 'Не тот сериал'}
               </button>
             )}
           </form>
@@ -78,10 +80,11 @@ function Row({ row, tmdbId, studios, season, episode }: { row: ManualRow; tmdbId
   );
 }
 
-export default async function ManualSearchPage({ params, searchParams }: { params: Promise<{ tmdbId: string }>; searchParams: Promise<{ s?: string; e?: string }> }) {
+export default async function ManualSearchPage({ params, searchParams }: { params: Promise<{ tmdbId: string }>; searchParams: Promise<{ s?: string; e?: string; type?: string }> }) {
   const { tmdbId: raw } = await params;
   const tmdbId = Number(raw);
   if (!Number.isInteger(tmdbId) || tmdbId <= 0) notFound();
+  if ((await searchParams).type === 'movie') return <MovieSearch tmdbId={tmdbId} />;
   const db = getDb();
   const { title } = await openTitle(db, getTmdb(db), tmdbId);
   const seasons = listSeasons(db, title.id);
@@ -125,6 +128,14 @@ export default async function ManualSearchPage({ params, searchParams }: { param
           ))}
         </nav>
       )}
+      <Results result={result} tmdbId={tmdbId} studios={studios} season={season} episode={episode} />
+    </div>
+  );
+}
+
+function Results({ result, tmdbId, studios, season, episode, movie = false }: { result: ManualResult; tmdbId: number; studios: { id: number; name: string }[]; season: number; episode?: number; movie?: boolean }) {
+  return (
+    <>
       {result.sources.length === 0 ? (
         <Card>
           <p className="m-0 text-[15px] text-muted">
@@ -156,12 +167,35 @@ export default async function ManualSearchPage({ params, searchParams }: { param
                 <span />
               </div>
               {result.rows.map((row) => (
-                <Row key={row.release.id} row={row} tmdbId={tmdbId} studios={studios} season={season} episode={episode} />
+                <Row key={row.release.id} row={row} tmdbId={tmdbId} studios={studios} season={season} episode={episode} movie={movie} />
               ))}
             </div>
           )}
         </>
       )}
+    </>
+  );
+}
+
+async function MovieSearch({ tmdbId }: { tmdbId: number }) {
+  const db = getDb();
+  const { title } = await openMovie(db, getTmdb(db), tmdbId);
+  const result = await runManualMovieSearch(db, tmdbId, { today: todayIso() });
+  return (
+    <div className="flex flex-col gap-6">
+      <Link href={`/movie/${tmdbId}`} className="flex min-h-11 items-center gap-1 self-start text-sm text-muted no-underline hover:text-text-2">
+        <Icon d={ICONS.back} size={16} strokeWidth={2} />
+        {title.nameRu}
+      </Link>
+      <div className="flex flex-col gap-2">
+        <PageTitle>Ручной поиск</PageTitle>
+        <span className="text-[15px] text-muted">
+          {title.nameRu}
+          {title.year ? ` · ${title.year}` : ''}
+          {result.profileSource === 'default' && ' · без подписки — оценка по профилю фильмов по умолчанию'}
+        </span>
+      </div>
+      <Results result={result} tmdbId={tmdbId} studios={[]} season={0} movie />
     </div>
   );
 }

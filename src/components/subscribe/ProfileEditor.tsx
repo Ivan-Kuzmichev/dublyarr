@@ -16,7 +16,7 @@ const H = ({ children, note }: { children: React.ReactNode; note?: string }) => 
   </div>
 );
 
-function Choice<T extends string | number>({ options, value, onChange, label }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void; label: string }) {
+export function Choice<T extends string | number>({ options, value, onChange, label }: { options: { value: T; label: string }[]; value: T; onChange: (v: T) => void; label: string }) {
   return (
     <div role="radiogroup" aria-label={label} className="inline-flex flex-wrap gap-1 self-start rounded-[10px] bg-surface-2 p-1">
       {options.map((o) => (

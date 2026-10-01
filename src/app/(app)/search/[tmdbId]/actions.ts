@@ -13,6 +13,12 @@ import { getQbit } from '@/lib/qbit';
 import { getSetting } from '@/lib/settings';
 import { fetchTorrentFile, startRelease, type Paths } from '@/lib/downloads';
 import { todayIso } from '@/lib/dates';
+import type { Title } from '@/lib/db/schema';
+import { getSubscription } from '@/lib/subscriptions';
+import { isMovieProfile, MOVIE_DUB_LABEL } from '@/lib/movie-profile';
+import { getMovieDefault } from '@/lib/profile';
+import { movieKinds } from '@/lib/movie-evaluate';
+import { MOVIE_EP } from '@/lib/movies';
 
 export type AssignState = { ok?: boolean; error?: string };
 
@@ -23,7 +29,7 @@ const positive = (v: FormDataEntryValue | null) => {
 
 function titleOf(form: FormData) {
   const tmdbId = positive(form.get('tmdbId'));
-  const title = tmdbId ? getTitleByTmdbId(getDb(), tmdbId) : undefined;
+  const title = tmdbId ? getTitleByTmdbId(getDb(), tmdbId, form.get('type') === 'movie' ? 'movie' : 'tv') : undefined;
   return title ? { tmdbId: tmdbId!, title } : null;
 }
 
@@ -70,6 +76,7 @@ export async function downloadAction(_prev: DownloadState, form: FormData): Prom
   const releaseId = positive(form.get('releaseId'));
   const season = positive(form.get('season'));
   const episode = positive(form.get('episode'));
+  if (t?.title.kind === 'movie' && releaseId) return downloadMovie(t.title, releaseId);
   if (!t || !releaseId || !season) return { error: 'Неверные данные' };
   const db = getDb();
   const qbit = getQbit(db);
@@ -98,6 +105,32 @@ export async function downloadAction(_prev: DownloadState, form: FormData): Prom
     if (d.state === 'error') return { error: d.lastError ?? 'Ошибка загрузки' };
     for (const e of want)
       db.delete(wantedState).where(and(eq(wantedState.titleId, t.title.id), eq(wantedState.season, e.season), eq(wantedState.number, e.number))).run();
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : String(e) };
+  }
+  revalidatePath('/activity');
+  return { ok: 'Добавлено в загрузки' };
+}
+
+/** «Скачать» фильм из ручного поиска: основной файл раздачи, подпись — тип перевода по профилю. */
+async function downloadMovie(title: Title, releaseId: number): Promise<DownloadState> {
+  const db = getDb();
+  const qbit = getQbit(db);
+  const paths = getSetting<Paths>(db, 'paths');
+  if (!qbit || !paths) return { error: 'Подключите qBittorrent и папки в настройках' };
+  if (!paths.movies) return { error: 'Задайте папку фильмов в «Загрузке и папках»' };
+  const release = db.select().from(releases).where(eq(releases.id, releaseId)).get();
+  if (!release || release.titleId !== title.id) return { error: 'Раздача не найдена' };
+  const sub = getSubscription(db, title.id);
+  const profile = sub && isMovieProfile(sub.profile) ? sub.profile : getMovieDefault(db);
+  const kinds = movieKinds(release.parsed);
+  const pos = profile.dubs.findIndex((d) => d.on && kinds.includes(d.kind));
+  const kind = pos >= 0 ? profile.dubs[pos].kind : kinds[0];
+  const label = kind === 'original' ? 'Оригинал' : kind ? MOVIE_DUB_LABEL[kind] : null;
+  try {
+    const d = await startRelease(db, { qbit, fetchTorrent: (r) => fetchTorrentFile(r), paths: { qbitDownloads: paths.qbitDownloads ?? paths.downloads } }, release, [MOVIE_EP], 'movie', label, { dubPosition: pos >= 0 ? pos : null });
+    if (d.state === 'error') return { error: d.lastError ?? 'Ошибка загрузки' };
+    db.delete(wantedState).where(and(eq(wantedState.titleId, title.id), eq(wantedState.season, 0), eq(wantedState.number, 0))).run();
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
   }

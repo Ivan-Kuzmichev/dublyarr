@@ -152,3 +152,11 @@ describe('замена', () => {
     expect(movieUpgrade({ ...f, dubPosition: 0 }, [v({ remux: true, position: 1 })], { ...DEFAULT_MOVIE_PROFILE, remux: true }, '2026-10-01', 'webdl')).toBeNull(); // перевод хуже — нет
   });
 });
+
+test('ручной поиск фильма: причины отказа и лучшая раздача', async () => {
+  const { runManualMovieSearch } = await import('@/lib/manual-search');
+  const s = await setup({ items: [MVO, DUB, { title: 'The Matrix [1999, HDTV 1080i] Dub', hash: 'D4' }] });
+  const r = await runManualMovieSearch(s.db, 603, { ...s.deps.searchOpts, now: s.deps.now, today: '2026-10-01' });
+  expect(r.profileSource).toBe('subscription');
+  expect(r.rows.map((x) => x.verdict.reason)).toEqual(['Лучший · Дубляж', 'Рано: ждём дубляж до 15 окт', 'Не цифровой релиз']);
+});
