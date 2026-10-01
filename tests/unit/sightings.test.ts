@@ -21,7 +21,7 @@ function setup() {
       .insert(releases)
       .values({
         titleId: t.id, sourceId: s.id, trackerName: 'X', title: `r${n++}`, size: 1, firstSeenAt: at('2026-09-10'), lastSeenAt: 1,
-        parsed: { base: 'x', names: [], year: null, seasons: [1], episodes: null, totalInSeason: null, absolute: false, pack: false, resolution: 1080, source: null, hdr: false, dv: false, screener: false, dubs: [{ label: 'HDrezka', studioId: st.id, via: 'title' }], original: false, subs: false, ...p } as ParsedRelease,
+        parsed: { base: 'x', names: [], year: null, seasons: [1], episodes: null, totalInSeason: null, absolute: false, pack: false, resolution: 1080, source: null, hdr: false, dv: false, screener: false, dubs: [{ kind: 'mvo', label: 'HDrezka', studioId: st.id, by: 'title' }], original: false, subs: false, ...p } as ParsedRelease,
         match: { score: 1, level: 'match', reasons: [] },
         ...o,
       })
@@ -61,7 +61,7 @@ test('остаётся более ранняя дата; отдельная се
 test('нераспознанная студия и «не тот сериал» — не учитываются', () => {
   const { db, t, rel, rows } = setup();
   recordSightings(db, t.id, [
-    rel({ episodes: { from: 1, to: 1 }, dubs: [{ label: 'Кто-то', studioId: null, via: 'title' }] }),
+    rel({ episodes: { from: 1, to: 1 }, dubs: [{ kind: 'mvo', label: 'Кто-то', studioId: null, by: 'title' }] }),
     rel({ episodes: { from: 2, to: 2 } }, { match: { score: 0.6, level: 'doubt', reasons: [] } }),
   ]);
   expect(rows()).toEqual([]);
