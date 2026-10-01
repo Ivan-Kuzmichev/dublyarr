@@ -1,4 +1,5 @@
-import { expect, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
+import { setSetting } from '@/lib/settings';
 import { randomBytes } from 'node:crypto';
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -7,7 +8,7 @@ import { testDb } from './helpers';
 import { fakeQbit } from './fake-qbit';
 import { bencode } from '@/lib/torrent-file';
 import { startRelease, syncDownloads } from '@/lib/downloads';
-import { downloads, episodeFiles, releases, sources, titles, wantedState, type Release } from '@/lib/db/schema';
+import { downloads, episodeFiles, oldCopies, releases, sources, titles, wantedState, type Release } from '@/lib/db/schema';
 import type { ParsedRelease } from '@/lib/parse/types';
 
 process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
@@ -189,4 +190,54 @@ test('часть серий пака не импортировалась — у�
   writeFileSync(path.join(media, rel(1)), 'изменён после импорта');
   await syncDownloads(db, { qbit: fq.qbit, paths, now: 2 * HOUR });
   expect(readFileSync(path.join(media, rel(1)), 'utf8')).toBe('изменён после импорта');
+});
+
+describe('старая копия после улучшения', () => {
+  const run = async (o: { samePath?: boolean; confirmed?: boolean; fail?: boolean }) => {
+    const s = setup();
+    const { db, t, mk, fq, files, deps, paths, media, finish } = s;
+    if (o.confirmed) setSetting(db, 'retention.oldCopy.confirmed', true);
+    const label = o.samePath ? 'X' : 'Y';
+    const oldRel = 'Игра престолов (2011)/Season 01/Игра престолов S01E01 [X 1080p].mkv';
+    mkdirSync(path.dirname(path.join(media, oldRel)), { recursive: true });
+    writeFileSync(path.join(media, oldRel), 'старая');
+    db.insert(episodeFiles).values({ titleId: t.id, season: 1, number: 1, path: oldRel, size: 6, method: 'copy', importedAt: 1, studioLabel: 'X', resolution: 1080, dubPosition: 1 }).run();
+    const r = mk('GoT S01E01', { pack: false });
+    files.set(r.id, torrent('Game.of.Thrones.S01E01.mkv', null));
+    const d = await startRelease(db, deps, r, [{ season: 1, number: 1 }], 'episode', label, { dubPosition: 0, note: 'Улучшение: X → Y' });
+    if (o.fail) fq.torrents.get(d.hash)!.progress = 1; // файла нет — импорт упадёт
+    else finish(d.hash);
+    await syncDownloads(db, { qbit: fq.qbit, paths, now: HOUR });
+    return { ...s, oldRel, newRel: oldRel.replace('[X', `[${label}`) };
+  };
+
+  test('до подтверждения — в скрытую папку и в список', async () => {
+    const { db, media, oldRel, newRel } = await run({});
+    expect(readFileSync(path.join(media, newRel), 'utf8')).toBe('video');
+    expect(existsSync(path.join(media, oldRel))).toBe(false);
+    expect(readFileSync(path.join(media, '.dublyarr-old', oldRel), 'utf8')).toBe('старая');
+    expect(db.select().from(oldCopies).all()).toEqual([expect.objectContaining({ path: `.dublyarr-old/${oldRel}`, size: Buffer.byteLength('старая'), reason: 'X → Y' })]);
+    expect(db.select().from(episodeFiles).get()).toMatchObject({ path: newRel, dubPosition: 0 });
+  });
+
+  test('после подтверждения — удаляется сразу', async () => {
+    const { db, media, oldRel } = await run({ confirmed: true });
+    expect(existsSync(path.join(media, oldRel))).toBe(false);
+    expect(existsSync(path.join(media, '.dublyarr-old', oldRel))).toBe(false);
+    expect(db.select().from(oldCopies).all()).toEqual([]);
+  });
+
+  test('тот же путь — старая сначала уходит в скрытую папку, новая ложится', async () => {
+    const { db, media, oldRel } = await run({ samePath: true });
+    expect(readFileSync(path.join(media, oldRel), 'utf8')).toBe('video');
+    expect(readFileSync(path.join(media, '.dublyarr-old', oldRel), 'utf8')).toBe('старая');
+    expect(db.select().from(oldCopies).all()).toHaveLength(1);
+  });
+
+  test('импорт новой упал — старая на месте', async () => {
+    const { db, media, oldRel } = await run({ samePath: true, fail: true });
+    expect(readFileSync(path.join(media, oldRel), 'utf8')).toBe('старая');
+    expect(db.select().from(episodeFiles).get()!.path).toBe(oldRel);
+    expect(db.select().from(oldCopies).all()).toEqual([]);
+  });
 });

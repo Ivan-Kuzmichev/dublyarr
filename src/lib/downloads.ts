@@ -4,6 +4,14 @@ import path from 'node:path';
 import { downloads, episodeFiles, releases, titles, wantedState, type Download, type DownloadFile, type EpisodeRef, type Release } from './db/schema';
 import { DEFAULT_TEMPLATE, PathError, renderTemplate, toLocalPath } from './library-path';
 import { importFile } from './importer';
+import { access } from 'node:fs/promises';
+import { restoreOldCopy, settleOldCopy, stashOldCopy } from './old-copies';
+
+const fileExists = (p: string) =>
+  access(p).then(
+    () => true,
+    () => false,
+  );
 import type { Qbit } from './qbit';
 import { parseTorrent, magnetHash, TorrentFileError } from './torrent-file';
 import { filesForEpisodes, filesForEpisodesStrict, otherSeasonInPath } from './episode-file';
@@ -412,7 +420,25 @@ async function importEpisode(
     .where(and(eq(episodeFiles.titleId, d.titleId), eq(episodeFiles.season, ep.season), eq(episodeFiles.number, ep.number)))
     .get();
   if (own?.downloadId === d.id && own.path === rel) return;
-  const r = await importFile(src, paths.media, rel, undefined, { replace: own?.path === rel });
+  // улучшение: у серии уже есть файл от другой загрузки — он станет старой копией (spec §8)
+  const prev = own && own.downloadId !== d.id ? own : null;
+  const stashed = prev && prev.path === rel && (await fileExists(path.resolve(paths.media, rel))) ? await stashOldCopy(paths.media, rel) : null;
+  let r: Awaited<ReturnType<typeof importFile>>;
+  try {
+    r = await importFile(src, paths.media, rel, undefined, { replace: !prev && own?.path === rel });
+  } catch (e) {
+    if (stashed) await restoreOldCopy(paths.media, stashed, rel);
+    throw e;
+  }
+  if (prev) {
+    const reason = d.note?.replace(/^Улучшение: /, '') ?? `${prev.studioLabel ?? '?'} → ${d.studioLabel ?? '?'}`;
+    try {
+      const old = stashed ?? (prev.path !== rel && (await fileExists(path.resolve(paths.media, prev.path))) ? await stashOldCopy(paths.media, prev.path) : null);
+      if (old) await settleOldCopy(db, paths.media, old, { titleId: d.titleId, season: ep.season, number: ep.number }, reason, now);
+    } catch (e) {
+      log.warn({ download: d.id, err: e instanceof Error ? e.message : String(e) }, 'old copy handling failed');
+    }
+  }
   const row = { titleId: d.titleId, season: ep.season, number: ep.number, path: rel, size: file.size, downloadId: d.id, studioLabel: d.studioLabel, resolution: d.resolution, method: r.method, importedAt: now, dubPosition: d.dubPosition };
   db.insert(episodeFiles)
     .values(row)
