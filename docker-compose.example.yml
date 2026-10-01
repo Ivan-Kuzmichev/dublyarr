@@ -11,6 +11,6 @@ services:
       TZ: Europe/Moscow
     volumes:
       - /volume1/docker/dublyarr:/data
-      - /volume1/downloads:/downloads
-      - /volume1/media:/media
+      # одна общая папка с подпапками downloads/ и media/ — тогда серии попадают в медиатеку жёсткой ссылкой
+      - /volume1/data:/storage
     restart: unless-stopped

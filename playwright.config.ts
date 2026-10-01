@@ -19,6 +19,11 @@ export default defineConfig({
     { command: 'node tests/e2e/tmdb-stub.mjs 3199', url: 'http://127.0.0.1:3199/3/configuration?api_key=ok' },
     { command: 'node tests/e2e/jackett-stub.mjs 3198', url: 'http://127.0.0.1:3198/api?t=caps&apikey=ok' },
     {
+      command: 'node tests/e2e/qbit-stub.mjs 3197',
+      url: 'http://127.0.0.1:3197/api/v2/auth/login',
+      env: { QBIT_DIR: path.join(dir, 'qbit'), QBIT_STEP: '1' },
+    },
+    {
       command: 'pnpm build && node dist/supervisor.cjs',
       url: 'http://127.0.0.1:3100/api/health',
       timeout: 240_000,

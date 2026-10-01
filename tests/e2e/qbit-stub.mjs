@@ -7,6 +7,7 @@ import { readTorrent } from './bencode.mjs';
 
 const port = Number(process.argv[2] ?? 3197);
 const dir = process.env.QBIT_DIR ?? path.join(process.cwd(), '.data', 'qbit');
+const step = Number(process.env.QBIT_STEP ?? 0.5);
 const torrents = new Map();
 
 function readBody(req) {
@@ -34,11 +35,11 @@ function multipart(body, type) {
   return out;
 }
 
-/** Каждый опрос info «докачивает» активные торренты: +50 %, на 100 % — файлы на диске. */
+/** Каждый опрос info «докачивает» активные торренты на QBIT_STEP (по умолчанию +50 %), на 100 % — файлы на диске. */
 function tick() {
   for (const t of torrents.values()) {
     if (t.paused || t.progress >= 1) continue;
-    t.progress = Math.min(1, t.progress + 0.5);
+    t.progress = Math.min(1, t.progress + step);
     if (t.progress >= 1)
       for (const f of t.files) {
         if (f.priority === 0) continue;

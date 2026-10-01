@@ -94,6 +94,22 @@ Self-hosted сервис для одного пользователя: подп�
 - Ручной поиск — `/search/[tmdbId]?s=&e=` (`src/lib/manual-search.ts`); каждое открытие опрашивает источники.
 - e2e: заглушка Jackett `tests/e2e/jackett-stub.mjs` (порт 3198).
 
+## Решения (фаза 1d — загрузки)
+
+- qBittorrent WebAPI v2: `src/lib/qbit.ts` (`createQbit`/`getQbit`; v4 и v5 — `start/stop` с webapi 2.11, иначе `resume/pause`; при 403 — один повторный вход).
+  Раздачи — категория `dublyarr`, папка `{qbitDownloads}/dublyarr`; удаление из клиента — всегда `deleteFiles=false`.
+  `.torrent` качает Dublyarr (`fetchTorrentFile`), хэш считает сам (`src/lib/torrent-file.ts`).
+- Пути — настройка `paths` `{ qbitDownloads, downloads, media, template }`: путь qBittorrent переводится заменой префикса (`toLocalPath`).
+  Импорт — жёсткая ссылка, при `EXDEV/EPERM/ENOTSUP/EMLINK` — копия (`src/lib/importer.ts`); шаблон имени — `src/lib/library-path.ts`.
+- Таблицы: `downloads` (одна строка — один торрент; `episodes` — какие серии из него нужны, `files` — снимок списка файлов),
+  `episode_files` (что лежит в медиатеке), `wanted_state` (почему нужная серия ещё не качается — ждём до даты / нет раздач / нужен ответ).
+- Что качать — `planEpisode` (`src/lib/plan.ts`): файл в уже качающемся паке → отдельная серия → пак с выбором файлов; серии одного пака — одна загрузка.
+  «Сезон целиком после финала» — пак, покрывающий весь сезон, когда вышла последняя серия.
+- Воркер: `subscriptions.search` раз в час (`src/lib/autosearch.ts`), `downloads.sync` раз в минуту (`syncDownloads`: состояния, stalled > суток без сидов, импорт).
+  Раздача с ошибкой загрузки при следующем поиске не берётся.
+- Экраны: «Сегодня», «Календарь», статусы серий — `src/lib/dashboard.ts`; очередь «Активности» — `src/lib/activity.ts`.
+- e2e: заглушка qBittorrent `tests/e2e/qbit-stub.mjs` (порт 3197; `QBIT_DIR`, `QBIT_STEP`); общий bencode заглушек — `tests/e2e/bencode.mjs`.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
