@@ -314,6 +314,8 @@ export const downloads = sqliteTable(
     lastError: text('last_error'),
     dubPosition: integer('dub_position'),
     pausedBySchedule: integer('paused_by_schedule', { mode: 'boolean' }).notNull().default(false),
+    pausedByUser: integer('paused_by_user', { mode: 'boolean' }).notNull().default(false), // «Пауза» в интерфейсе или API — синхронизация не запускает
+    restarts: json<number[]>('restarts').notNull().default([]), // когда синхронизация запускала остановленную клиентом (за последний час)
     processing: integer('processing', { mode: 'boolean' }).notNull().default(false), // идёт пересборка
     replacedById: integer('replaced_by_id').references((): AnySQLiteColumn => downloads.id, { onDelete: 'set null' }),
     note: text('note'),

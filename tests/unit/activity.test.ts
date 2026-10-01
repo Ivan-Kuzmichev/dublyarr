@@ -74,3 +74,14 @@ test('идёт пересборка — «Пересборка…»', () => {
   db.insert(downloads).values({ hash: 'p', titleId: t.id, season: 1, kind: 'episode', episodes: [{ season: 1, number: 1 }], state: 'completed', processing: true, progress: 1, name: 'x', size: 1, addedAt: NOW }).run();
   expect(activityQueue(db, NOW)[0].state).toBe('Пересборка…');
 });
+
+test('пауза из «Активности» помечает загрузку как остановленную пользователем', async () => {
+  const db = testDb();
+  const t = db.insert(titles).values({ tmdbId: 7, kind: 'series', nameRu: 'Эль', nameOriginal: 'Elle', originalLanguage: 'en', status: 'returning', createdAt: 1, refreshedAt: 1 }).returning().get();
+  const fq = fakeQbit();
+  const d = db.insert(downloads).values({ titleId: t.id, season: 1, kind: 'episode', size: 1, name: 'x', episodes: [], addedAt: 1, hash: 'h1', state: 'downloading' }).returning().get();
+  await controlDownload(db, fq.qbit, d.id, 'pause');
+  expect(db.select().from(downloads).where(eq(downloads.id, d.id)).get()!.pausedByUser).toBe(true);
+  await controlDownload(db, fq.qbit, d.id, 'resume');
+  expect(db.select().from(downloads).where(eq(downloads.id, d.id)).get()!.pausedByUser).toBe(false);
+});

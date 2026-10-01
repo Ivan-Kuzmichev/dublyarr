@@ -29,7 +29,11 @@ export async function applySpeed(db: Db, qbit: Qbit, now: Date): Promise<SpeedSt
   }
 
   // окно паузы закончилось — будим только то, что остановили сами; остановленное вручную не трогаем
-  const ours = db.select().from(downloads).where(and(eq(downloads.state, 'paused'), eq(downloads.pausedBySchedule, true))).all();
+  const ours = db
+    .select()
+    .from(downloads)
+    .where(and(eq(downloads.state, 'paused'), eq(downloads.pausedBySchedule, true), eq(downloads.pausedByUser, false)))
+    .all();
   if (ours.length) {
     await qbit.start(ours.map((d) => d.hash));
     db.update(downloads)

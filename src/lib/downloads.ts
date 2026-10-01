@@ -43,7 +43,23 @@ export type DownloadDeps = {
   fetchTorrent: (r: Release) => Promise<Buffer | { magnet: string }>;
   paths: { qbitDownloads: string };
   now?: number;
+  /** Тесты: без настоящих пауз при ожидании торрента. */
+  sleep?: (ms: number) => Promise<void>;
+  /** Сколько ждать появления торрента в клиенте, мс (15 с). */
+  waitMs?: number;
 };
+
+const sleepMs = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+
+/** qBittorrent 5 добавляет торрент асинхронно: команды до его появления молча теряются. */
+export async function waitForTorrent(qbit: Qbit, hash: string, o: { waitMs?: number; sleep?: (ms: number) => Promise<void> } = {}): Promise<boolean> {
+  const sleep = o.sleep ?? sleepMs;
+  for (let waited = 0; ; waited += 500) {
+    if ((await qbit.list(CATEGORY)).some((t) => t.hash === hash)) return true;
+    if (waited >= (o.waitMs ?? 15_000)) return false;
+    await sleep(500);
+  }
+}
 
 const code = (e: EpisodeRef) => `S${String(e.season).padStart(2, '0')}E${String(e.number).padStart(2, '0')}`;
 const merge = (a: EpisodeRef[], b: EpisodeRef[]) =>
@@ -131,8 +147,9 @@ export async function startRelease(
     // другой вызов (ручное «Скачать» и воркер одновременно) уже добавил этот торрент
     if (!(await deps.qbit.list(CATEGORY)).some((t) => t.hash === meta.infohash)) throw e;
   }
+  const appeared = await waitForTorrent(deps.qbit, meta.infohash, deps);
   let files: DownloadFile[] = meta.files.map((f) => ({ index: f.index, name: qbitName(meta, f.path), size: f.size, priority: 1 }));
-  if (!files.length) files = (await deps.qbit.files(meta.infohash)).map((f) => ({ index: f.index, name: f.name, size: f.size, priority: f.priority }));
+  if (!files.length && appeared) files = (await deps.qbit.files(meta.infohash)).map((f) => ({ index: f.index, name: f.name, size: f.size, priority: f.priority }));
   const row = {
     hash: meta.infohash,
     titleId: release.titleId,
@@ -141,7 +158,7 @@ export async function startRelease(
     kind,
     episodes: want,
     files,
-    state: 'adding' as const,
+    state: appeared ? ('adding' as const) : ('error' as const),
     progress: 0,
     size: release.size,
     name: release.title,
@@ -150,7 +167,7 @@ export async function startRelease(
     dubPosition: opts.dubPosition ?? null,
     note: opts.note ?? null,
     addedAt: now,
-    lastError: null,
+    lastError: appeared ? null : 'qBittorrent не добавил торрент',
     completedAt: null,
     importedAt: null,
   };
@@ -165,6 +182,7 @@ export async function startRelease(
     await enableFiles(db, deps, other.id, want);
     return db.select().from(downloads).where(eq(downloads.id, other.id)).get()!;
   }
+  if (!appeared) return d;
   // magnet-пак без метаданных: файлы выберет синхронизация, когда qBittorrent их получит
   if ((kind === 'pack' || kind === 'movie') && !files.length) return d;
   return selectAndStart(db, deps.qbit, d, files);
@@ -212,8 +230,25 @@ async function selectAndStart(db: Db, qbit: Qbit, d: Download, files: DownloadFi
     await qbit.setFilePriority(d.hash, off, 0);
     d = update(db, d.id, { episodes: found, files: files.map((f) => ({ ...f, priority: keep.has(f.index) ? 1 : 0 })) });
   }
-  dlog.info({ download: d.id, hash: d.hash, on: (d.files ?? []).filter((f) => f.priority > 0).map((f) => f.index) }, 'files selected');
+  const on = (d.files ?? []).filter((f) => f.priority > 0).map((f) => f.index);
+  dlog.info({ download: d.id, hash: d.hash, on }, 'files selected');
   await qbit.start([d.hash]);
+  // перепроверка: клиент принял выбор файлов и запуск (один повтор)
+  if ((d.kind === 'pack' || d.kind === 'movie') && on.length) {
+    const off = async () => (await qbit.files(d.hash)).filter((f) => on.includes(f.index) && f.priority === 0).map((f) => f.index);
+    let missed = await off();
+    if (missed.length) {
+      dlog.warn({ download: d.id, hash: d.hash, missed }, 'files not enabled, retry');
+      await qbit.setFilePriority(d.hash, missed, 1);
+      missed = await off();
+      if (missed.length) return update(db, d.id, { state: 'error', lastError: 'qBittorrent не включил файлы серий' });
+    }
+  }
+  const t = (await qbit.list(CATEGORY)).find((x) => x.hash === d.hash);
+  if (t && /^(stopped|paused)/i.test(t.state)) {
+    dlog.warn({ download: d.id, hash: d.hash, qbitState: t.state }, 'not started, retry');
+    await qbit.start([d.hash]);
+  }
   return update(db, d.id, { state: 'downloading' });
 }
 
@@ -374,6 +409,8 @@ export async function enableFiles(db: Db, deps: DownloadDeps, downloadId: number
 
 export type Paths = { qbitDownloads?: string; downloads: string; media: string; template?: string; movies?: string; movieTemplate?: string };
 const DAY = 86_400_000;
+const HOUR = 3_600_000;
+const MAX_RESTARTS = 3;
 
 /** Состояние загрузок из qBittorrent; завершённые — импорт нужных файлов в медиатеку. */
 export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; now?: number; runner?: Runner }) {
@@ -404,12 +441,33 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
       continue;
     }
     const partial = d.kind === 'pack' || d.kind === 'movie'; // включены не все файлы раздачи
+    const paused = /^(stopped|paused)/i.test(t.state);
+    // пак/фильм, у которого в клиенте выключены все файлы (выбор файлов потерялся), — выбрать заново
+    if (partial && d.state !== 'adding' && qfiles.length > 0 && qfiles.every((f) => f.priority === 0) && !d.pausedByUser && !d.pausedBySchedule) {
+      dlog.warn({ download: d.id, hash: d.hash }, 'all files off, reselect');
+      await selectAndStart(db, deps.qbit, d, qfiles.map((f) => ({ index: f.index, name: f.name, size: f.size, priority: f.priority })));
+      res.updated++;
+      continue;
+    }
     const wanted = partial ? qfiles.filter((f) => f.priority > 0) : qfiles;
     const total = wanted.reduce((n, f) => n + f.size, 0);
     const progress = partial && total > 0 ? wanted.reduce((n, f) => n + f.progress * f.size, 0) / total : t.progress;
     const done = partial ? wanted.length > 0 && wanted.every((f) => f.progress >= 1) : t.progress >= 1;
     const lastSeededAt = t.num_seeds > 0 ? now : d.lastSeededAt;
-    const paused = /^(stopped|paused)/i.test(t.state);
+    // клиент остановил загрузку не по нашей команде — запускаем снова (не больше 3 раз за час)
+    if (paused && !done && !d.pausedByUser && !d.pausedBySchedule && d.state !== 'adding') {
+      const recent = [...d.restarts.filter((x) => now - x < HOUR), now];
+      if (recent.length > MAX_RESTARTS) {
+        update(db, d.id, { state: 'error', lastError: 'qBittorrent останавливает загрузку', restarts: recent });
+        res.errors++;
+        continue;
+      }
+      await deps.qbit.start([d.hash]);
+      dlog.info({ download: d.id, hash: d.hash, qbitState: t.state, restarts: recent.length }, 'restart');
+      update(db, d.id, { state: 'downloading', restarts: recent, progress, dlSpeed: t.dlspeed, eta: t.eta, contentPath: t.content_path });
+      res.updated++;
+      continue;
+    }
     const stalled = !done && t.num_seeds === 0 && now - (lastSeededAt ?? d.addedAt) > DAY;
     const state = done ? 'completed' : paused ? 'paused' : stalled ? 'stalled' : 'downloading';
     if (state === 'stalled' && d.state !== 'stalled') notifyStalled(db, d, now);

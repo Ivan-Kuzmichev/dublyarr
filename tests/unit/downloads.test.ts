@@ -6,6 +6,7 @@ import { bencode, parseTorrent } from '@/lib/torrent-file';
 import { QbitError } from '@/lib/qbit';
 import { startRelease, enableFiles, activeDownloads, fetchTorrentFile, DownloadError, syncDownloads } from '@/lib/downloads';
 import { downloads, releases, sources, titles, type Release } from '@/lib/db/schema';
+import { controlDownload } from '@/lib/activity';
 import { encrypt } from '@/lib/crypto/secretbox';
 import type { ParsedRelease } from '@/lib/parse/types';
 import { Writable } from 'node:stream';
@@ -182,4 +183,76 @@ test('смена состояния загрузки пишется в журн�
   files.set(r.id, torrent('A.S01E03.mkv', null));
   await startRelease(db, deps, r, [{ season: 1, number: 3 }], 'episode', 'LostFilm');
   expect(lines.find((l) => l.area === 'downloads' && l.msg === 'state' && l.to === 'downloading')).toMatchObject({ from: 'adding', to: 'downloading' });
+});
+
+const fast = { sleep: async () => undefined };
+const paths = { downloads: '/d', media: '/m' };
+
+test('qBittorrent добавляет асинхронно: ждём появления, потом выбираем файлы и запускаем', async () => {
+  const { db, mk, files, deps } = setup();
+  const fq = fakeQbit({ lateAdd: 3 });
+  const r = mk('A S01', {});
+  files.set(r.id, torrent('A S01', ['A.S01E01.mkv', 'A.S01E02.mkv']));
+  const d = await startRelease(db, { ...deps, ...fast, qbit: fq.qbit }, r, [{ season: 1, number: 2 }], 'pack', 'LostFilm');
+  expect(d.state).toBe('downloading');
+  const t = fq.torrents.get(d.hash)!;
+  expect(t.files.map((f) => f.priority)).toEqual([0, 1]);
+  expect(t.paused).toBe(false);
+});
+
+test('торрент так и не появился — ошибка загрузки', async () => {
+  const { db, mk, files, deps } = setup();
+  const fq = fakeQbit({ lateAdd: 1000 });
+  const r = mk('A S01E03', { pack: false, episodes: { from: 3, to: 3 } });
+  files.set(r.id, torrent('A.S01E03.mkv', null));
+  const d = await startRelease(db, { ...deps, ...fast, waitMs: 2000, qbit: fq.qbit }, r, [{ season: 1, number: 3 }], 'episode', 'X');
+  expect(d).toMatchObject({ state: 'error', lastError: 'qBittorrent не добавил торрент' });
+});
+
+test('синхронизация: остановленную в клиенте (не пользователем, не расписанием) запускает снова', async () => {
+  const { db, mk, fq, files, deps } = setup();
+  const r = mk('A S01E03', { pack: false, episodes: { from: 3, to: 3 } });
+  files.set(r.id, torrent('A.S01E03.mkv', null));
+  const d = await startRelease(db, deps, r, [{ season: 1, number: 3 }], 'episode', 'X');
+  await fq.qbit.stop([d.hash]);
+  await syncDownloads(db, { qbit: fq.qbit, paths, now: 100 });
+  expect(fq.torrents.get(d.hash)!.paused).toBe(false);
+  expect(db.select().from(downloads).get()!.state).toBe('downloading');
+});
+
+test('пауза пользователем и по расписанию — не трогаем', async () => {
+  const { db, mk, fq, files, deps } = setup();
+  const r = mk('A S01E03', { pack: false, episodes: { from: 3, to: 3 } });
+  files.set(r.id, torrent('A.S01E03.mkv', null));
+  const d = await startRelease(db, deps, r, [{ season: 1, number: 3 }], 'episode', 'X');
+  await controlDownload(db, fq.qbit, d.id, 'pause');
+  await syncDownloads(db, { qbit: fq.qbit, paths, now: 100 });
+  expect(fq.torrents.get(d.hash)!.paused).toBe(true);
+  db.update(downloads).set({ pausedByUser: false, pausedBySchedule: true }).run();
+  await syncDownloads(db, { qbit: fq.qbit, paths, now: 200 });
+  expect(fq.torrents.get(d.hash)!.paused).toBe(true);
+});
+
+test('больше 3 перезапусков за час — ошибка «qBittorrent останавливает загрузку»', async () => {
+  const { db, mk, fq, files, deps } = setup();
+  const r = mk('A S01E03', { pack: false, episodes: { from: 3, to: 3 } });
+  files.set(r.id, torrent('A.S01E03.mkv', null));
+  const d = await startRelease(db, deps, r, [{ season: 1, number: 3 }], 'episode', 'X');
+  for (let i = 0; i < 4; i++) {
+    await fq.qbit.stop([d.hash]);
+    await syncDownloads(db, { qbit: fq.qbit, paths, now: 1000 + i * 60_000 });
+  }
+  expect(db.select().from(downloads).get()).toMatchObject({ state: 'error', lastError: 'qBittorrent останавливает загрузку' });
+});
+
+test('пак, у которого в клиенте выключены все файлы, — файлы выбираются заново', async () => {
+  const { db, mk, fq, files, deps } = setup();
+  const r = mk('A S01', {});
+  files.set(r.id, torrent('A S01', ['A.S01E01.mkv', 'A.S01E02.mkv']));
+  const d = await startRelease(db, deps, r, [{ season: 1, number: 2 }], 'pack', 'X');
+  await fq.qbit.setFilePriority(d.hash, [0, 1], 0);
+  await fq.qbit.stop([d.hash]);
+  await syncDownloads(db, { qbit: fq.qbit, paths, now: 100 });
+  expect(fq.torrents.get(d.hash)!.files.map((f) => f.priority)).toEqual([0, 1]);
+  expect(fq.torrents.get(d.hash)!.paused).toBe(false);
 });

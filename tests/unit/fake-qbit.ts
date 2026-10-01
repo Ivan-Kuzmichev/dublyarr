@@ -3,24 +3,35 @@ import type { Qbit, QbitTorrent, QbitFile } from '@/lib/qbit';
 
 export type FakeTorrent = QbitTorrent & { files: QbitFile[]; paused: boolean };
 
-/** qBittorrent в памяти: хранит торренты, приоритеты, состояние. */
-export function fakeQbit() {
+/** qBittorrent в памяти: хранит торренты, приоритеты, состояние.
+ *  `lateAdd: n` — как qBittorrent 5: торрент виден только после n вызовов list(), команды до этого теряются. */
+export function fakeQbit(opts: { lateAdd?: number } = {}) {
   const torrents = new Map<string, FakeTorrent>();
+  const pending = new Map<string, { t: FakeTorrent; left: number }>();
   const calls: string[] = [];
   const qbit: Qbit = {
     version: async () => 'v5.1.2',
     async add(t, o) {
       calls.push('add');
       const meta = Buffer.isBuffer(t) ? parseTorrent(t) : { infohash: /btih:([0-9a-f]{40})/i.exec(t.magnet)![1].toLowerCase(), name: 'magnet', files: [] };
-      torrents.set(meta.infohash, {
+      const target = opts.lateAdd ? new Map<string, FakeTorrent>() : torrents;
+      target.set(meta.infohash, {
         hash: meta.infohash, name: meta.name, state: o.paused || o.stopOnMetadata ? 'stoppedDL' : 'downloading', progress: 0, dlspeed: 0, eta: 0,
         size: meta.files.reduce((n, f) => n + f.size, 0), num_seeds: 5, save_path: o.savePath, content_path: `${o.savePath}/${meta.name}`, category: o.category,
         // как настоящий qBittorrent: у многофайловой раздачи имена с корневой папкой
         files: meta.files.map((f) => ({ index: f.index, name: meta.files.length > 1 || f.path !== meta.name ? `${meta.name}/${f.path}` : f.path, size: f.size, progress: 0, priority: 1 })),
         paused: o.paused || !!o.stopOnMetadata,
       });
+      if (opts.lateAdd) pending.set(meta.infohash, { t: target.get(meta.infohash)!, left: opts.lateAdd });
     },
-    list: async (category) => [...torrents.values()].filter((t) => category === undefined || t.category === category),
+    async list(category) {
+      for (const [h, p] of pending)
+        if (--p.left <= 0) {
+          torrents.set(h, p.t);
+          pending.delete(h);
+        }
+      return [...torrents.values()].filter((t) => category === undefined || t.category === category);
+    },
     files: async (hash) => torrents.get(hash)?.files ?? [],
     async setFilePriority(hash, idx, prio) {
       calls.push(`prio:${idx.join(',')}=${prio}`);
