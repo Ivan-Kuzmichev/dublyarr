@@ -12,6 +12,7 @@ import { applySpeed } from '../lib/speed';
 import { getCleanup, runCleanup } from '../lib/cleanup';
 import { createTelegram, getTelegramSettings, telegramProxy } from '../lib/telegram';
 import { sendPending } from '../lib/notify';
+import { pollUpdates } from '../lib/telegram-updates';
 import { checkPacks } from '../lib/pack-watch';
 import { getSetting } from '../lib/settings';
 import { beat } from '../lib/heartbeat';
@@ -84,6 +85,11 @@ export const buildHandlers = (db: Db): Record<string, Handler> => ({
     if (r.titles && !getSchedule(db).packChecks) await packsJob(db);
   },
   'packs.check': () => packsJob(db),
+  'telegram.poll': async () => {
+    const s = getTelegramSettings(db);
+    if (!s?.token) return;
+    await pollUpdates(db, createTelegram({ token: s.token, proxy: telegramProxy(db, s) }));
+  },
   'telegram.send': async () => {
     const tg = telegramFor(db);
     if (!tg) return;
