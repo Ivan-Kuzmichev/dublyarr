@@ -463,3 +463,53 @@ export const deletions = sqliteTable('deletions', {
   size: integer('size').notNull(),
   at: ts('at').notNull(),
 });
+
+// Laya (фаза 4)
+
+/** Ответы Laya (после адаптера) — кэш: повторный поиск не спрашивает заново. version — версия адаптеров (0 — базовая). */
+export const layaAnswers = sqliteTable(
+  'laya_answers',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    task: text('task').notNull(),
+    key: text('key').notNull(),
+    version: integer('version').notNull(),
+    answer: json<string | boolean>('answer').notNull(),
+    p: real('p').notNull(), // после адаптера: P(true) для «да/нет», уверенность выбора для «выбора»
+    raw: real('raw').notNull(), // как ответила сама Laya
+    at: ts('at').notNull(),
+  },
+  (t) => [uniqueIndex('laya_answers_key').on(t.task, t.key, t.version)],
+);
+
+/** Размеченные примеры: ответы пользователя на те же вопросы, что видела бы Laya. Один пример на (задача, ключ). */
+export const layaExamples = sqliteTable(
+  'laya_examples',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    task: text('task').notNull(),
+    key: text('key').notNull(),
+    input: json<{ state: unknown; question: unknown; features: number[] }>('input').notNull(),
+    label: json<string | boolean>('label').notNull(),
+    laya: json<{ answer: string | boolean; p: number; raw: number } | null>('laya'),
+    source: text('source').notNull(),
+    title: text('title').notNull().default(''), // для экрана: раздача
+    createdAt: ts('created_at').notNull(),
+  },
+  (t) => [uniqueIndex('laya_examples_key').on(t.task, t.key)],
+);
+
+export type LayaAdapterSet = Partial<Record<'studio' | 'match' | 'anime' | 'final', { w: number[]; b: number } | null>>;
+
+/** Версии адаптеров: текущая одна; хранятся 3 последние (+ «Базовая» — без строки). */
+export const layaVersions = sqliteTable('laya_versions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  number: integer('number').notNull().unique(),
+  createdAt: ts('created_at').notNull(),
+  examples: integer('examples').notNull(),
+  laya: text('laya').notNull(),
+  model: text('model').notNull(),
+  current: integer('current', { mode: 'boolean' }).notNull().default(false),
+  adapters: json<LayaAdapterSet>('adapters').notNull(),
+  metrics: json<Record<string, { accuracy: number; logLoss: number; auto: number; n: number }>>('metrics').notNull(),
+});
