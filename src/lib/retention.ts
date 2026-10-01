@@ -152,7 +152,13 @@ export async function deleteMediaFile(media: string, rel: string, under = ''): P
  * Уборка медиатеки. Без confirmKeys — по подтверждённым правилам (остальное ждёт и попадает в сводку «Требует внимания»);
  * с confirmKeys — выполнить отмеченное на странице, включить затронутые правила; неотмеченное — «не удалять».
  */
-export async function runRetention(db: Db, media: string, settings: RetentionSettings, now: number, opts: { confirmKeys?: string[] } = {}) {
+/** Корни медиатеки: сериалы и (если задана) папка фильмов. */
+export type Roots = { media: string; movies?: string };
+const rootsOf = (r: string | Roots): Roots => (typeof r === 'string' ? { media: r } : r);
+
+export async function runRetention(db: Db, roots: string | Roots, settings: RetentionSettings, now: number, opts: { confirmKeys?: string[] } = {}) {
+  const { media, movies } = rootsOf(roots);
+  const isMovie = new Set(db.select({ id: titles.id }).from(titles).where(eq(titles.kind, 'movie')).all().map((t) => t.id));
   const res = { deleted: 0, freed: 0, pending: 0 };
   const today = new Date(now).toLocaleDateString('sv-SE');
   const plan = retentionPlan(db, settings, now, today);
@@ -176,9 +182,11 @@ export async function runRetention(db: Db, media: string, settings: RetentionSet
       continue;
     }
     if (keys && !keys.has(i.key)) continue; // подтверждение со страницы выполняет только отмеченное
+    const root = isMovie.has(i.titleId) ? movies : media;
+    if (!root) continue; // папка фильмов не задана — файлы фильмов не трогаем
     let freed = 0;
     for (const f of i.files) {
-      const ok = f.oldCopyId ? await deleteMediaFile(media, f.path, OLD_DIR) : await deleteMediaFile(media, f.path);
+      const ok = f.oldCopyId ? await deleteMediaFile(root, f.path, OLD_DIR) : await deleteMediaFile(root, f.path);
       if (!ok) {
         log.warn({ item: i.key, path: f.path }, 'retention: path outside media library');
         continue;

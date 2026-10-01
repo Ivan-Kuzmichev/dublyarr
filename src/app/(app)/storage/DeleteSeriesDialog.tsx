@@ -7,17 +7,17 @@ import { Icon } from '@/components/ui/Icon';
 import { deleteSeriesAction, type ActionState } from './actions';
 
 const MODES = [
-  { id: 'all', title: 'Удалить файлы и отписаться', sub: 'Сериал пропадёт из библиотеки, новые серии качаться не будут', label: 'Удалить всё' },
-  { id: 'files', title: 'Только файлы, подписка остаётся', sub: 'Освободит место, новые серии продолжат скачиваться', label: 'Удалить файлы' },
+  { id: 'all', title: 'Удалить файлы и отписаться', sub: 'Пропадёт из библиотеки, дальше ничего не качается', label: 'Удалить всё' },
+  { id: 'files', title: 'Только файлы, подписка остаётся', sub: 'Освободит место; удалённое заново не скачается, новые серии — да', label: 'Удалить файлы' },
   { id: 'sub', title: 'Только отписаться, файлы оставить', sub: 'Скачанное останется на диске, дальше ничего не качается', label: 'Отписаться' },
 ] as const;
 
 /** Удаление сериала: три варианта; торренты сериала убираются вместе с файлами в папке загрузок. */
-export function DeleteSeriesDialog({ tmdbId, title, trigger = 'icon' }: { tmdbId: number; title: string; trigger?: 'icon' | 'button' }) {
+export function DeleteSeriesDialog({ tmdbId, title, trigger = 'icon', movie = false }: { tmdbId: number; title: string; trigger?: 'icon' | 'button'; movie?: boolean }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<(typeof MODES)[number]['id']>('all');
   const [state, action, pending] = useActionState<ActionState, FormData>(deleteSeriesAction, {});
-  const id = `del-${tmdbId}`;
+  const id = `del-${movie ? 'm' : 's'}${tmdbId}`;
   return (
     <>
       {trigger === 'icon' ? (
@@ -33,6 +33,7 @@ export function DeleteSeriesDialog({ tmdbId, title, trigger = 'icon' }: { tmdbId
         <form action={action} className="flex flex-col gap-5 p-6">
           <input type="hidden" name="tmdbId" value={tmdbId} />
           <input type="hidden" name="mode" value={mode} />
+          <input type="hidden" name="type" value={movie ? 'movie' : 'tv'} />
           <h2 id={id} className="m-0 text-xl font-semibold">
             Удалить «{title}»?
           </h2>

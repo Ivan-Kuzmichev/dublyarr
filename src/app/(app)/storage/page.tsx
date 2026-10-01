@@ -15,7 +15,7 @@ import { FirstCleanup } from './FirstCleanup';
 export const metadata = { title: 'Хранилище · Dublyarr' };
 export const dynamic = 'force-dynamic';
 
-const COLORS = ['bg-text-2', 'bg-[#9C8F7E]', 'bg-[#4A4642]', 'bg-line'];
+const COLORS: Record<string, string> = { Сериалы: 'bg-text-2', Аниме: 'bg-[#9C8F7E]', Фильмы: 'bg-[#6E655A]', 'Не Dublyarr': 'bg-[#4A4642]', Свободно: 'bg-line' };
 const when = (ms: number) => new Date(ms).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
 const weeks = (w: number | null) => (w === null ? '—' : w > 520 ? 'больше 10 лет' : `~${Math.round(w)} нед`);
 
@@ -57,14 +57,14 @@ export default async function StoragePage({ searchParams }: { searchParams: Prom
         <div className="flex h-3 overflow-hidden rounded-full bg-line">
           {data.segments
             .filter((s) => s.name !== 'Свободно')
-            .map((s, i) => (
-              <div key={s.name} className={COLORS[i]} style={{ width: `${s.pct}%` }} />
+            .map((s) => (
+              <div key={s.name} className={COLORS[s.name]} style={{ width: `${s.pct}%` }} />
             ))}
         </div>
         <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-[13px] text-text-3">
-          {data.segments.map((s, i) => (
+          {data.segments.map((s) => (
             <span key={s.name} className="flex items-center gap-2">
-              <span className={`h-2.5 w-2.5 rounded-sm ${s.name === 'Свободно' ? 'border border-line-strong' : COLORS[i]}`} />
+              <span className={`h-2.5 w-2.5 rounded-sm ${s.name === 'Свободно' ? 'border border-line-strong' : COLORS[s.name]}`} />
               {s.name} <span className="font-mono text-muted">{formatSize(s.size)}</span>
             </span>
           ))}
@@ -91,11 +91,11 @@ export default async function StoragePage({ searchParams }: { searchParams: Prom
           ) : (
             <div className="overflow-hidden rounded-2xl border border-line">
               {shows.map((s) => (
-                <div key={s.tmdbId} className="flex items-center gap-3 border-t border-line-soft px-4 py-3 first:border-t-0">
+                <div key={`${s.kind}:${s.tmdbId}`} className="flex items-center gap-3 border-t border-line-soft px-4 py-3 first:border-t-0">
                   <Poster tmdbId={s.tmdbId} name={s.title} path={s.posterPath} size="w185" className="h-12 w-8 shrink-0 rounded" />
                   <div className="flex min-w-0 grow flex-col gap-1.5">
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                      <Link href={`/series/${s.tmdbId}`} className="truncate text-[15px] font-semibold text-text no-underline hover:text-accent">
+                      <Link href={s.kind === 'movie' ? `/movie/${s.tmdbId}` : `/series/${s.tmdbId}`} className="truncate text-[15px] font-semibold text-text no-underline hover:text-accent">
                         {s.title}
                       </Link>
                       <span className="font-mono text-[13px] text-text-2">{formatSize(s.size)}</span>
@@ -110,7 +110,7 @@ export default async function StoragePage({ searchParams }: { searchParams: Prom
                       <span className={s.dropPct ? 'text-accent' : ''}>{s.rule}</span>
                     </div>
                   </div>
-                  <DeleteSeriesDialog tmdbId={s.tmdbId} title={s.title} />
+                  <DeleteSeriesDialog tmdbId={s.tmdbId} title={s.title} movie={s.kind === 'movie'} />
                 </div>
               ))}
             </div>

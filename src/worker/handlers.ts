@@ -10,7 +10,7 @@ import { fetchTorrentFile, syncDownloads, type Paths } from '../lib/downloads';
 import { searchAll, searchDueTitles } from '../lib/autosearch';
 import { getSchedule } from '../lib/schedule';
 import { applySpeed } from '../lib/speed';
-import { checkDisk, diskUsage } from '../lib/storage';
+import { checkDisk, diskUsage, fullestDisk } from '../lib/storage';
 import { getCleanup, runCleanup } from '../lib/cleanup';
 import { createTelegram, getTelegramSettings, telegramProxy } from '../lib/telegram';
 import { sendPending } from '../lib/notify';
@@ -50,7 +50,7 @@ export async function syncJob(db: Db) {
   }
   try {
     await syncDownloads(db, { qbit, paths });
-    checkDisk(db, await diskUsage(paths.media), getRetention(db), Date.now());
+    checkDisk(db, fullestDisk([await diskUsage(paths.media), paths.movies ? await diskUsage(paths.movies) : null]), getRetention(db), Date.now());
     await applySpeed(db, qbit, new Date());
     const n = db.select().from(downloads).where(eq(downloads.state, 'downloading')).all().length;
     beat(db, 'qbit', true, n ? `${n} ↓` : 'ок');
@@ -62,7 +62,7 @@ export async function syncJob(db: Db) {
 async function retentionJob(db: Db) {
   const paths = getSetting<Paths>(db, 'paths');
   if (!paths) return;
-  const r = await runRetention(db, paths.media, getRetention(db), Date.now());
+  const r = await runRetention(db, paths, getRetention(db), Date.now());
   setSetting(db, 'retention.lastRun', Date.now());
   if (r.deleted || r.pending) log.info(r, 'retention done');
 }

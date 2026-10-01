@@ -20,7 +20,7 @@ export async function confirmAction(_prev: ConfirmState, form: FormData): Promis
     .getAll('id')
     .map(Number)
     .filter((n) => Number.isInteger(n) && n > 0);
-  const r = await confirmOldCopies(db, paths.media, ids);
+  const r = await confirmOldCopies(db, paths, ids);
   revalidatePath('/');
   revalidatePath('/old-copies');
   if (r.refused) return { error: `Не удалено ${r.refused}: путь вне папки старых копий` };

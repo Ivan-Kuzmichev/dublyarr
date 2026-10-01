@@ -22,14 +22,14 @@ export async function deleteSeriesAction(_prev: ActionState, form: FormData): Pr
   const tmdbId = Number(form.get('tmdbId'));
   const mode = String(form.get('mode')) as (typeof MODES)[number];
   if (!Number.isInteger(tmdbId) || !MODES.includes(mode)) return { error: 'Неверные данные' };
-  const t = getTitleByTmdbId(db, tmdbId);
+  const t = getTitleByTmdbId(db, tmdbId, form.get('type') === 'movie' ? 'movie' : 'tv');
   const paths = getSetting<Paths>(db, 'paths');
   if (!t || !paths) return { error: 'Сериал или папки не найдены' };
   try {
     const r = await deleteSeries(db, { qbit: getQbit(db), paths }, t.id, mode);
     revalidatePath('/storage');
     revalidatePath('/library');
-    revalidatePath(`/series/${tmdbId}`);
+    revalidatePath(t.kind === 'movie' ? `/movie/${tmdbId}` : `/series/${tmdbId}`);
     return { ok: mode === 'sub' ? 'Подписка удалена' : `Удалено файлов: ${r.files} · ${formatSize(r.freed)}` };
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
@@ -47,7 +47,7 @@ export async function confirmRetentionAction(_prev: ActionState, form: FormData)
     .map(String)
     .filter((k) => /^[soa]:[\d:,]+$/.test(k));
   if (!keys.length) return { error: 'Ничего не отмечено' };
-  const r = await runRetention(db, paths.media, getRetention(db), Date.now(), { confirmKeys: keys });
+  const r = await runRetention(db, paths, getRetention(db), Date.now(), { confirmKeys: keys });
   revalidatePath('/storage');
   revalidatePath('/');
   return { ok: `Удалено файлов: ${r.deleted} · освобождено ${formatSize(r.freed)}` };
@@ -57,9 +57,9 @@ export async function confirmRetentionAction(_prev: ActionState, form: FormData)
 export async function setExceptionsAction(form: FormData) {
   await requireSession();
   const db = getDb();
-  const t = getTitleByTmdbId(db, Number(form.get('tmdbId')));
+  const t = getTitleByTmdbId(db, Number(form.get('tmdbId')), form.get('type') === 'movie' ? 'movie' : 'tv');
   if (!t) return;
   setSeriesExceptions(db, t.id, { keepAll: form.get('keepAll') === 'on', autoDelete: form.get('autoDelete') === 'on' });
-  revalidatePath(`/series/${t.tmdbId}`);
+  revalidatePath(t.kind === 'movie' ? `/movie/${t.tmdbId}` : `/series/${t.tmdbId}`);
   revalidatePath('/storage');
 }

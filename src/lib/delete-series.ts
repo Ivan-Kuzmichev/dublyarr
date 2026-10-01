@@ -8,6 +8,7 @@ import { OLD_DIR } from './old-copies';
 import { dropTorrents } from './cleanup';
 import { unsubscribe } from './subscriptions';
 import { log } from './log';
+import { mediaRoot } from './movie-files';
 
 // Удаление сериала (spec §8): «файлы и подписка» / «только файлы» / «только подписка». Подтверждение — диалог на экране.
 
@@ -16,9 +17,10 @@ export async function deleteSeries(db: Db, deps: { qbit: Qbit | null; paths: Pat
   const t = db.select().from(titles).where(eq(titles.id, titleId)).get();
   if (!t) throw new Error('Сериал не найден');
   if (mode !== 'sub') {
-    const media = deps.paths.media;
-    for (const f of db.select().from(episodeFiles).where(eq(episodeFiles.titleId, titleId)).all()) {
-      if (!(await deleteMediaFile(media, f.path))) {
+    // фильм — в своей папке; не задана — файлы фильма не трогаем
+    const media = mediaRoot(deps.paths, t.kind);
+    for (const f of media ? db.select().from(episodeFiles).where(eq(episodeFiles.titleId, titleId)).all() : []) {
+      if (!(await deleteMediaFile(media!, f.path))) {
         log.warn({ file: f.id }, 'delete series: path outside media library');
         continue;
       }
@@ -27,8 +29,8 @@ export async function deleteSeries(db: Db, deps: { qbit: Qbit | null; paths: Pat
       res.files++;
       res.freed += f.size;
     }
-    for (const c of db.select().from(oldCopies).where(eq(oldCopies.titleId, titleId)).all()) {
-      if (!(await deleteMediaFile(media, c.path, OLD_DIR))) continue;
+    for (const c of media ? db.select().from(oldCopies).where(eq(oldCopies.titleId, titleId)).all() : []) {
+      if (!(await deleteMediaFile(media!, c.path, OLD_DIR))) continue;
       db.delete(oldCopies).where(eq(oldCopies.id, c.id)).run();
       res.files++;
       res.freed += c.size;

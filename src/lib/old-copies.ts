@@ -2,7 +2,7 @@ import { access, mkdir, rename, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { eq, inArray } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { oldCopies } from './db/schema';
+import { oldCopies, titles } from './db/schema';
 import { getSetting, setSetting } from './settings';
 import { getRetention } from './retention-settings';
 import { log } from './log';
@@ -69,11 +69,14 @@ export async function settleOldCopy(db: Db, media: string, stashed: string, row:
 }
 
 /** Подтверждение правила: удалить отмеченные старые копии; дальше правило работает само. */
-export async function confirmOldCopies(db: Db, media: string, deleteIds: number[]) {
+export async function confirmOldCopies(db: Db, roots: string | { media: string; movies?: string }, deleteIds: number[]) {
   const res = { deleted: 0, freed: 0, refused: 0 };
-  const rows = deleteIds.length ? db.select().from(oldCopies).where(inArray(oldCopies.id, deleteIds)).all() : [];
-  for (const r of rows) {
-    const abs = insideOld(media, r.path);
+  const { media, movies } = typeof roots === 'string' ? { media: roots, movies: undefined } : roots;
+  const rows = deleteIds.length ? db.select({ c: oldCopies, kind: titles.kind }).from(oldCopies).innerJoin(titles, eq(titles.id, oldCopies.titleId)).where(inArray(oldCopies.id, deleteIds)).all() : [];
+  for (const { c: r, kind } of rows) {
+    // старые копии фильмов — в скрытой папке медиатеки фильмов
+    const root = kind === 'movie' ? movies : media;
+    const abs = root ? insideOld(root, r.path) : null;
     if (!abs) {
       res.refused++;
       log.warn({ oldCopy: r.id }, 'old copy path outside hidden folder');
