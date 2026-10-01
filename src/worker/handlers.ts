@@ -22,6 +22,9 @@ import { getRetention, retentionDue } from '../lib/retention-settings';
 import { beat } from '../lib/heartbeat';
 import { downloads } from '../lib/db/schema';
 import { eq } from 'drizzle-orm';
+import path from 'node:path';
+import { getConfig } from '../lib/config';
+import { trainVersion, trainingDue } from '../lib/laya/versions';
 
 /** Обновляет сериалы по одному; ошибка одного не мешает остальным. */
 export async function refreshAll(db: Db, tmdb: Tmdb | null, now = Date.now()) {
@@ -105,6 +108,11 @@ export const buildHandlers = (db: Db): Record<string, Handler> => ({
     if (retentionDue(settings.schedule, getSetting<number>(db, 'retention.lastRun') ?? null, new Date())) await retentionJob(db);
   },
   'retention.run': () => retentionJob(db),
+  // дообучение Laya: ночью при 30+ новых примерах или после обновления; «Обучить сейчас» — без порога
+  'laya.train': async () => {
+    if (trainingDue(db, new Date())) await layaTrainJob(db, false);
+  },
+  'laya.train-now': () => layaTrainJob(db, true),
   'telegram.poll': async () => {
     const s = getTelegramSettings(db);
     if (!s?.token) return;
@@ -128,3 +136,9 @@ export const buildHandlers = (db: Db): Record<string, Handler> => ({
     log.info(r, 'tmdb refresh done');
   },
 });
+
+async function layaTrainJob(db: Db, force: boolean) {
+  const r = await trainVersion(db, path.join(getConfig().dataDir, 'laya'), { force });
+  setSetting(db, 'laya.lastTrain', { at: Date.now(), ...r });
+  log.info({ applied: r.applied, version: r.version, reason: r.reason }, 'laya training');
+}

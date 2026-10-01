@@ -58,6 +58,7 @@ async function loop() {
     scheduleEvery(db, 'subscriptions.tick', TICK_EVERY);
     scheduleEvery(db, 'cleanup.run', 60 * 60_000);
     scheduleEvery(db, 'retention.tick', TICK_EVERY);
+    scheduleEvery(db, 'laya.train', 30 * 60_000);
     scheduleEvery(db, 'telegram.send', 15_000);
     scheduleEvery(db, 'telegram.poll', 15_000);
     if (getSchedule(db).packChecks) scheduleEvery(db, 'packs.check', PACK_CHECK_EVERY);
