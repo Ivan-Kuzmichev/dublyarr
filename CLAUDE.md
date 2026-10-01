@@ -120,6 +120,18 @@ Self-hosted сервис для одного пользователя: подп�
 - Кнопки «Активности» — `controlDownload` (`src/lib/activity.ts`): только из подходящих состояний, ошибка — `/activity?error=…`.
 - e2e: заглушки получили переключатели `POST /__air?ep=&date=` (TMDB) и `POST /__update` (Jackett — новая версия топика).
 
+## Решения (фаза 2b — озвучки и прогноз)
+
+- Наблюдения «студия выпустила серию» — `studio_sightings` (`src/lib/sightings.ts`, пишутся после каждого `searchTitle`, старые раздачи — один раз при старте воркера).
+- Задержка студии — медиана по лучшему классу (отдельные «видели сами» → «по датам раздач» → паки), прогноз и строка запасного варианта — чистый `src/lib/forecast.ts`;
+  на экраны — через `src/lib/dashboard.ts` (`seriesDubColumns`, `speedBlock`, `delayBasis`, прогноз в «Ждём озвучку» и календаре).
+- Замена на лучшую версию — `src/lib/upgrade.ts` + `autosearch.ts`: 30 дней после эфира, позиция профиля выше или та же позиция и качество до целевого.
+  Позиция профиля хранится в `downloads.dub_position` → `episode_files.dub_position` (null — не улучшаем). Подпись «Улучшение: …» — `downloads.note`.
+- Старая копия (spec §8, решение владельца: удалять сразу, первый раз — с подтверждением) — `src/lib/old-copies.ts`: до подтверждения — в `{media}/.dublyarr-old`
+  и в `old_copies`, страница `/old-copies`; флаг правила `app_settings['retention.oldCopy.confirmed']`. Удаляются только файлы внутри скрытой папки.
+- Новые сезоны — `subscriptions.max_season` (граница подписки), `extendSeasons` в конце `syncTitle`; заметки — таблица `notices`, «Новости» на «Сегодня» (3 дня).
+- e2e: `POST /__add2160` в заглушке Jackett — пак LostFilm 2160p.
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

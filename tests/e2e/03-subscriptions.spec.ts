@@ -18,7 +18,7 @@ test('подписка → карточка → библиотека → пра�
   // подписка с изменённым порядком и качеством
   await page.getByRole('button', { name: 'Подписаться' }).click();
   const dialog = page.getByRole('dialog');
-  await dialog.getByRole('button', { name: /^1\s*LostFilm$/ }).click(); // убрать LostFilm из порядка
+  await dialog.getByRole('button', { name: /^1\s*LostFilm\s*прогноз/ }).click(); // убрать LostFilm из порядка
   await dialog.getByRole('radio', { name: '1080p' }).click();
   await dialog.getByRole('button', { name: 'Подписаться' }).click();
   await expect(dialog).toBeHidden();

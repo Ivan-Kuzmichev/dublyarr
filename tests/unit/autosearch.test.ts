@@ -227,3 +227,16 @@ test('обычная загрузка запоминает позицию про
   await searchSubscription(db, t.id, deps);
   expect(db.select().from(downloads).get()!.dubPosition).toBe(0);
 });
+
+test('улучшения нескольких серий из одного пака — одна загрузка', async () => {
+  const { db, t, deps, profile } = await setup();
+  const lf = findStudioByAlias(db, 'LostFilm')!;
+  subscribe(db, t.id, profile({ dubs: [{ kind: 'studio', studioId: lf.id, waitDays: 0 }, { kind: 'any', waitDays: 0 }] }), 1);
+  for (const n of [1, 2]) {
+    setAir(db, t.id, n, '2026-09-28');
+    db.insert(episodeFiles).values({ titleId: t.id, season: 1, number: n, path: `x/${n}.mkv`, size: 1, method: 'hardlink', importedAt: 1, studioLabel: 'Кураж-Бамбей', resolution: 720, dubPosition: 1 }).run();
+  }
+  setAir(db, t.id, 3, '2026-10-20');
+  await searchSubscription(db, t.id, deps);
+  expect(db.select().from(downloads).all().map((d) => d.episodes)).toEqual([[{ season: 1, number: 1 }, { season: 1, number: 2 }]]);
+});

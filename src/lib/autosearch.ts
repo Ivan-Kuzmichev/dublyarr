@@ -195,7 +195,12 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
       const v = betterVerdict(f, verdicts, byId, profile.quality.target);
       if (!v) continue;
       const r = byId.get(v.releaseId)!;
-      if (starts.has(r.id)) continue; // раздача уже идёт для нужных серий — улучшение в следующий раз
+      const same = starts.get(r.id);
+      if (same?.upgrade) {
+        same.eps.push(ep); // улучшения из одного пака — одной загрузкой
+        continue;
+      }
+      if (same) continue; // раздача уже идёт для нужных серий — улучшение в следующий раз
       starts.set(r.id, { release: r, eps: [ep], kind: r.parsed.pack ? 'pack' : 'episode', label: studioFor(profile, v, r, names), dubPosition: v.position, note: upgradeNote(f, r, v, profile, (id) => names.get(id)), upgrade: true });
     }
 

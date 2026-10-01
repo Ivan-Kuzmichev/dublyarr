@@ -11,6 +11,12 @@ const read = (n) => readFileSync(path.join(dir, n), 'utf8');
 const EXTRA = `<item><title>Game of Thrones / S1E1-10 of 10 [2011, WEB-DL 1080p] MVO (Zaycev Studio)</title><guid>https://rutracker.org/forum/viewtopic.php?t=3003</guid>
 <jackettindexer id="rutracker">RuTracker.org</jackettindexer><size>12884901888</size><link>http://127.0.0.1:3198/dl/rutracker/?path=z</link>
 <torznab:attr name="seeders" value="7" /></item>`;
+// POST /__add2160 — в выдаче появляется пак LostFilm 2160p (для замены на лучшее качество)
+const UHD = `<item><title>Game of Thrones / S1E1-10 of 10 [2011, WEB-DL 2160p] MVO (LostFilm)</title><guid>https://rutracker.org/forum/viewtopic.php?t=4004</guid>
+<comments>https://rutracker.org/forum/viewtopic.php?t=4004</comments>
+<jackettindexer id="rutracker">RuTracker.org</jackettindexer><size>42949672960</size><link>http://127.0.0.1:3198/dl/rutracker/?path=uhd</link>
+<torznab:attr name="seeders" value="50" /></item>`;
+let uhd = false;
 const EMPTY = '<?xml version="1.0"?><rss version="2.0"><channel><title>empty</title></channel></rss>';
 const CAPS = '<?xml version="1.0"?><caps><server title="Jackett stub"/><categories><category id="5000" name="TV"/><category id="5070" name="Anime"/></categories></caps>';
 
@@ -20,6 +26,10 @@ let version = 1;
 http
   .createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
+    if (req.method === 'POST' && url.pathname === '/__add2160') {
+      uhd = true;
+      return res.end('ok');
+    }
     if (req.method === 'POST' && url.pathname === '/__update') {
       version++;
       return res.end(String(version));
@@ -43,7 +53,7 @@ http
     if (t === 'search') {
       const q = (url.searchParams.get('q') ?? '').toLowerCase();
       // ссылки на .torrent — на эту же заглушку, а не на настоящий Jackett из фикстуры
-      const body = read('search-jackett.xml').replace('</channel>', `${EXTRA}</channel>`).replaceAll('http://127.0.0.1:9117/', `http://127.0.0.1:${port}/`);
+      const body = read('search-jackett.xml').replace('</channel>', `${EXTRA}${uhd ? UHD : ''}</channel>`).replaceAll('http://127.0.0.1:9117/', `http://127.0.0.1:${port}/`);
       return send(/game|thrones|игра|престол|got/.test(q) ? body : EMPTY);
     }
     res.writeHead(404);
