@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { episodeStatuses, type EpisodeStatus } from '@/lib/dashboard';
 import { notFound } from 'next/navigation';
 import { PageTitle } from '@/components/shell/PageTitle';
 import { buttonClass } from '@/components/ui/Button';
@@ -18,6 +19,16 @@ import { SubscribeButton } from './SubscribeButton';
 import { SubscriptionPanel } from './SubscriptionPanel';
 import { getSubscription } from '@/lib/subscriptions';
 import { getDefaultProfile, subscribeDialogStudios } from '@/lib/profile';
+
+const EP_TONE: Record<EpisodeStatus['state'], string> = {
+  downloaded: 'text-text-2',
+  downloading: 'text-progress',
+  waiting: 'text-accent',
+  missing: 'text-muted',
+  ask: 'text-danger',
+  upcoming: 'text-faint',
+  skipped: 'text-faint',
+};
 
 export const dynamic = 'force-dynamic';
 
@@ -65,6 +76,7 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
   const { season: seasonParam } = await searchParams;
   const current = seasons.some((s) => String(s.number) === seasonParam) ? Number(seasonParam) : pickDefaultSeason(seasons, today);
   const eps = listEpisodes(db, t.id, current);
+  const statuses = episodeStatuses(db, t.id, today);
   const regular = seasons.filter((s) => s.number > 0).length;
   const ordered = [...seasons.filter((s) => s.number > 0), ...seasons.filter((s) => s.number === 0)];
   const backdrop = imageUrl('w1280', t.backdropPath);
@@ -154,20 +166,29 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
           <p className="m-0 text-[15px] text-muted">Серии ещё не объявлены.</p>
         ) : (
           <div className="overflow-hidden rounded-2xl border border-line">
-            <div className="grid grid-cols-[48px_minmax(0,1fr)_110px] gap-3.5 bg-surface px-4 py-3 text-[11px] font-semibold tracking-[0.06em] text-faint uppercase lg:grid-cols-[60px_minmax(0,1fr)_140px] lg:px-[18px]">
+            <div className="grid grid-cols-[40px_minmax(0,1fr)_minmax(0,150px)] gap-3.5 bg-surface px-4 py-3 text-[11px] font-semibold tracking-[0.06em] text-faint uppercase lg:grid-cols-[60px_minmax(0,1fr)_200px_140px] lg:px-[18px]">
               <span>№</span>
               <span>Серия</span>
+              <span className="max-lg:hidden">Статус</span>
               <span>Эфир</span>
             </div>
             {eps.map((e) => {
               const future = !e.airDate || e.airDate > today;
+              const st = statuses.get(`${e.season}:${e.number}`);
               return (
                 <div
                   key={e.number}
-                  className={`grid grid-cols-[48px_minmax(0,1fr)_110px] items-center gap-3.5 border-t border-line-soft px-4 py-3 text-sm lg:grid-cols-[60px_minmax(0,1fr)_140px] lg:px-[18px] ${future ? 'text-faint' : ''}`}
+                  className={`grid grid-cols-[40px_minmax(0,1fr)_minmax(0,150px)] items-center gap-3.5 border-t border-line-soft px-4 py-3 text-sm lg:grid-cols-[60px_minmax(0,1fr)_200px_140px] lg:px-[18px] ${future ? 'text-faint' : ''}`}
                 >
                   <span className="font-mono text-[13px] text-muted">{String(e.number).padStart(2, '0')}</span>
-                  <span className={`truncate ${future ? '' : 'font-medium text-text'}`}>{e.name}</span>
+                  <span className="flex min-w-0 flex-col gap-0.5">
+                    <span className={`truncate ${future ? '' : 'font-medium text-text'}`}>{e.name}</span>
+                    {st && <span className={`truncate text-xs lg:hidden ${EP_TONE[st.state]}`}>{[st.text, st.detail].filter(Boolean).join(' · ')}</span>}
+                  </span>
+                  <span className="flex min-w-0 flex-col gap-0.5 max-lg:hidden">
+                    {st && <span className={`text-[13px] ${EP_TONE[st.state]}`}>{st.text}</span>}
+                    {st?.detail && <span className="truncate text-xs text-faint" title={st.detail}>{st.detail}</span>}
+                  </span>
                   <span className="flex items-center justify-between gap-2 text-[13px]">
                     {formatAirDate(e.airDate, today)}
                     {!future && (

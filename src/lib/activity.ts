@@ -16,9 +16,11 @@ export type QueueRow = {
   state: string;
   tone: 'progress' | 'danger' | 'ok' | 'muted';
   speed: string;
+  speedBps: number;
   canPause: boolean;
   canResume: boolean;
   canRemove: boolean;
+  active: boolean;
 };
 
 const HOUR = 3_600_000;
@@ -90,8 +92,10 @@ export function activityQueue(db: Db, now = Date.now()): QueueRow[] {
       pct: Math.round(d.progress * 100),
       ...stateOf(d, now),
       speed: d.state === 'downloading' ? formatSpeed(d.dlSpeed) : '',
+      speedBps: d.state === 'downloading' ? d.dlSpeed : 0,
       canPause: d.state === 'downloading' || d.state === 'stalled',
       canResume: d.state === 'paused',
       canRemove: d.state !== 'imported',
+      active: ACTIVE.has(d.state),
     }));
 }
