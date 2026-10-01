@@ -20,7 +20,7 @@ export function Segmented<T extends string>({ name, options, defaultValue, onCha
         return (
           <label
             key={o.value}
-            className={`flex h-9 cursor-pointer items-center rounded-[7px] px-3 text-[13px] ${on ? 'bg-text font-semibold text-bg' : 'text-muted hover:text-text-2'}`}
+            className={`relative flex h-9 shrink-0 cursor-pointer items-center rounded-[7px] px-3 text-[13px] whitespace-nowrap ${on ? 'bg-text font-semibold text-bg' : 'text-muted hover:text-text-2'}`}
           >
             <input
               type="radio"

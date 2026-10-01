@@ -14,7 +14,7 @@ test('обычные и секретные настройки', () => {
   expect(getSecretSetting(db, 'qbittorrent')).toEqual({ url: 'http://q', password: 'pw' });
   const raw = db.select().from(appSettings).all().find((r) => r.key === 'qbittorrent')!;
   expect(raw.encrypted).toBe(true);
-  expect(raw.value).not.toContain('pw');
+  expect(raw.value).not.toContain('"password"'); // не «pw»: в base64 шифротекста такая пара букв иногда встречается случайно
   expect(getSetting(db, 'nope')).toBeUndefined();
 });
 
