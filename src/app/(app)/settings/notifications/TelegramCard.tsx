@@ -19,7 +19,7 @@ export function TelegramCard(p: Props) {
       </div>
       <form action={action} className="flex max-w-[560px] flex-col gap-4">
         <PasswordField label="Токен бота" name="token" autoComplete="off" placeholder={p.hasToken ? 'сохранён — оставьте пустым' : '123456:ABC…'} hint="Выдаёт @BotFather. Хранится зашифрованным" />
-        <Field label="Chat ID" name="chatId" mono defaultValue={v?.chatId ?? p.chatId} placeholder="заполнится при привязке" hint="Проще привязать кнопкой ниже" />
+        <Field label="Chat ID" name="chatId" mono defaultValue={v?.chatId || p.chatId} placeholder={p.chatId ? 'привязан — оставьте пустым' : 'заполнится при привязке'} hint="Проще привязать кнопкой ниже" />
         <Field
           label="Прокси"
           name="proxy"
@@ -54,6 +54,11 @@ export function TelegramCard(p: Props) {
           <Button type="submit" name="intent" value="test" variant="secondary" disabled={pending}>
             Отправить тестовое
           </Button>
+          {p.chatId && (
+            <Button type="submit" name="intent" value="unpair" variant="ghost" disabled={pending}>
+              Отвязать чат
+            </Button>
+          )}
         </div>
       </form>
     </Card>

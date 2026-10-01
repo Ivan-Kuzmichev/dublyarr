@@ -1,5 +1,5 @@
 import type { Db } from './db/client';
-import { setSecretSetting, tryGetSecretSetting } from './settings';
+import { setSecretSetting, setSetting, tryGetSecretSetting } from './settings';
 import { getTmdbSettings, proxiedFetch } from './tmdb';
 
 // Клиент Telegram Bot API (spec §12). Токен — часть адреса запроса, поэтому адреса и тексты ошибок маскируются.
@@ -76,3 +76,24 @@ export function createTelegram(s: Pick<TelegramSettings, 'token' | 'proxy'>, opt
   };
 }
 export type Telegram = ReturnType<typeof createTelegram>;
+
+/**
+ * Поля формы бота → настройки. Пустой токен и пустой Chat ID — прежние (поля после действия очищаются,
+ * а токен в браузер не возвращается); отвязать чат — явно. Смена токена (другой бот) сбрасывает offset обновлений.
+ */
+export function applyTelegramForm(db: Db, f: { token: string; chatId: string; proxy: string; baseUrl: string; unpair?: boolean }): { settings: TelegramSettings } | { error: string } {
+  const saved = getTelegramSettings(db);
+  const token = f.token.trim() || saved?.token || '';
+  const proxy = f.proxy.trim();
+  const baseUrl = f.baseUrl.trim().replace(/\/+$/, '');
+  const chatId = f.unpair ? '' : f.chatId.trim() || saved?.chatId || '';
+  if (!token) return { error: 'Укажите токен бота (его выдаёт @BotFather)' };
+  if (!/^\d+:[\w-]{20,}$/.test(token)) return { error: 'Токен вида 123456:ABC…' };
+  if (proxy && !(/^https?:\/\//.test(proxy) && URL.canParse(proxy))) return { error: 'Прокси — адрес вида http://host:port' };
+  if (baseUrl && !/^https?:\/\//.test(baseUrl)) return { error: 'Адрес Dublyarr — вида http://nas:3000' };
+  if (chatId && !/^-?\d+$/.test(chatId)) return { error: 'Chat ID — число' };
+  if (saved?.token && saved.token !== token) setSetting(db, 'telegram.offset', null);
+  const settings: TelegramSettings = { token, ...(chatId ? { chatId } : {}), ...(proxy ? { proxy } : {}), ...(baseUrl ? { baseUrl } : {}) };
+  saveTelegramSettings(db, settings);
+  return { settings };
+}

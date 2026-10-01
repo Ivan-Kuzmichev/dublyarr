@@ -61,6 +61,8 @@ export async function sendPending(db: Db, tg: Telegram, chatId: string, now = Da
         .where(eq(notifications.id, n.id))
         .run();
       log.warn({ notification: n.id, err: e instanceof Error ? e.message : String(e) }, 'telegram send failed');
+      // сеть недоступна — остальные не пробуем (каждая попытка ждала бы таймаут и держала воркер)
+      if (e instanceof TelegramError && e.code === 'network') break;
     }
   }
   return res;

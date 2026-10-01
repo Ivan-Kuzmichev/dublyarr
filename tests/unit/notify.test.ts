@@ -75,3 +75,15 @@ test('разбор формы событий', async () => {
   f.set('original', 'on');
   expect(parseEventsForm(f)).toEqual({ downloaded: true, stuck: false, ask: false, original: true, 'source-down': false });
 });
+
+test('Telegram недоступен — после первой ошибки сети проход прекращается (не ждём таймаут на каждом)', async () => {
+  const db = testDb();
+  for (const k of ['a', 'b', 'c']) notify(db, { key: k, kind: 'downloaded', text: k }, 0);
+  let calls = 0;
+  const { tg } = fakeTg(() => {
+    calls++;
+    return new TelegramError('Telegram недоступен', 'network');
+  });
+  await sendPending(db, tg, '42', 0);
+  expect(calls).toBe(1);
+});

@@ -90,3 +90,15 @@ test('нажатие из чужого чата — игнор; уже реше�
   expect(db.select().from(releaseRules).get()!.verdict).toBe('reject');
   expect(calls).toContain('answer:Уже решено');
 });
+
+test('привязка: старые сообщения и подбор кода не проходят', async () => {
+  const { db, tg, push } = setup();
+  const code = startPairing(db, 100 * MIN);
+  const at = (id: number, text: string, date: number): TgUpdate => ({ update_id: id, message: { message_id: id, chat: { id: 9 }, text, date } as never });
+  push(at(1, code, (99 * MIN) / 1000)); // отправлено до выдачи кода
+  await pollUpdates(db, tg, 101 * MIN);
+  expect(getTelegramSettings(db)!.chatId).toBeUndefined();
+  push(...[2, 3, 4, 5, 6].map((i) => at(i, String(100000 + i), (101 * MIN) / 1000)), at(7, code, (101 * MIN) / 1000));
+  await pollUpdates(db, tg, 102 * MIN);
+  expect(getTelegramSettings(db)!.chatId).toBeUndefined(); // после 5 неверных код сгорел
+});

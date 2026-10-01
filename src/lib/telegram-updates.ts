@@ -16,7 +16,7 @@ const PAIR_TTL = 10 * 60_000;
 /** Одноразовый код из 6 цифр: пользователь отправляет его боту, и чат привязывается. */
 export function startPairing(db: Db, now = Date.now()): string {
   const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
-  setSetting(db, 'telegram.pairing', { code, expires: now + PAIR_TTL });
+  setSetting(db, 'telegram.pairing', { code, startedAt: now, expires: now + PAIR_TTL, wrong: 0 });
   return code;
 }
 
@@ -27,7 +27,7 @@ export async function pollUpdates(db: Db, tg: Telegram, now = Date.now()) {
   for (const u of updates) {
     offset = Math.max(offset, u.update_id + 1);
     try {
-      if (u.message?.text) await onMessage(db, tg, u.message.chat.id, u.message.text, now);
+      if (u.message?.text) await onMessage(db, tg, u.message.chat.id, u.message.text, now, (u.message as { date?: number }).date);
       if (u.callback_query) res.handled += await onButton(db, tg, u.callback_query);
     } catch (e) {
       log.warn({ update: u.update_id, err: e instanceof Error ? e.message : String(e) }, 'telegram update failed');
@@ -37,9 +37,20 @@ export async function pollUpdates(db: Db, tg: Telegram, now = Date.now()) {
   return res;
 }
 
-async function onMessage(db: Db, tg: Telegram, chat: number, text: string, now: number) {
-  const pairing = getSetting<{ code: string; expires: number }>(db, 'telegram.pairing');
-  if (!pairing || now > pairing.expires || text.trim() !== pairing.code) return;
+const MAX_WRONG = 5;
+
+async function onMessage(db: Db, tg: Telegram, chat: number, text: string, now: number, date?: number) {
+  const pairing = getSetting<{ code: string; startedAt: number; expires: number; wrong: number }>(db, 'telegram.pairing');
+  if (!pairing || now > pairing.expires) return;
+  // отправленное до выдачи кода не считается; подбор — после 5 неверных код сгорает
+  if (date !== undefined && date * 1000 < pairing.startedAt) return;
+  const guess = text.trim();
+  if (guess !== pairing.code) {
+    if (!/^\d{6}$/.test(guess)) return;
+    const wrong = (pairing.wrong ?? 0) + 1;
+    setSetting(db, 'telegram.pairing', wrong >= MAX_WRONG ? null : { ...pairing, wrong });
+    return;
+  }
   const s = getTelegramSettings(db);
   if (!s) return;
   saveTelegramSettings(db, { ...s, chatId: String(chat) });

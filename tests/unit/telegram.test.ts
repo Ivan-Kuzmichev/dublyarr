@@ -1,5 +1,8 @@
-import { expect, test } from 'vitest';
+import { describe, expect, test } from 'vitest';
+import { randomBytes } from 'node:crypto';
 import { createTelegram, maskToken, TelegramError } from '@/lib/telegram';
+
+process.env.DUBLYARR_SECRET_KEY ??= randomBytes(32).toString('base64');
 
 const TOKEN = '123456:SECRET-token_x';
 function fake(handler: (method: string, body: Record<string, unknown>) => Response | Promise<Response>) {
@@ -50,4 +53,32 @@ test('ошибки: токен, блокировка, лимит, сеть — �
 
 test('maskToken', () => {
   expect(maskToken(`GET https://api.telegram.org/bot${TOKEN}/getMe failed`)).toBe('GET https://api.telegram.org/bot***/getMe failed');
+});
+
+describe('форма бота', () => {
+  const T = '123456:abcdefghijklmnopqrstuvwxyz';
+  const T2 = '654321:zyxwvutsrqponmlkjihgfedcba';
+  test('пустой Chat ID сохраняет привязанный; «отвязать» — снимает', async () => {
+    const { testDb } = await import('./helpers');
+    const { applyTelegramForm, saveTelegramSettings, getTelegramSettings } = await import('@/lib/telegram');
+    const db = testDb();
+    saveTelegramSettings(db, { token: T, chatId: '777' });
+    expect(applyTelegramForm(db, { token: '', chatId: '', proxy: '', baseUrl: '' })).toMatchObject({ settings: { token: T, chatId: '777' } });
+    expect(getTelegramSettings(db)!.chatId).toBe('777');
+    applyTelegramForm(db, { token: '', chatId: '', proxy: '', baseUrl: '', unpair: true });
+    expect(getTelegramSettings(db)!.chatId).toBeUndefined();
+  });
+  test('смена токена сбрасывает offset; прокси — только http(s)', async () => {
+    const { testDb } = await import('./helpers');
+    const { applyTelegramForm, saveTelegramSettings } = await import('@/lib/telegram');
+    const { getSetting, setSetting } = await import('@/lib/settings');
+    const db = testDb();
+    saveTelegramSettings(db, { token: T });
+    setSetting(db, 'telegram.offset', 500);
+    applyTelegramForm(db, { token: T, chatId: '', proxy: '', baseUrl: '' });
+    expect(getSetting(db, 'telegram.offset')).toBe(500);
+    applyTelegramForm(db, { token: T2, chatId: '', proxy: '', baseUrl: '' });
+    expect(getSetting(db, 'telegram.offset') ?? null).toBeNull();
+    expect(applyTelegramForm(db, { token: '', chatId: '', proxy: 'socks5://h:1', baseUrl: '' })).toEqual({ error: 'Прокси — адрес вида http://host:port' });
+  });
 });
