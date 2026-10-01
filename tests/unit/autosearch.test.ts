@@ -341,3 +341,12 @@ test('серии, удалённые правилами или вручную, �
   subscribe(db, t.id, profile(), 1);
   expect(db.select().from(retiredEpisodes).all()).toEqual([]);
 });
+
+test('финальная проверка Laya: все лучшие — «нет» — ничего не качаем, вопрос пользователю', async () => {
+  const { db, t, deps, profile } = await setup();
+  subscribe(db, t.id, profile(), 1);
+  const layaClient = { ask: async () => ({ answers: { q: { noul: 0.02, choice: 'x', probabilities: { x: 0.1 } } }, ms: 1 }), health: async () => null, last: () => 1 } as never;
+  expect((await searchSubscription(db, t.id, { ...deps, layaClient })).started).toBe(0);
+  expect(db.select().from(downloads).all()).toEqual([]);
+  expect(db.select().from(wantedState).all().map((w) => [w.state, w.reason.split(',')[0]])).toContainEqual(['ask', 'Laya не уверена']);
+});

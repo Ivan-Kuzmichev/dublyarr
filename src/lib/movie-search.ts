@@ -9,6 +9,9 @@ import { activeDownloads, releaseStalled, startRelease, type DownloadDeps } from
 import { clearWanted, setWanted } from './wanted';
 import { formatShortDate, todayIso } from './dates';
 import { log } from './log';
+import type { Verdict } from './evaluate';
+import { finalChecks } from './laya/final';
+import { SEARCH_BUDGET } from './laya/decide';
 import type { AutoDeps } from './autosearch';
 
 // Поиск и загрузка фильма по подписке (spec §10): ожидание дубляжа после цифрового релиза, замена на дубляж и до BDRemux.
@@ -70,7 +73,7 @@ export async function searchMovie(db: Db, titleId: number, deps: AutoDeps) {
   const own = file ? sourceOfFile(db, file) : null;
   if (file && !wantsDub(file, profile, today) && !(profile.remux && own?.source !== 'remux')) return res; // улучшать нечего — без запросов
 
-  const { releases } = await searchTitle(db, titleId, { ...deps.searchOpts, now });
+  const { releases } = await searchTitle(db, titleId, { ...deps.searchOpts, now, layaClient: deps.layaClient });
   const title = db.select().from(titles).where(eq(titles.id, titleId)).get()!;
   const rejected = new Set(
     db
@@ -82,13 +85,21 @@ export async function searchMovie(db: Db, titleId: number, deps: AutoDeps) {
   );
   const usable = releases.filter((r) => !rejected.has(r.id) && r.id !== own?.releaseId);
   const digital = digitalReleased(title, today);
-  const verdicts = evaluateMovie(usable, { profile, digital, today });
   const byId = new Map(usable.map((r) => [r.id, r]));
+  // финальная проверка Laya: «это фильм X в переводе Y?» — до трёх лучших
+  const target = { title, code: 'фильм', what: 'фильм', dubOf: (v: Verdict) => (label(profile, v.position) ?? 'любой').toLowerCase() };
+  const finalOpts = { budget: { left: SEARCH_BUDGET }, client: deps.layaClient };
+  const evaluated = evaluateMovie(usable, { profile, digital, today });
+  const verdicts = (file ? evaluated : await finalChecks(db, evaluated, byId, target, finalOpts)) as MovieVerdict[];
   const dl: DownloadDeps | null = deps.qbit ? { qbit: deps.qbit, fetchTorrent: deps.fetchTorrent, paths: { qbitDownloads: deps.paths.qbitDownloads ?? deps.paths.downloads }, now } : null;
 
   if (file) {
-    const up = movieUpgrade(file, verdicts, profile, today, own?.source ?? null);
-    if (!up || !dl) return res;
+    const found = movieUpgrade(file, verdicts, profile, today, own?.source ?? null);
+    if (!found || !dl) return res;
+    // замена — тоже через финальную проверку
+    const checked = await finalChecks(db, [{ ...found.v, best: true }], byId, target, finalOpts);
+    if (!checked.some((x) => x.best)) return res;
+    const up = found;
     try {
       const d = await startRelease(db, dl, byId.get(up.v.releaseId)!, [ep], 'movie', label(profile, up.v.position), { dubPosition: up.v.position, note: up.note });
       if (d.state !== 'error') res.started++;

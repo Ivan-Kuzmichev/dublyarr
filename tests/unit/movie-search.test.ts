@@ -190,3 +190,10 @@ describe('исправления по ревью 3c', () => {
     expect(n.text).toMatch(/^❓ Матрица: /);
   });
 });
+
+test('финальная проверка фильма: «нет» — не качаем, вопрос', async () => {
+  const s = await setup({ items: [DUB] });
+  const layaClient = { ask: async () => ({ answers: { q: { noul: 0.02 } }, ms: 1 }), health: async () => null, last: () => 1 } as never;
+  expect((await searchSubscription(s.db, s.t.id, { ...s.deps, layaClient })).started).toBe(0);
+  expect(s.wanted()).toMatchObject({ state: 'ask', reason: 'Laya не уверена, что это фильм в озвучке дубляж' });
+});
