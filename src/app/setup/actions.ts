@@ -11,13 +11,12 @@ import { requestContext } from '@/lib/auth/current';
 import { tryGetSecretSetting, setSecretSetting, setSetting } from '@/lib/settings';
 import { markStep, completeSetup } from '@/lib/setup';
 import { checkQbittorrent, type QbitConfig } from '@/lib/integrations/qbittorrent';
-import { checkTorznab } from '@/lib/integrations/torznab';
-import { addSource, listSources, removeSource } from '@/lib/sources';
+import { listSources, removeSource } from '@/lib/sources';
+import { parseSourceForm } from '@/lib/source-form';
+import { saveSource } from '@/lib/source-save';
 import { checkWritableDir } from '@/lib/fs-check';
 import { requireSetupSession } from './guard';
 import { revalidatePath } from 'next/cache';
-import { torznabIndexers } from '@/lib/torznab';
-import { syncTrackers } from '@/lib/trackers';
 import { checkAndSaveTmdb } from '@/lib/tmdb/form';
 import { formValues } from '@/lib/form-values';
 
@@ -92,21 +91,14 @@ export async function addSourceAction(_prev: StepState, form: FormData): Promise
     markStep(db, 'sources', intent === 'next' ? 'done' : 'skipped');
     redirect('/setup/folders');
   }
-  const s = { name: str(form, 'name') || 'Jackett', url: str(form, 'url'), apiKey: str(form, 'apiKey') };
-  const values = formValues(form, ['name', 'url']);
-  if (!/^https?:\/\//.test(s.url)) return { values, fieldErrors: { url: 'Адрес вида http://jackett:9117/api/v2.0/indexers/all/results/torznab/' } };
-  const r = await checkTorznab(s);
-  if (!r.ok) return { values, error: r.error };
-  const { id } = addSource(db, s);
-  // сразу список трекеров источника (для основного/запасного); не умеет — соберётся при поиске
-  try {
-    const list = await torznabIndexers({ url: s.url, apiKey: s.apiKey, timeoutMs: 15_000 });
-    if (list) syncTrackers(db, id, list);
-  } catch {
-    // не страшно: трекеры появятся при первом поиске
-  }
+  const values = formValues(form, ['name', 'url', 'kind']);
+  const input = parseSourceForm(form);
+  if ('error' in input) return { values, fieldErrors: { url: input.error } };
+  // проверка по типу + список трекеров (для основного/запасного); JacRed — трекеры соберутся при поиске
+  const r = await saveSource(db, input, null);
+  if ('error' in r) return { values, error: r.error };
   revalidatePath('/setup/sources');
-  return { ok: `«${s.name}» добавлен · категорий: ${r.categories}` };
+  return { ok: `«${input.name}» добавлен${r.categories !== null ? ` · категорий: ${r.categories}` : ''}` };
 }
 
 export async function removeSourceAction(form: FormData) {

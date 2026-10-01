@@ -3,6 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { testDb } from './helpers';
 import { episodeStatuses, todayData, calendarWeek, mondayOf, seriesDubColumns, speedBlock, delayBasis } from '@/lib/dashboard';
 import { setSetting } from '@/lib/settings';
+import { eq } from 'drizzle-orm';
 import { downloads, episodeFiles, episodes, notices, oldCopies, seasons, studioSightings, studios, subscriptions, titles, wantedState } from '@/lib/db/schema';
 import type { Profile } from '@/lib/profile-core';
 
@@ -159,4 +160,16 @@ test('«Требует внимания»: уборка медиатеки жд�
   const { db } = setup();
   setSetting(db, 'retention.pending', { count: 2, size: 700 * 1024 ** 3 });
   expect(todayData(db, today, NOW).attention).toContainEqual({ tmdbId: 0, title: 'Уборка медиатеки', code: '', text: '2 · 700 ГБ — подтвердите удаление', href: '/storage' });
+});
+
+test('«Новые серии»: кадр серии → фон сериала → постер', () => {
+  const { db, t } = setup();
+  db.update(titles).set({ posterPath: '/poster.jpg', backdropPath: '/backdrop.jpg' }).run();
+  db.update(episodes).set({ stillPath: '/still.jpg' }).where(eq(episodes.number, 1)).run();
+  expect(todayData(db, today, NOW).fresh.map((f) => [f.code, f.image])).toEqual([
+    ['S01E02', { path: '/backdrop.jpg', wide: true }],
+    ['S01E01', { path: '/still.jpg', wide: true }],
+  ]);
+  db.update(titles).set({ backdropPath: null }).where(eq(titles.id, t.id)).run();
+  expect(todayData(db, today, NOW).fresh[0].image).toEqual({ path: '/poster.jpg', wide: false });
 });

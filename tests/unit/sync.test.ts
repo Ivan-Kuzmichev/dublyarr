@@ -96,6 +96,8 @@ test('нет сидов больше суток — «застряла»; исч
   expect(db.select().from(downloads).get()!.state).toBe('downloading');
   await syncDownloads(db, { qbit: fq.qbit, paths, now: 25 * HOUR });
   expect(db.select().from(downloads).get()!.state).toBe('stalled');
+  // остановлена пользователем («Пауза») — остаётся на паузе; без отметки синхронизация запустила бы её снова
+  db.update(downloads).set({ pausedByUser: true }).run();
   fq.torrents.get(d.hash)!.state = 'stoppedDL';
   await syncDownloads(db, { qbit: fq.qbit, paths, now: 26 * HOUR });
   expect(db.select().from(downloads).get()!.state).toBe('paused');

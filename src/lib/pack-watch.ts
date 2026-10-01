@@ -4,7 +4,9 @@ import { downloads, episodeFiles, episodes, releases, subscriptions, type Downlo
 import { wantedEpisodes } from './subscriptions';
 import { switchTorrent, type DownloadDeps } from './downloads';
 import { todayIso } from './dates';
-import { log } from './log';
+import { logger } from './log';
+
+const log = logger('downloads');
 
 // Проверка обновлений знакомых паков (spec §4 п. 1, §5): новая версия топика → докачка в ту же раздачу.
 

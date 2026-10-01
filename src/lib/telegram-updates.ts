@@ -7,7 +7,9 @@ import { getTelegramSettings, saveTelegramSettings, type Telegram } from './tele
 import { answerMatch } from './manual-search';
 import { ruleFor } from './release-rules';
 import { enqueue } from '../worker/jobs';
-import { log } from './log';
+import { logger } from './log';
+
+const log = logger('telegram');
 
 // Входящие из Telegram: привязка чата кодом и ответы кнопками «Это он» / «Не тот сериал».
 

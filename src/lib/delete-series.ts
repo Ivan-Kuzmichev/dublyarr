@@ -7,8 +7,10 @@ import { deleteMediaFile, retireEpisode } from './retention';
 import { OLD_DIR } from './old-copies';
 import { dropTorrents } from './cleanup';
 import { unsubscribe } from './subscriptions';
-import { log } from './log';
+import { logger } from './log';
 import { mediaRoot } from './movie-files';
+
+const log = logger('storage');
 
 // Удаление сериала (spec §8): «файлы и подписка» / «только файлы» / «только подписка». Подтверждение — диалог на экране.
 

@@ -2,13 +2,15 @@ import { eq } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { sources } from './db/schema';
 import { decrypt, encrypt } from './crypto/secretbox';
+import type { SourceKind } from './source-kinds';
 
-export function addSource(db: Db, s: { name: string; url: string; apiKey: string; timeoutMs?: number }) {
+export function addSource(db: Db, s: { name: string; url: string; apiKey: string; timeoutMs?: number; kind?: SourceKind }) {
   return db
     .insert(sources)
     .values({
       name: s.name.trim(),
       url: s.url.trim(),
+      ...(s.kind ? { kind: s.kind } : {}),
       apiKeyEnc: s.apiKey ? encrypt(s.apiKey) : null,
       ...(s.timeoutMs ? { timeoutMs: s.timeoutMs } : {}),
       createdAt: Date.now(),
@@ -19,7 +21,7 @@ export function addSource(db: Db, s: { name: string; url: string; apiKey: string
 
 /** Без ключей: они нужны только воркеру. */
 export const listSources = (db: Db) =>
-  db.select({ id: sources.id, name: sources.name, url: sources.url, enabled: sources.enabled }).from(sources).all();
+  db.select({ id: sources.id, name: sources.name, url: sources.url, kind: sources.kind, enabled: sources.enabled }).from(sources).all();
 
 export const removeSource = (db: Db, id: number) => db.delete(sources).where(eq(sources.id, id)).run();
 
@@ -31,13 +33,13 @@ export function sourcesForSearch(db: Db) {
     .where(eq(sources.enabled, true))
     .orderBy(sources.id)
     .all()
-    .map((s) => ({ id: s.id, name: s.name, url: s.url, apiKey: s.apiKeyEnc ? decrypt(s.apiKeyEnc) : '', timeoutMs: s.timeoutMs }));
+    .map((s) => ({ id: s.id, name: s.name, url: s.url, kind: s.kind, apiKey: s.apiKeyEnc ? decrypt(s.apiKeyEnc) : '', timeoutMs: s.timeoutMs }));
 }
 
 /** Правка источника; пустой ключ — оставить сохранённый. */
-export function updateSource(db: Db, id: number, s: { name: string; url: string; apiKey: string; timeoutMs: number }) {
+export function updateSource(db: Db, id: number, s: { name: string; url: string; apiKey: string; timeoutMs: number; kind?: SourceKind }) {
   db.update(sources)
-    .set({ name: s.name, url: s.url, timeoutMs: s.timeoutMs, ...(s.apiKey ? { apiKeyEnc: encrypt(s.apiKey) } : {}) })
+    .set({ name: s.name, url: s.url, timeoutMs: s.timeoutMs, ...(s.kind ? { kind: s.kind } : {}), ...(s.apiKey ? { apiKeyEnc: encrypt(s.apiKey) } : {}) })
     .where(eq(sources.id, id))
     .run();
 }

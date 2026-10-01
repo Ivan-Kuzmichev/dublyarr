@@ -146,3 +146,12 @@ test('после неудачного обновления карточка 10 �
   await openTitle(db, hanging, 1399, t1 + 11 * 60_000);
   expect(calls).toBe(2);
 });
+
+test('кадр серии из TMDB сохраняется', async () => {
+  const db = testDb();
+  const s1 = fx<TmdbSeason>('tv-1399-season-1');
+  s1.episodes[0].still_path = '/still1.jpg';
+  const { tmdb } = fakeTmdb({ details: { 1399: fx<TmdbTvDetails>('tv-1399') }, seasons: { '1399:1': s1, '1399:0': fx<TmdbSeason>('tv-1399-season-0') } });
+  const t = await syncTitle(db, tmdb, 1399, { now: T0 });
+  expect(listEpisodes(db, t.id, 1)[0].stillPath).toBe('/still1.jpg');
+});

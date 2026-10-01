@@ -71,6 +71,7 @@ export const sources = sqliteTable('sources', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
   url: text('url').notNull(),
+  kind: text('kind', { enum: ['jackett', 'jacred', 'torznab'] }).notNull().default('torznab'), // jackett — адрес без пути
   apiKeyEnc: text('api_key_enc'),
   enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
   timeoutMs: integer('timeout_ms').notNull().default(15000),
@@ -167,6 +168,7 @@ export const episodes = sqliteTable(
     name: text('name').notNull(),
     airDate: text('air_date'),
     runtime: integer('runtime'),
+    stillPath: text('still_path'), // кадр серии TMDB — для широких карточек «Сегодня»
   },
   (t) => [uniqueIndex('episodes_title_season_number').on(t.titleId, t.season, t.number)],
 );
@@ -314,6 +316,8 @@ export const downloads = sqliteTable(
     lastError: text('last_error'),
     dubPosition: integer('dub_position'),
     pausedBySchedule: integer('paused_by_schedule', { mode: 'boolean' }).notNull().default(false),
+    pausedByUser: integer('paused_by_user', { mode: 'boolean' }).notNull().default(false), // «Пауза» в интерфейсе или API — синхронизация не запускает
+    restarts: json<number[]>('restarts').notNull().default([]), // когда синхронизация запускала остановленную клиентом (за последний час)
     processing: integer('processing', { mode: 'boolean' }).notNull().default(false), // идёт пересборка
     replacedById: integer('replaced_by_id').references((): AnySQLiteColumn => downloads.id, { onDelete: 'set null' }),
     note: text('note'),
@@ -515,4 +519,15 @@ export const layaVersions = sqliteTable('laya_versions', {
   current: integer('current', { mode: 'boolean' }).notNull().default(false),
   adapters: json<LayaAdapterSet>('adapters').notNull(),
   metrics: json<Record<string, { accuracy: number; logLoss: number; auto: number; n: number }>>('metrics').notNull(),
+});
+
+/** Токены API (в базе — только sha256), «Настройки → Безопасность». */
+export const apiTokens = sqliteTable('api_tokens', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  hash: text('hash').notNull().unique(),
+  prefix: text('prefix').notNull(), // первые символы — узнать токен в списке
+  createdAt: ts('created_at').notNull(),
+  lastUsedAt: ts('last_used_at'),
+  lastIp: text('last_ip'),
 });

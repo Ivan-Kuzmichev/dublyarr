@@ -6,6 +6,8 @@ import { listStudios } from './studios';
 import { sourcesForSearch } from './sources';
 import { ensureTracker, markSourceTrackers } from './trackers';
 import { torznabSearch, TorznabError, type TorznabItem } from './torznab';
+import { jacredSearch } from './jacred';
+import { endpointFor } from './source-kinds';
 import { parseRelease } from './parse/dubs';
 import { normalizeTitle } from './parse/normalize';
 import { absoluteCandidates, matchRelease, resolveAbsolute, toTitleInfo } from './match';
@@ -14,10 +16,12 @@ import { ruleFor } from './release-rules';
 import { encrypt } from './crypto/secretbox';
 import { recordSightings } from './sightings';
 import { checkSourcesDown } from './notify-events';
-import { log } from './log';
+import { logger } from './log';
 import { animeKey, applyAnimeDecision, applyMatchDecision, matchKey, reviewAnime, reviewMatches, reviewStudios } from './laya/review';
 import { cachedDecision, SEARCH_BUDGET } from './laya/decide';
 import type { LayaClient } from './laya/client';
+
+const log = logger('search');
 
 export type SourceStatus = { sourceId: number; name: string; ok: boolean; found: number; ms: number; error?: string };
 export type SearchOptions = { fetchImpl?: typeof fetch; now?: number; layaClient?: LayaClient; layaBudget?: number };
@@ -42,6 +46,13 @@ export function queriesFor(t: Pick<Title, 'kind' | 'nameRu' | 'nameOriginal' | '
 }
 
 type Found = { sourceId: number; item: TorznabItem };
+export type SearchSource = ReturnType<typeof sourcesForSearch>[number];
+
+/** Один запрос к источнику: Jackett и Torznab — Torznab (у Jackett путь дописывается), JacRed — его JSON. */
+export function searchSource(src: SearchSource, q: string, kind: Title['kind'], fetchImpl?: typeof fetch): Promise<TorznabItem[]> {
+  if (src.kind === 'jacred') return jacredSearch(src, q, kind, { fetchImpl });
+  return torznabSearch({ ...src, url: endpointFor(src) }, q, kind === 'movie' ? MOVIE_CATEGORIES : CATEGORIES, fetchImpl);
+}
 
 /** Поиск раздач сериала во всех источниках: параллельно, со склейкой дублей и основным/запасным источником трекера. */
 export async function searchTitle(db: Db, titleId: number, opts: SearchOptions = {}): Promise<{ releases: Release[]; sources: SourceStatus[] }> {
@@ -55,9 +66,10 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
     srcs.map(async (src) => {
       const started = Date.now();
       try {
-        const lists = await Promise.all(queries.map((q) => torznabSearch(src, q, title.kind === 'movie' ? MOVIE_CATEGORIES : CATEGORIES, opts.fetchImpl)));
+        const lists = await Promise.all(queries.map((q) => searchSource(src, q, title.kind, opts.fetchImpl)));
         const items = lists.flat();
         const distinct = new Set(items.map((i) => i.infohash ?? `${i.indexerId}|${i.title}|${i.size}`)).size;
+        log.debug({ source: src.name, queries, found: distinct, ms: Date.now() - started }, 'source search');
         return { status: { sourceId: src.id, name: src.name, ok: true, found: distinct, ms: Date.now() - started } as SourceStatus, items };
       } catch (e) {
         const error = e instanceof TorznabError ? e.message : e instanceof Error ? e.message : String(e);
@@ -134,6 +146,8 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
   const matched = await reviewMatches(db, title, saved, { budget, client: opts.layaClient });
   const named = await reviewStudios(db, title, matched, { budget, client: opts.layaClient });
   const reviewed = await reviewAnime(db, title, named, { budget, client: opts.layaClient });
+  const level = (l: string) => reviewed.filter((r) => r.match.level === l).length;
+  logger('parse').debug({ titleId, title: title.nameRu, releases: reviewed.length, match: level('match'), doubt: level('doubt'), reject: level('reject') }, 'parsed');
   if (title.kind === 'movie') noteDigital(db, title, reviewed, now);
   else recordSightings(db, titleId, reviewed);
   return { releases: reviewed, sources: statuses };

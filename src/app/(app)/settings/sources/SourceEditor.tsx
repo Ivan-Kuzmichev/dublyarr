@@ -3,10 +3,12 @@
 import { useActionState, useCallback, useEffect, useId, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { Field, PasswordField } from '@/components/ui/Field';
+import { Field } from '@/components/ui/Field';
+import { SourceFields } from '@/components/sources/SourceFields';
+import type { SourceKind } from '@/lib/source-kinds';
 import { deleteSourceAction, saveSourceAction, type SourceFormState } from './source-actions';
 
-type Source = { id: number; name: string; url: string; timeoutMs: number };
+type Source = { id: number; name: string; url: string; timeoutMs: number; kind: SourceKind };
 
 function Body({ source, onClose }: { source?: Source; onClose: () => void }) {
   const titleId = useId();
@@ -24,18 +26,7 @@ function Body({ source, onClose }: { source?: Source; onClose: () => void }) {
         </h2>
         <form action={action} id="source-form" className="flex flex-col gap-4">
           {source && <input type="hidden" name="id" value={source.id} />}
-          <Field label="Название" name="name" defaultValue={v?.name ?? source?.name ?? 'Jackett'} />
-          <Field
-            label="Адрес Torznab"
-            name="url"
-            mono
-            inputMode="url"
-            required
-            defaultValue={v?.url ?? source?.url ?? ''}
-            placeholder="http://jackett:9117/api/v2.0/indexers/all/results/torznab/"
-            hint="Jackett: http://<адрес>:9117/api/v2.0/indexers/all/results/torznab/"
-          />
-          <PasswordField label="API-ключ" name="apiKey" autoComplete="off" placeholder={source ? 'сохранён — оставьте пустым' : ''} hint="Хранится в базе зашифрованным" />
+          <SourceFields kind={(v?.kind as SourceKind | undefined) ?? source?.kind} name={v?.name ?? source?.name} url={v?.url ?? source?.url ?? ''} saved={!!source} />
           <Field label="Таймаут, с" name="timeout" type="number" min={3} max={60} defaultValue={v?.timeout ?? String((source?.timeoutMs ?? 15000) / 1000)} />
         </form>
         {(state.error || del.error) && (

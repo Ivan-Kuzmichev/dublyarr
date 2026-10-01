@@ -3,7 +3,9 @@ import type { Db } from './db/client';
 import { notifications } from './db/schema';
 import { getSetting } from './settings';
 import { TelegramError, type InlineButton, type Telegram } from './telegram';
-import { log } from './log';
+import { logger } from './log';
+
+const log = logger('telegram');
 
 // Очередь сообщений в Telegram (spec §12): события пишутся сразу, воркер отправляет; Telegram недоступен — повторы с паузой.
 

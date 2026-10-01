@@ -1,3 +1,6 @@
+import { logger } from '../log';
+
+const llog = logger('laya');
 // Клиент laya-serve (127.0.0.1): вопросы «выбор» и «да/нет». Любой сбой — null: решение по правилам.
 
 export type LayaHealth = { status: 'downloading' | 'loading' | 'ready' | 'error'; runtime?: 'torch' | 'stub'; laya?: string; model?: string; error?: string };
@@ -38,8 +41,10 @@ export function createLayaClient(o: { port: number; fetchImpl?: typeof fetch; ti
           if (!a || (q.type === 'noul' ? typeof a.noul !== 'number' : typeof a.choice !== 'string')) return null;
         }
         lastMs = body.ms;
+        llog.debug({ questions: Object.keys(questions), answers: body.answers, ms: body.ms }, 'laya ask');
         return body;
       } catch (e) {
+        llog.warn({ questions: Object.keys(questions), err: e instanceof Error ? e.message : String(e) }, 'laya ask failed');
         if (e instanceof Error && /abort|timeout/i.test(`${e.name} ${e.message}`) && ++timeouts >= PAUSE_AFTER) {
           pausedUntil = now() + PAUSE_MS; // Laya «зависла» — не ждём её каждый раз
           timeouts = 0;

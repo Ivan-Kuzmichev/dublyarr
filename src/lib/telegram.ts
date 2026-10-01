@@ -1,6 +1,9 @@
 import type { Db } from './db/client';
 import { setSecretSetting, setSetting, tryGetSecretSetting } from './settings';
 import { getTmdbSettings, proxiedFetch } from './tmdb';
+import { logger } from './log';
+
+const tgLog = logger('telegram');
 
 // Клиент Telegram Bot API (spec §12). Токен — часть адреса запроса, поэтому адреса и тексты ошибок маскируются.
 
@@ -48,6 +51,8 @@ export function createTelegram(s: Pick<TelegramSettings, 'token' | 'proxy'>, opt
       throw new TelegramError(`Telegram недоступен — проверьте прокси (${maskToken(e instanceof Error ? e.message : String(e))})`, 'network');
     }
     const data = (await res.json().catch(() => ({}))) as { ok?: boolean; result?: T; error_code?: number; description?: string; parameters?: { retry_after?: number } };
+    // getUpdates — раз в 15 с, только в подробном журнале; токен в адресе — никогда в журнал
+    tgLog[data.ok || method === 'getUpdates' ? 'debug' : 'warn']({ method, ok: !!data.ok, status: data.error_code ?? res.status, ...(data.ok ? {} : { description: maskToken(data.description ?? '') }) }, 'telegram call');
     if (data.ok) return data.result as T;
     const status = data.error_code ?? res.status;
     if (status === 401 || status === 404) throw new TelegramError('Неверный токен бота', 'auth');

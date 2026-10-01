@@ -28,5 +28,5 @@ test('ключ источника хранится зашифрованным и
   const db = testDb();
   addSource(db, { name: 'Jackett', url: 'http://j/', apiKey: 'SECRETKEY' });
   expect(db.select().from(sources).get()!.apiKeyEnc).not.toContain('SECRETKEY');
-  expect(listSources(db)).toEqual([{ id: 1, name: 'Jackett', url: 'http://j/', enabled: true }]);
+  expect(listSources(db)).toEqual([{ id: 1, name: 'Jackett', url: 'http://j/', kind: 'torznab', enabled: true }]);
 });

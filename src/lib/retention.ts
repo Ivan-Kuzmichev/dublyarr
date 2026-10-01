@@ -7,8 +7,10 @@ import { getSetting, setSetting } from './settings';
 import { OLD_DIR } from './old-copies';
 import { notifyPendingConfirm } from './notify-events';
 import { formatSize } from './format';
-import { log } from './log';
+import { logger } from './log';
 import type { RetentionSettings } from './retention-settings';
+
+const log = logger('storage');
 
 // Правила хранения (spec §8): что удалило бы каждое правило. Удаляются только файлы, записанные Dublyarr.
 

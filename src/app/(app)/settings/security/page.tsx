@@ -8,6 +8,8 @@ import { describeUserAgent } from '@/lib/auth/describe-ua';
 import { logoutAction } from '@/app/login/actions';
 import { TwoFactorCard } from './TwoFactorCard';
 import { PasswordCard } from './PasswordCard';
+import { ApiCard } from './ApiCard';
+import { getApiEnabled, listApiTokens } from '@/lib/api/tokens';
 import { revokeSessionAction, logoutEverywhereAction } from './actions';
 
 export const metadata = { title: 'Безопасность · Dublyarr' };
@@ -30,11 +32,20 @@ function loadSessions(userId: number) {
 export default async function SecurityPage() {
   const { user, session: current } = await requireSession();
   const { now, sessions } = loadSessions(user.id);
+  const date = (ts: number) => new Date(ts).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' });
+  const tokens = listApiTokens(getDb()).map((t) => ({
+    id: t.id,
+    name: t.name,
+    prefix: t.prefix,
+    created: date(t.createdAt),
+    used: t.lastUsedAt ? `использован ${ago(t.lastUsedAt, now)}${t.lastIp ? ` · ${t.lastIp}` : ''}` : 'не использовался',
+  }));
   return (
     <>
       <SectionHeader title="Безопасность" description={`Вход для ${user.username}: пароль и код из приложения.`} />
       <TwoFactorCard enabled={user.totpEnabled} />
       <PasswordCard />
+      <ApiCard enabled={getApiEnabled(getDb())} tokens={tokens} />
       <Card className="flex flex-col gap-4">
         <CardTitle note={`${sessions.length}`}>Активные сеансы</CardTitle>
         <Table<Session>

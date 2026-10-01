@@ -13,7 +13,7 @@ import { planEpisode, seasonFinished, coversWholeSeason, claimedSeasonTotal } fr
 import { activeDownloads, enableFiles, releaseStalled, startRelease, type DownloadDeps, type Paths } from './downloads';
 import type { Qbit } from './qbit';
 import { todayIso } from './dates';
-import { log } from './log';
+import { logger } from './log';
 import { eagerTitles } from './forecast';
 import { clearWanted, setWanted } from './wanted';
 import { finalChecks } from './laya/final';
@@ -21,6 +21,8 @@ import { FINAL_BUDGET } from './laya/decide';
 import type { LayaClient } from './laya/client';
 import { searchMovie } from './movie-search';
 import { getSchedule, inNightWindow, searchDue, type ScheduleSettings } from './schedule';
+
+const log = logger('downloads');
 
 // Поиск и загрузка по подпискам (воркер, раз в час и по кнопке «Искать сейчас»).
 
@@ -243,6 +245,7 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
     return res;
   }
   for (const s of starts.values()) {
+    log.info({ titleId, release: s.release.id, title: s.release.title, kind: s.kind, eps: s.eps.map((e) => `S${e.season}E${e.number}`), upgrade: !!s.upgrade }, 'start');
     try {
       const d = await startRelease(db, dl, s.release, s.eps, s.kind, s.label, { dubPosition: s.dubPosition, note: s.note });
       if (s.upgrade) {

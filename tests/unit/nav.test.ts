@@ -15,3 +15,7 @@ test('состав навигации как в макетах', () => {
   expect(MOBILE_TABS.map((n) => n.label)).toEqual(['Сегодня', 'Библиотека', 'Календарь', 'Загрузки', 'Ещё']);
   expect(SETTINGS_SECTIONS.at(-1)).toEqual({ id: 'security', label: 'Безопасность', phase: 0 });
 });
+
+test('«Диагностика» — перед «Безопасностью»', () => {
+  expect(SETTINGS_SECTIONS.at(-2)).toMatchObject({ id: 'diagnostics', label: 'Диагностика' });
+});

@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { Writable } from 'node:stream';
-import { createLogger, redactUrl } from '@/lib/log';
+import { createLogger, redactUrl, logger, applyLogSettings, setLogDestination } from '@/lib/log';
 
 function capture() {
   const lines: string[] = [];
@@ -32,4 +32,28 @@ test('redactUrl прячет ключи и логин:пароль', () => {
 
 test('ключ Jackett в ссылке на .torrent маскируется', () => {
   expect(redactUrl('http://j:9117/dl/rutracker/?jackett_apikey=SECRET&path=abc')).toBe('http://j:9117/dl/rutracker/?jackett_apikey=***&path=abc');
+});
+
+test('logger(area) пишет поле area и слушается уровня области', () => {
+  const { lines, destination } = capture();
+  setLogDestination(destination);
+  applyLogSettings({ level: 'info', areas: { qbit: 'debug', tmdb: 'off' } });
+  logger('qbit').debug({ hash: 'h' }, 'add');
+  logger('tmdb').warn('x');
+  logger('search').debug('скрыто');
+  logger('search').info('видно');
+  const rows = lines.join('').trim().split('\n').map((l) => JSON.parse(l));
+  expect(rows.map((r) => [r.area, r.msg])).toEqual([['qbit', 'add'], ['search', 'видно']]);
+});
+
+test('смена настроек меняет уровень уже созданного логгера', () => {
+  const { lines, destination } = capture();
+  setLogDestination(destination);
+  applyLogSettings({ level: 'info', areas: {} });
+  const l = logger('downloads');
+  l.debug('1');
+  applyLogSettings({ level: 'info', areas: { downloads: 'debug' } });
+  l.debug('2');
+  expect(lines.join('')).not.toContain('"msg":"1"');
+  expect(lines.join('')).toContain('"msg":"2"');
 });

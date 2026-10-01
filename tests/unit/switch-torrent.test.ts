@@ -142,3 +142,12 @@ test('новая версия уже в клиенте без записи (пр
   expect(res.switched).toBe(true);
   expect(fq.calls).not.toContain('add');
 });
+
+test('новая версия топика в qBittorrent 5 появляется не сразу — ждём, выбор файлов не теряется', async () => {
+  const { db, deps } = await setup();
+  db.update(downloads).set({ state: 'imported' }).run();
+  const late = fakeQbit({ lateAdd: 3 });
+  const res = await switchTorrent(db, { ...deps, qbit: late.qbit, sleep: async () => undefined }, db.select().from(downloads).get()!, v2, [ep(3)]);
+  expect(res).toMatchObject({ switched: true });
+  expect(late.torrents.get(parseTorrent(v2).infohash)!.files.map((f) => f.priority)).toEqual([0, 0, 1]);
+});

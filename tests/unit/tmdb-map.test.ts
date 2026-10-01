@@ -48,6 +48,6 @@ test('Атака титанов: аниме, романдзи, без дубля
 test('сезоны и серии; пустая дата эфира → null', () => {
   expect(mapSeasons(fx<TmdbTvDetails>('tv-1399')).map((s) => s.number)).toEqual([0, 1]);
   const eps = mapEpisodes(fx<TmdbSeason>('tv-1399-season-1'));
-  expect(eps[0]).toEqual({ season: 1, number: 1, name: 'Зима близко', airDate: '2011-04-17', runtime: 62 });
+  expect(eps[0]).toEqual({ season: 1, number: 1, name: 'Зима близко', airDate: '2011-04-17', runtime: 62, stillPath: null });
   expect(eps[2].airDate).toBeNull();
 });

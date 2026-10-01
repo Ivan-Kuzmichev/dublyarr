@@ -5,9 +5,11 @@ import type { Db } from './db/client';
 import { oldCopies, titles } from './db/schema';
 import { getSetting, setSetting } from './settings';
 import { getRetention } from './retention-settings';
-import { log } from './log';
+import { logger } from './log';
 import { notifyPendingConfirm } from './notify-events';
 import { formatSize } from './format';
+
+const log = logger('storage');
 
 // Правило «Старая копия после улучшения» (spec §8): удалять сразу; первое срабатывание — через подтверждение.
 // До подтверждения старая копия лежит в скрытой папке медиатеки (VidHub её не показывает) и ждёт в списке.
