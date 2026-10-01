@@ -39,6 +39,7 @@ export function activeNavId(pathname: string): NavId {
   const seg = pathname.split('/')[1] ?? '';
   if (seg === 'more') return 'settings';
   if (seg === 'series') return 'library';
+  if (seg === 'search') return 'activity';
   const hit = DESKTOP_NAV.find((n) => n.href !== '/' && n.href === `/${seg}`);
   return (hit?.id as NavId | undefined) ?? 'today';
 }

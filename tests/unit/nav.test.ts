@@ -7,6 +7,7 @@ test('активный пункт по пути', () => {
   expect(activeNavId('/settings/security')).toBe('settings');
   expect(activeNavId('/activity/search')).toBe('activity');
   expect(activeNavId('/series/1399')).toBe('library');
+  expect(activeNavId('/search/1399')).toBe('activity');
 });
 
 test('состав навигации как в макетах', () => {

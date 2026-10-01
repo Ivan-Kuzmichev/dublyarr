@@ -48,7 +48,8 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
       try {
         const lists = await Promise.all(queries.map((q) => torznabSearch(src, q, CATEGORIES, opts.fetchImpl)));
         const items = lists.flat();
-        return { status: { sourceId: src.id, name: src.name, ok: true, found: items.length, ms: Date.now() - started } as SourceStatus, items };
+        const distinct = new Set(items.map((i) => i.infohash ?? `${i.indexerId}|${i.title}|${i.size}`)).size;
+        return { status: { sourceId: src.id, name: src.name, ok: true, found: distinct, ms: Date.now() - started } as SourceStatus, items };
       } catch (e) {
         const error = e instanceof TorznabError ? e.message : e instanceof Error ? e.message : String(e);
         log.warn({ source: src.name, err: error }, 'torznab search failed');
@@ -87,12 +88,11 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
 
   const seasons = listSeasons(db, title.id);
   const info = toTitleInfo(title, seasons);
-  const studios = listStudios(db).map((s) => ({ id: s.id, name: s.name, aliases: s.aliases, trackers: s.trackers }));
+  const studios = studioRefs(db);
   const saved: Release[] = [];
   for (const k of unique.values()) {
     const it = k.item;
-    const parsed = resolveAbsolute(parseRelease(it.title, it.attrs, { id: it.indexerId ?? '', name: k.trackerName }, studios), info);
-    const match = matchRelease(parsed, it.size, info, ruleFor(db, title.id, k.trackerName, it.title));
+    const { parsed, match } = analyze(db, title.id, info, studios, { title: it.title, attrs: it.attrs, size: it.size, indexerId: it.indexerId ?? '', trackerName: k.trackerName });
     const fields = {
       sourceId: k.sourceId,
       trackerId: k.trackerId,
@@ -131,4 +131,34 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
     );
   }
   return { releases: saved, sources: statuses };
+}
+
+type StudioRefs = ReturnType<typeof studioRefs>;
+const studioRefs = (db: Db) => listStudios(db).map((s) => ({ id: s.id, name: s.name, aliases: s.aliases, trackers: s.trackers }));
+
+/** Разбор заголовка и оценка «тот ли сериал» (с учётом правил пользователя). */
+function analyze(
+  db: Db,
+  titleId: number,
+  info: ReturnType<typeof toTitleInfo>,
+  studios: StudioRefs,
+  r: { title: string; attrs: Record<string, string | string[]>; size: number; indexerId: string; trackerName: string },
+) {
+  const parsed = resolveAbsolute(parseRelease(r.title, r.attrs, { id: r.indexerId, name: r.trackerName }, studios), info);
+  return { parsed, match: matchRelease(parsed, r.size, info, ruleFor(db, titleId, r.trackerName, r.title)) };
+}
+
+/** Переразобрать сохранённые раздачи сериала (после правки словаря или ответа «это он / не он»), без запросов к источникам. */
+export function reparseReleases(db: Db, titleId: number) {
+  const title = db.select().from(titles).where(eq(titles.id, titleId)).get();
+  if (!title) return;
+  const info = toTitleInfo(title, listSeasons(db, titleId));
+  const studios = studioRefs(db);
+  const ixById = new Map(db.select().from(trackers).all().map((t) => [t.id, t.indexerId]));
+  db.transaction(() => {
+    for (const r of db.select().from(releases).where(eq(releases.titleId, titleId)).all()) {
+      const res = analyze(db, titleId, info, studios, { ...r, indexerId: (r.trackerId && ixById.get(r.trackerId)) || '' });
+      db.update(releases).set(res).where(eq(releases.id, r.id)).run();
+    }
+  });
 }

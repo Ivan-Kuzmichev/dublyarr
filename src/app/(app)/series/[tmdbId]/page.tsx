@@ -113,6 +113,9 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
               names={studioNames}
               profile={sub?.profile ?? getDefaultProfile(db, t.kind)}
             />
+            <Link href={`/search/${t.tmdbId}?s=${current}`} className={buttonClass('secondary', 'md', 'no-underline hover:text-text')}>
+              Ручной поиск
+            </Link>
             <RefreshButton tmdbId={t.tmdbId} />
             <KindSwitch tmdbId={t.tmdbId} kind={t.kind} />
           </div>
@@ -165,7 +168,18 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
                 >
                   <span className="font-mono text-[13px] text-muted">{String(e.number).padStart(2, '0')}</span>
                   <span className={`truncate ${future ? '' : 'font-medium text-text'}`}>{e.name}</span>
-                  <span className="text-[13px]">{formatAirDate(e.airDate, today)}</span>
+                  <span className="flex items-center justify-between gap-2 text-[13px]">
+                    {formatAirDate(e.airDate, today)}
+                    {!future && (
+                      <Link
+                        href={`/search/${t.tmdbId}?s=${e.season}&e=${e.number}`}
+                        aria-label={`Ручной поиск ${e.season}×${e.number}`}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg text-faint hover:bg-surface-2 hover:text-text"
+                      >
+                        <Icon d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4" size={16} />
+                      </Link>
+                    )}
+                  </span>
                 </div>
               );
             })}
