@@ -63,7 +63,8 @@ function searchQueued() {
     .get();
 }
 
-export default function ActivityPage() {
+export default async function ActivityPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+  const { error } = await searchParams;
   const db = getDb();
   const queue = activityQueue(db);
   const qbit = !!getQbit(db);
@@ -78,6 +79,13 @@ export default function ActivityPage() {
           </Button>
         </form>
       </div>
+      {error && (
+        <Card tone="danger">
+          <p role="alert" className="m-0 text-[15px] text-danger">
+            {error.slice(0, 200)}
+          </p>
+        </Card>
+      )}
       {!qbit && (
         <Card tone="danger">
           <p className="m-0 text-[15px] text-text-2">
