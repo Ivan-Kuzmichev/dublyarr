@@ -22,6 +22,9 @@ import { log, redactUrl } from './log';
 // Добавление раздач в qBittorrent: серия целиком или пак с выбором нужных файлов (spec §4).
 
 export class DownloadError extends Error {}
+
+/** Имя файла так, как его показывает qBittorrent: у многофайловой раздачи — с корневой папкой. */
+const qbitName = (meta: { name: string; files: unknown[] }, p: string) => (meta.files.length > 1 || p !== meta.name ? `${meta.name}/${p}` : p);
 export const CATEGORY = 'dublyarr';
 const ACTIVE = ['adding', 'downloading', 'paused', 'stalled', 'completed'] as const;
 
@@ -109,7 +112,7 @@ export async function startRelease(
     // другой вызов (ручное «Скачать» и воркер одновременно) уже добавил этот торрент
     if (!(await deps.qbit.list(CATEGORY)).some((t) => t.hash === meta.infohash)) throw e;
   }
-  let files: DownloadFile[] = meta.files.map((f) => ({ index: f.index, name: f.path, size: f.size, priority: 1 }));
+  let files: DownloadFile[] = meta.files.map((f) => ({ index: f.index, name: qbitName(meta, f.path), size: f.size, priority: 1 }));
   if (!files.length) files = (await deps.qbit.files(meta.infohash)).map((f) => ({ index: f.index, name: f.name, size: f.size, priority: f.priority }));
   const row = {
     hash: meta.infohash,
@@ -221,7 +224,7 @@ export async function switchTorrent(db: Db, deps: DownloadDeps, old: Download, t
   );
   const carry = old.state === 'imported' ? [] : old.episodes.filter((e) => !have.has(`${e.season}:${e.number}`));
   const all = merge(carry, want);
-  const files: DownloadFile[] = meta.files.map((f) => ({ index: f.index, name: f.path, size: f.size, priority: 1 }));
+  const files: DownloadFile[] = meta.files.map((f) => ({ index: f.index, name: qbitName(meta, f.path), size: f.size, priority: 1 }));
   // топик могли переделать под другой сезон: строгое сопоставление и проверка имени раздачи
   if (otherSeasonInPath(meta.name, old.season)) return { switched: false, reason: 'no-new-episodes' };
   const map = filesForEpisodesStrict(files, old.season, all.filter((e) => e.season === old.season).map((e) => e.number));
