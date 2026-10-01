@@ -23,7 +23,7 @@ export function episodeFromFilename(file: string, season: number): number | null
     new RegExp(`(?:^|[\\s._\\-\\[(])E(?:p(?:isode)?)?[\\s._]?(\\d{1,4})${END}`, 'i'),
     /Серия\s*(\d{1,4})/i,
     /(?:^|[\s._-])(\d{1,4})\s*серия/i,
-    /^(\d{1,3})(?=[.\s_-])/,
+    /^(\d{1,3})(?=$|[.\s_-])/,
     new RegExp(` - (\\d{1,4})${END}`),
     /\[(\d{1,3})\]/,
   ];

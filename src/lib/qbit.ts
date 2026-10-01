@@ -30,7 +30,7 @@ export class QbitError extends Error {
 
 export type Qbit = {
   version(): Promise<string>;
-  add(torrent: Buffer | { magnet: string }, opts: { savePath: string; category: string; paused: boolean }): Promise<void>;
+  add(torrent: Buffer | { magnet: string }, opts: { savePath: string; category: string; paused: boolean; stopOnMetadata?: boolean }): Promise<void>;
   list(category: string): Promise<QbitTorrent[]>;
   files(hash: string): Promise<QbitFile[]>;
   setFilePriority(hash: string, indexes: number[], priority: 0 | 1 | 6 | 7): Promise<void>;
@@ -115,6 +115,8 @@ export function createQbit(cfg: QbitConfig, opts: { fetchImpl?: typeof fetch } =
       fd.append('category', o.category);
       fd.append('paused', String(o.paused));
       fd.append('stopped', String(o.paused));
+      // magnet: скачать метаданные и остановиться (qBittorrent 4.5+), чтобы выбрать файлы до загрузки
+      if (o.stopOnMetadata) fd.append('stopCondition', 'MetadataReceived');
       const res = await ok('/api/v2/torrents/add', { method: 'POST', body: fd });
       const text = (await res.text()).trim();
       if (text && text !== 'Ok.') throw new QbitError(`qBittorrent не принял торрент: ${text}`, 'http');

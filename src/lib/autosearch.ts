@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { downloads, episodeFiles, subscriptions, titles, wantedState, type EpisodeRef, type Release } from './db/schema';
 import { listEpisodes, listSeasons } from './catalog';
@@ -78,16 +78,21 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   if (!need.length && !seasonTargets.length) return res;
 
   const { releases } = await searchTitle(db, titleId, deps.searchOpts);
-  const failed = new Set(
-    db
-      .select({ r: downloads.releaseId })
-      .from(downloads)
-      .where(and(eq(downloads.titleId, titleId), eq(downloads.state, 'error')))
-      .all()
-      .map((x) => x.r),
-  );
-  const usable = releases.filter((r) => !failed.has(r.id));
-  const byId = new Map(usable.map((r) => [r.id, r]));
+  // отвергнутые раздачи: убранная из клиента — целиком, с ошибкой «нет файла» — только для тех серий
+  const rejected = new Map<number, Set<string> | 'all'>();
+  for (const d of db.select().from(downloads).where(and(eq(downloads.titleId, titleId), inArray(downloads.state, ['error', 'removed']))).all()) {
+    if (d.releaseId === null) continue;
+    const prev = rejected.get(d.releaseId);
+    if (d.state === 'removed' || prev === 'all') rejected.set(d.releaseId, 'all');
+    else rejected.set(d.releaseId, new Set([...(prev ?? []), ...d.episodes.map(key)]));
+  }
+  const usableFor = (ep?: EpisodeRef) =>
+    releases.filter((r) => {
+      const x = rejected.get(r.id);
+      return !x || (x !== 'all' && (ep ? !x.has(key(ep)) : x.size === 0));
+    });
+  const usable = usableFor();
+  const byId = new Map(releases.map((r) => [r.id, r]));
   const names = new Map(listStudios(db).map((s) => [s.id, s.name]));
   const ctx = { profile, episodes: eps, studioName: (id: number) => names.get(id), today };
   const dl: DownloadDeps | null = deps.qbit ? { qbit: deps.qbit, fetchTorrent: deps.fetchTorrent, paths: { qbitDownloads: deps.paths.qbitDownloads ?? deps.paths.downloads }, now } : null;
@@ -111,7 +116,7 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
 
   const active = activeDownloads(db, titleId);
   for (const ep of need) {
-    const verdicts = evaluateReleases(usable, ctx, { season: ep.season, episode: ep.number });
+    const verdicts = evaluateReleases(usableFor(ep), ctx, { season: ep.season, episode: ep.number });
     const plan = planEpisode(ep, verdicts, byId, active);
     if (plan.action === 'have') continue;
     if (plan.action === 'wait') {

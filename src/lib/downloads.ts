@@ -77,10 +77,13 @@ export async function startRelease(
     await enableFiles(db, deps, existing.id, want);
     return db.select().from(downloads).where(eq(downloads.id, existing.id)).get()!;
   }
+  // уже скачанная (или убранная только у нас) раздача всё ещё в клиенте — повторный add qBittorrent отвергнет
+  if (existing && (await deps.qbit.list(CATEGORY)).some((t) => t.hash === existing.hash)) return resume(db, deps, existing, want);
 
   const savePath = `${deps.paths.qbitDownloads.replace(/\/+$/, '')}/${CATEGORY}`;
   await deps.qbit.ensureCategory(CATEGORY, savePath);
-  await deps.qbit.add(torrent, { savePath, category: CATEGORY, paused: true });
+  const magnetPack = !Buffer.isBuffer(torrent) && kind === 'pack';
+  await deps.qbit.add(torrent, { savePath, category: CATEGORY, paused: !magnetPack, stopOnMetadata: magnetPack });
   let files: DownloadFile[] = meta.files.map((f) => ({ index: f.index, name: f.path, size: f.size, priority: 1 }));
   if (!files.length) files = (await deps.qbit.files(meta.infohash)).map((f) => ({ index: f.index, name: f.name, size: f.size, priority: f.priority }));
   const row = {
@@ -102,22 +105,45 @@ export async function startRelease(
     completedAt: null,
     importedAt: null,
   };
-  let d = existing ? update(db, existing.id, row) : db.insert(downloads).values(row).returning().get();
+  const d = existing ? update(db, existing.id, row) : db.insert(downloads).values(row).returning().get();
+  // magnet-пак без метаданных: файлы выберет синхронизация, когда qBittorrent их получит
+  if (kind === 'pack' && !files.length) return d;
+  return selectAndStart(db, deps.qbit, d, files);
+}
 
-  if (kind === 'pack' && files.length) {
-    const map = filesForEpisodes(files, d.season, want.map((w) => w.number));
-    const found = want.filter((w) => map.has(w.number));
+/** Пак: приоритет 0 всем, кроме файлов нужных серий; затем запуск. */
+async function selectAndStart(db: Db, qbit: Qbit, d: Download, files: DownloadFile[]): Promise<Download> {
+  if (d.kind === 'pack') {
+    const map = filesForEpisodes(files, d.season, d.episodes.map((w) => w.number));
+    const found = d.episodes.filter((w) => map.has(w.number));
     if (!found.length) {
-      await deps.qbit.remove([d.hash]);
-      return update(db, d.id, { state: 'error', lastError: `В раздаче нет файла ${code(want[0])}` });
+      await qbit.remove([d.hash]);
+      return update(db, d.id, { state: 'error', files, lastError: `В раздаче нет файла ${code(d.episodes[0])}` });
     }
     const keep = new Set(found.flatMap((w) => map.get(w.number)!));
     const off = files.filter((f) => !keep.has(f.index)).map((f) => f.index);
-    await deps.qbit.setFilePriority(d.hash, off, 0);
+    await qbit.setFilePriority(d.hash, off, 0);
     d = update(db, d.id, { episodes: found, files: files.map((f) => ({ ...f, priority: keep.has(f.index) ? 1 : 0 })) });
   }
-  await deps.qbit.start([d.hash]);
+  await qbit.start([d.hash]);
   return update(db, d.id, { state: 'downloading' });
+}
+
+/** Снова качать из раздачи, которая уже есть в клиенте: включить файлы новых серий (прежние скачаны и остаются как есть). */
+async function resume(db: Db, deps: DownloadDeps, d: Download, want: EpisodeRef[]): Promise<Download> {
+  const files = d.files?.length ? d.files : (await deps.qbit.files(d.hash)).map((f) => ({ index: f.index, name: f.name, size: f.size, priority: f.priority }));
+  let episodes = want;
+  let next = files;
+  if (d.kind === 'pack') {
+    const map = filesForEpisodes(files, d.season, want.map((w) => w.number));
+    episodes = want.filter((w) => map.has(w.number));
+    if (!episodes.length) throw new DownloadError(`В раздаче нет файла ${code(want[0])}`);
+    const on = new Set(episodes.flatMap((w) => map.get(w.number)!));
+    await deps.qbit.setFilePriority(d.hash, [...on], 1);
+    next = files.map((f) => (on.has(f.index) ? { ...f, priority: 1 } : f));
+  }
+  await deps.qbit.start([d.hash]);
+  return update(db, d.id, { episodes, files: next, state: 'downloading', lastError: null, completedAt: null, progress: 0 });
 }
 
 /** Включить файлы ещё нужных серий в уже качающемся паке. */
@@ -162,6 +188,10 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
       continue;
     }
     const qfiles = await deps.qbit.files(d.hash);
+    if (d.state === 'adding' && d.kind === 'pack' && !d.files?.length) {
+      if (qfiles.length) await selectAndStart(db, deps.qbit, d, qfiles.map((f) => ({ index: f.index, name: f.name, size: f.size, priority: f.priority })));
+      continue;
+    }
     const wanted = d.kind === 'pack' ? qfiles.filter((f) => f.priority > 0) : qfiles;
     const total = wanted.reduce((n, f) => n + f.size, 0);
     const progress = d.kind === 'pack' && total > 0 ? wanted.reduce((n, f) => n + f.progress * f.size, 0) / total : t.progress;
@@ -174,8 +204,8 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
     res.updated++;
     if (!done) continue;
     try {
-      await importDownload(db, d, t.save_path, qfiles, deps.paths, now);
-      update(db, d.id, { state: 'imported', importedAt: now, lastError: null });
+      const got = await importDownload(db, d, t.save_path, qfiles, deps.paths, now);
+      update(db, d.id, { state: 'imported', importedAt: now, lastError: null, episodes: got });
       res.imported++;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -187,14 +217,22 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
   return res;
 }
 
-async function importDownload(db: Db, d: Download, savePath: string, files: { index: number; name: string; size: number }[], paths: Paths, now: number) {
+async function importDownload(db: Db, d: Download, savePath: string, files: { index: number; name: string; size: number }[], paths: Paths, now: number): Promise<EpisodeRef[]> {
   const title = db.select().from(titles).where(eq(titles.id, d.titleId)).get();
   if (!title) throw new Error('Сериал удалён');
   const map = filesForEpisodes(files, d.season, d.episodes.filter((e) => e.season === d.season).map((e) => e.number));
-  for (const ep of d.episodes) {
-    const idx = map.get(ep.number)?.[0];
-    const file = idx === undefined ? undefined : files.find((f) => f.index === idx);
-    if (!file) throw new Error(`нет файла ${code(ep)}`);
+  const found = d.episodes.filter((ep) => map.has(ep.number) && files.some((f) => f.index === map.get(ep.number)![0]));
+  if (!found.length) throw new Error(`нет файла ${code(d.episodes[0])}`);
+  // серии без файла в раздаче — не ждать их здесь, а искать заново
+  for (const ep of d.episodes.filter((e) => !found.includes(e))) {
+    const row = { titleId: d.titleId, season: ep.season, number: ep.number, state: 'missing' as const, reason: `В раздаче нет файла ${code(ep)}`, until: null, checkedAt: now };
+    db.insert(wantedState)
+      .values(row)
+      .onConflictDoUpdate({ target: [wantedState.titleId, wantedState.season, wantedState.number], set: row })
+      .run();
+  }
+  for (const ep of found) {
+    const file = files.find((f) => f.index === map.get(ep.number)![0])!;
     const src = toLocalPath(`${savePath.replace(/\/+$/, '')}/${file.name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
     const rel = renderTemplate(
       paths.template || DEFAULT_TEMPLATE,
@@ -211,4 +249,5 @@ async function importDownload(db: Db, d: Download, savePath: string, files: { in
       .where(and(eq(wantedState.titleId, d.titleId), eq(wantedState.season, ep.season), eq(wantedState.number, ep.number)))
       .run();
   }
+  return found;
 }

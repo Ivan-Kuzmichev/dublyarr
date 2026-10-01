@@ -125,3 +125,17 @@ test('путь qBittorrent вне папки загрузок — ошибка �
   await syncDownloads(db, { qbit: fq.qbit, paths, now: HOUR });
   expect(db.select().from(downloads).get()!.lastError).toBe('Путь qBittorrent вне папки загрузок: /elsewhere/Game.of.Thrones.S01E01.mkv');
 });
+
+test('в паке сезона нет файла одной серии — остальные импортируются, загрузка завершена, серия «нет файла»', async () => {
+  const { db, t, mk, fq, files, deps, paths, media, finish } = setup();
+  const r = mk('Игра престолов S01', {});
+  files.set(r.id, torrent('GoT S01', ['GoT.S01E01.mkv', 'GoT.S01E02.mkv']));
+  const want = [1, 2, 3].map((number) => ({ season: 1, number }));
+  const d = await startRelease(db, deps, r, want, 'season', 'LostFilm');
+  finish(d.hash);
+  await syncDownloads(db, { qbit: fq.qbit, paths, now: 50 });
+  expect(db.select().from(downloads).get()).toMatchObject({ state: 'imported', episodes: want.slice(0, 2) });
+  expect(db.select().from(episodeFiles).all()).toHaveLength(2);
+  expect(existsSync(path.join(media, 'Игра престолов (2011)', 'Season 01'))).toBe(true);
+  expect(db.select().from(wantedState).all()).toEqual([expect.objectContaining({ titleId: t.id, season: 1, number: 3, state: 'missing', reason: 'В раздаче нет файла S01E03' })]);
+});

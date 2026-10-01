@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { testDb } from './helpers';
 import { fakeQbit } from './fake-qbit';
 import { bencode } from '@/lib/torrent-file';
-import { startRelease, enableFiles, activeDownloads, fetchTorrentFile, DownloadError } from '@/lib/downloads';
+import { startRelease, enableFiles, activeDownloads, fetchTorrentFile, DownloadError, syncDownloads } from '@/lib/downloads';
 import { downloads, releases, sources, titles, type Release } from '@/lib/db/schema';
 import { encrypt } from '@/lib/crypto/secretbox';
 import type { ParsedRelease } from '@/lib/parse/types';
@@ -101,4 +101,34 @@ test('получение торрента: ссылка, иначе magnet, ин
   expect(await fetchTorrentFile({ ...r, magnet: 'magnet:?xt=urn:btih:aa' } as Release, down)).toEqual({ magnet: 'magnet:?xt=urn:btih:aa' });
   await expect(fetchTorrentFile(r, down)).rejects.toBeInstanceOf(DownloadError);
   await expect(fetchTorrentFile(r, (async () => new Response('<html>')) as typeof fetch)).rejects.toThrow('Не удалось получить торрент');
+});
+
+test('раздача уже импортирована и раздаётся — та же запись, включается новый файл, без повторного add', async () => {
+  const { db, mk, fq, files, deps } = setup();
+  const r = mk('A S01', {});
+  files.set(r.id, torrent('A S01', ['A.S01E01.mkv', 'A.S01E02.mkv', 'A.S01E03.mkv']));
+  const d = await startRelease(db, deps, r, [{ season: 1, number: 1 }], 'pack', 'LostFilm');
+  db.update(downloads).set({ state: 'imported', importedAt: 5 }).run();
+  fq.calls.length = 0;
+  const again = await startRelease(db, deps, r, [{ season: 1, number: 3 }], 'pack', 'LostFilm');
+  expect(again.id).toBe(d.id);
+  expect(again).toMatchObject({ state: 'downloading', episodes: [{ season: 1, number: 3 }] });
+  expect(fq.calls).not.toContain('add');
+  expect(fq.torrents.get(d.hash)!.files.map((f) => f.priority)).toEqual([1, 0, 1]);
+});
+
+test('magnet-пак: ждём метаданные на паузе, файлы выбираются при синхронизации', async () => {
+  const { db, mk, fq, deps } = setup();
+  const r = mk('A S01', {});
+  const hash = 'a'.repeat(40);
+  const d = await startRelease(db, { ...deps, fetchTorrent: async () => ({ magnet: `magnet:?xt=urn:btih:${hash}` }) }, r, [{ season: 1, number: 2 }], 'pack', null);
+  expect(d.state).toBe('adding');
+  expect(fq.calls).not.toContain('start');
+  expect(fq.torrents.get(hash)!.paused).toBe(true);
+  // метаданные пришли
+  fq.torrents.get(hash)!.files = ['A.S01E01.mkv', 'A.S01E02.mkv', 'A.S01E03.mkv'].map((name, index) => ({ index, name, size: 100, progress: 0, priority: 1 }));
+  await syncDownloads(db, { qbit: fq.qbit, paths: { qbitDownloads: '/downloads', downloads: '/tmp/x', media: '/tmp/y' }, now: 20 });
+  expect(fq.torrents.get(hash)!.files.map((f) => f.priority)).toEqual([0, 1, 0]);
+  expect(fq.torrents.get(hash)!.paused).toBe(false);
+  expect(db.select().from(downloads).get()).toMatchObject({ state: 'downloading', episodes: [{ season: 1, number: 2 }] });
 });

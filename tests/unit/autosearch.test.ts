@@ -34,7 +34,7 @@ async function setup(today = '2026-09-30') {
   const t = await syncTitle(db, tmdb, 1399, { now: 1 });
   addSource(db, { name: 'J', url: 'http://j/api', apiKey: 'k' });
   const fq = fakeQbit();
-  const fetchTorrent = async (r: Release) => (r.parsed.pack ? pack(r.title.slice(0, 20)) : single(`${r.title.slice(0, 20)}.mkv`));
+  const fetchTorrent = async (r: Release) => (r.parsed.pack ? pack(`${r.title.slice(0, 20)} #${r.id}`) : single(`${r.title.slice(0, 20)} #${r.id}.mkv`));
   const deps = { qbit: fq.qbit, fetchTorrent, paths: { qbitDownloads: '/downloads', downloads: '/tmp/x', media: '/tmp/y' }, searchOpts: { fetchImpl: (async () => new Response(xml)) as typeof fetch }, today, now: 1 };
   const profile = (o: Partial<Profile> = {}): Profile => ({ ...builtinProfile(db, 'series'), scope: { mode: 'all' }, ...o });
   return { db, t, fq, deps, profile };
@@ -96,4 +96,28 @@ test('ошибка одной подписки не мешает остальн�
   const r = await searchAll(db, { ...deps, fetchTorrent: async () => { throw new Error('сломалось'); } });
   expect(r).toMatchObject({ titles: 1, errors: 0 });
   expect(db.select().from(wantedState).all().map((w) => w.reason)).toContain('сломалось');
+});
+
+test('раздачу убрали из клиента — её больше не берём', async () => {
+  const { db, t, fq, deps, profile } = await setup();
+  subscribe(db, t.id, profile(), 0);
+  await searchSubscription(db, t.id, deps);
+  const d = db.select().from(downloads).get()!;
+  db.update(downloads).set({ state: 'removed' }).run();
+  fq.torrents.delete(d.hash);
+  await searchSubscription(db, t.id, deps);
+  expect(db.select().from(downloads).all().filter((x) => x.releaseId === d.releaseId)).toHaveLength(1);
+  expect(db.select().from(downloads).all().filter((x) => x.state !== 'removed').every((x) => x.releaseId !== d.releaseId)).toBe(true);
+});
+
+test('ошибка пака по одной серии не отсекает раздачу для других серий', async () => {
+  const { db, t, deps, profile } = await setup();
+  subscribe(db, t.id, profile(), 0);
+  await searchSubscription(db, t.id, deps);
+  const d = db.select().from(downloads).get()!;
+  // будто раньше в этом паке не нашли файл S01E02, а S01E01 — ещё нужна
+  db.update(downloads).set({ state: 'error', episodes: [{ season: 1, number: 2 }], hash: 'f'.repeat(40) }).run();
+  await searchSubscription(db, t.id, deps);
+  const fresh = db.select().from(downloads).all().filter((x) => x.state !== 'error');
+  expect(fresh.find((x) => x.releaseId === d.releaseId)?.episodes).toEqual([{ season: 1, number: 1 }]);
 });

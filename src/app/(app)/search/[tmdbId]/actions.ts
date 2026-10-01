@@ -78,6 +78,7 @@ export async function downloadAction(_prev: DownloadState, form: FormData): Prom
   const release = db.select().from(releases).where(eq(releases.id, releaseId)).get();
   if (!release || release.titleId !== t.title.id) return { error: 'Раздача не найдена' };
   const eps = listEpisodes(db, t.title.id, season).filter((e) => e.airDate && e.airDate <= todayIso());
+  if (episode && !eps.some((e) => e.number === episode)) return { error: 'Такой вышедшей серии нет' };
   const p = release.parsed;
   const want = episode
     ? [{ season, number: episode }]
