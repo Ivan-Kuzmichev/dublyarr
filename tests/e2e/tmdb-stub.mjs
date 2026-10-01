@@ -37,6 +37,16 @@ http
     if (key === 'bad') return json(res, 401, { status_message: 'Invalid API key' });
     if (p === '/3/configuration') return json(res, 200, { images: {} });
     if (p === '/3/trending/tv/week') return json(res, 200, fx('trending'));
+    // фильм «Матрица» без дат релиза: цифровой релиз Dublyarr узнаёт по раздачам
+    const matrix = () => ({ ...fx('movie-603'), release_dates: { results: [] } });
+    const movieItem = { id: 603, media_type: 'movie', title: 'Матрица', original_title: 'The Matrix', release_date: '1999-03-30', poster_path: null };
+    if (p === '/3/trending/all/week') return json(res, 200, { page: 1, results: [movieItem], total_results: 1 });
+    if (p === '/3/search/multi') {
+      const q = (url.searchParams.get('query') ?? '').toLowerCase();
+      const results = /матриц|matrix/.test(q) ? [movieItem] : [];
+      return json(res, 200, { page: 1, results, total_results: results.length });
+    }
+    if (p === '/3/movie/603') return json(res, 200, matrix());
     if (p === '/3/search/tv') {
       const q = (url.searchParams.get('query') ?? '').toLowerCase();
       const all = fx('trending');

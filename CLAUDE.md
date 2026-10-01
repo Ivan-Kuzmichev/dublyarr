@@ -173,6 +173,20 @@ Self-hosted сервис для одного пользователя: подп�
 
 <!-- BEGIN:nextjs-agent-rules -->
 
+## Решения (фаза 3c — фильмы)
+
+- Фильм — `titles.kind = 'movie'`, `tmdb_type = 'movie'` (id сериалов и фильмов в TMDB пересекаются: уникальность — пара, `getTitleByTmdbId(db, id, 'movie')`, ссылки — `titleHref`).
+  Каталог — `src/lib/movies.ts` (`syncMovie`, `openMovie`, `digitalReleased`, `MOVIE_EP` = S00E00 — так фильм живёт в `episode_files`/`downloads`/`wanted_state`).
+- Подписка — та же `subscriptions`, профиль `MovieProfile` (`type: 'movie'`, `src/lib/movie-profile.ts`, по умолчанию — `app_settings['profile.movie']`, `getMovieDefault`); сериальный код пропускает `isMovieProfile`.
+- Цифровой релиз — дата TMDB (тип 4/5) или первая цифровая раздача (`titles.digital_seen_at`, пишет `searchTitle`). Ниже дубляжа — через `waitDubDays` после него.
+- Выбор раздачи — `src/lib/movie-evaluate.ts` (`matchMovie` 0,6 название · 0,3 год · 0,1 размер; `evaluateMovie`, `decideMovie`); корпус заголовков — `tests/fixtures/releases/movies.tsv`.
+  Автопоиск и замена (дубляж — 180 дней, BDRemux) — `src/lib/movie-search.ts`; статусы — `src/lib/wanted.ts`.
+- Загрузка — `downloads.kind = 'movie'`, только основной видеофайл и внешние дорожки (`pickMovieFile`); импорт — в `paths.movies` по `paths.movieTemplate` (`{Перевод}`), без папки фильмов — не качаем.
+  Пересборка: нужная дорожка — по типу перевода (условные «студии» Дубляж/Многоголосый), «не тот фильм» — вне 0,6–2× длительности.
+- Хранение — корни `{ media, movies }` в `runRetention`, `confirmOldCopies`, `deleteSeries` (`mediaRoot`); пауза — по самому заполненному тому (`fullestDisk`).
+- Экраны: `/movie/[tmdbId]` (лента — `src/lib/movie-card.ts`), ручной поиск — `/search/[id]?type=movie`, «Настройки → Фильмы» — `/settings/movies`.
+- e2e: заглушки TMDB (`/3/movie/603` без дат, `search/multi`, `trending/all`) и Jackett (`POST /__movie?stage=dub`).
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
