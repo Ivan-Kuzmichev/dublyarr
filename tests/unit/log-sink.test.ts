@@ -18,6 +18,8 @@ test('не JSON — обёртка с областью', () => {
   const j = JSON.parse(toJsonLine('Downloading model…', 'laya'));
   expect(j).toMatchObject({ area: 'laya', name: 'laya', msg: 'Downloading model…', level: 30 });
   expect(toJsonLine('{"msg":"a"}', 'web')).toBe('{"msg":"a"}');
+  // stderr (стек падения) — уровень «ошибка», иначе фильтр «только ошибки» его не покажет
+  expect(JSON.parse(toJsonLine('TypeError: x', 'web', 'stderr'))).toMatchObject({ level: 50, area: 'system' });
 });
 
 test('нет прав на запись — ошибка, строки идут только в echo', () => {

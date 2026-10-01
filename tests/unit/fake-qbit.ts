@@ -35,6 +35,8 @@ export function fakeQbit(opts: { lateAdd?: number } = {}) {
     files: async (hash) => torrents.get(hash)?.files ?? [],
     async setFilePriority(hash, idx, prio) {
       calls.push(`prio:${idx.join(',')}=${prio}`);
+      // как qBittorrent: торрента ещё нет — 404
+      if (pending.has(hash)) throw new Error('qBittorrent ответил ошибкой 404');
       for (const f of torrents.get(hash)?.files ?? []) if (idx.includes(f.index)) f.priority = prio;
     },
     async start(h) {

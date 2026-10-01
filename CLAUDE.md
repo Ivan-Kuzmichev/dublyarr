@@ -195,6 +195,7 @@ Self-hosted сервис для одного пользователя: подп�
   Экран — «Настройки → Диагностика» (`/settings/diagnostics`: уровни, журнал, сверка с qBittorrent `src/lib/reconcile.ts`, задачи `src/lib/diagnostics.ts`).
 - API: `/api/v1/*` (`src/app/api/v1/[...path]/route.ts` → `src/lib/api/router.ts`, `read.ts`, `write.ts`, `settings-sections.ts`), токены `api_tokens` (только хэш), выключен по умолчанию.
   Только локальная сеть: все адреса `X-Forwarded-For`/`X-Real-IP`/`Forwarded` частные (`src/lib/api/lan.ts`; Next ставит XFF = сокет, Pangolin — внешний адрес → 403).
+  Проверка доверяет заголовкам прокси (адрес сокета Next не отдаёт): Dublyarr открывать наружу только через прокси, который ставит `X-Forwarded-For` (Pangolin/Traefik), без проброса порта напрямую.
   «Безопасность», ключ TMDB и бот Telegram через API не меняются. Обработчики зовут те же функции, что actions (`downloadRelease` — `src/lib/manual-download.ts`; JSON → `toFormData` → парсеры форм).
 - Источники: `sources.kind` = `jackett` (адрес без пути, `endpointFor`; адрес одного трекера сохраняется) | `jacred` (JSON `/api/v1.0/torrents`, `src/lib/jacred.ts`,
   по одному запросу с паузой 1 с, 429 → пауза по Retry-After ≤ 10 с) | `torznab` (полный адрес). Сохранение и проверка — `saveSource` (`src/lib/source-save.ts`).

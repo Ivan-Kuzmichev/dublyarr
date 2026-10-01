@@ -5,11 +5,12 @@ import path from 'node:path';
 
 const MB = 1024 * 1024;
 
-/** Строки детей — JSON pino; остальное (laya-serve, падения Node) оборачивается, чтобы журнал читался одинаково. */
-export function toJsonLine(line: string, proc: string): string {
+/** Строки детей — JSON pino; остальное (laya-serve, падения Node) оборачивается, чтобы журнал читался одинаково.
+ *  stderr и ошибки супервизора — уровень «ошибка»: стек падения должен находиться фильтром «только ошибки». */
+export function toJsonLine(line: string, proc: string, stream: 'stdout' | 'stderr' = 'stdout'): string {
   const t = line.trim();
   if (t.startsWith('{') && t.endsWith('}')) return t;
-  return JSON.stringify({ level: 30, time: Date.now(), name: proc, area: proc === 'laya' ? 'laya' : 'system', msg: t });
+  return JSON.stringify({ level: stream === 'stderr' ? 50 : 30, time: Date.now(), name: proc, area: proc === 'laya' ? 'laya' : 'system', msg: t });
 }
 
 export type LogSink = { write(line: string): void; error: string | null };

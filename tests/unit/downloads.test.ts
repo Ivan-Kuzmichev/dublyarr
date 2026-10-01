@@ -207,6 +207,8 @@ test('торрент так и не появился — ошибка загру
   files.set(r.id, torrent('A.S01E03.mkv', null));
   const d = await startRelease(db, { ...deps, ...fast, waitMs: 2000, qbit: fq.qbit }, r, [{ season: 1, number: 3 }], 'episode', 'X');
   expect(d).toMatchObject({ state: 'error', lastError: 'qBittorrent не добавил торрент' });
+  // если он всё же появится позже — не останется в клиенте без записи
+  expect(fq.calls).toContain('remove');
 });
 
 test('синхронизация: остановленную в клиенте (не пользователем, не расписанием) запускает снова', async () => {
@@ -255,4 +257,15 @@ test('пак, у которого в клиенте выключены все ф
   await syncDownloads(db, { qbit: fq.qbit, paths, now: 100 });
   expect(fq.torrents.get(d.hash)!.files.map((f) => f.priority)).toEqual([0, 1]);
   expect(fq.torrents.get(d.hash)!.paused).toBe(false);
+});
+
+test('продолжили в самом qBittorrent — отметка «пауза пользователем» снимается', async () => {
+  const { db, mk, fq, files, deps } = setup();
+  const r = mk('A S01E03', { pack: false, episodes: { from: 3, to: 3 } });
+  files.set(r.id, torrent('A.S01E03.mkv', null));
+  const d = await startRelease(db, deps, r, [{ season: 1, number: 3 }], 'episode', 'X');
+  await controlDownload(db, fq.qbit, d.id, 'pause');
+  await fq.qbit.start([d.hash]); // «Продолжить» в веб-интерфейсе qBittorrent
+  await syncDownloads(db, { qbit: fq.qbit, paths, now: 100 });
+  expect(db.select().from(downloads).get()).toMatchObject({ state: 'downloading', pausedByUser: false });
 });

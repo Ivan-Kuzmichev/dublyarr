@@ -148,6 +148,8 @@ export async function startRelease(
     if (!(await deps.qbit.list(CATEGORY)).some((t) => t.hash === meta.infohash)) throw e;
   }
   const appeared = await waitForTorrent(deps.qbit, meta.infohash, deps);
+  // появится позже — не должен остаться в клиенте без записи (файлов ещё нет, удаляем без них)
+  if (!appeared) await deps.qbit.remove([meta.infohash]).catch(() => undefined);
   let files: DownloadFile[] = meta.files.map((f) => ({ index: f.index, name: qbitName(meta, f.path), size: f.size, priority: 1 }));
   if (!files.length && appeared) files = (await deps.qbit.files(meta.infohash)).map((f) => ({ index: f.index, name: f.name, size: f.size, priority: f.priority }));
   const row = {
@@ -327,6 +329,8 @@ export async function switchTorrent(db: Db, deps: DownloadDeps, old: Download, t
   if (!(await deps.qbit.list(CATEGORY)).some((t) => t.hash === meta.infohash)) await deps.qbit.add(torrent, { savePath, category: CATEGORY, paused: true });
   const keep = new Set([...found.flatMap((e) => map.get(e.number)!), ...externalIndexes(files, old.season, map)]);
   try {
+    // qBittorrent 5 добавляет асинхронно: выбор файлов до появления торрента теряется (404)
+    if (!(await waitForTorrent(deps.qbit, meta.infohash, deps))) throw new DownloadError('qBittorrent не добавил торрент');
     await deps.qbit.setFilePriority(meta.infohash, files.filter((f) => !keep.has(f.index)).map((f) => f.index), 0);
   } catch (e) {
     // не оставлять в клиенте торрент без записи: следующая попытка начнёт заново
@@ -478,7 +482,8 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
       contentPath: t.content_path,
       lastSeededAt,
       state,
-      ...(state !== 'paused' ? { pausedBySchedule: false } : {}),
+      // продолжили в самом qBittorrent — отметки пауз устарели
+      ...(state !== 'paused' ? { pausedBySchedule: false, pausedByUser: false } : {}),
       ...(done && !d.completedAt ? { completedAt: now } : {}),
     });
     res.updated++;

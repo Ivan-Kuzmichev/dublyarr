@@ -21,16 +21,16 @@ export function startSupervisor(o: Opts) {
   let stopping = false;
   const delayFor = o.delayFor ?? restartDelay;
   const sink = o.sink;
-  const toSink = (msg: string) => sink?.write(toJsonLine(msg, 'supervisor'));
-  const logger = o.logger ?? (sink ? { info: toSink, error: toSink } : console);
+  const toSink = (stream: 'stdout' | 'stderr') => (msg: string) => sink?.write(toJsonLine(msg, 'supervisor', stream));
+  const logger = o.logger ?? (sink ? { info: toSink('stdout'), error: toSink('stderr') } : console);
 
   function run(spec: ChildSpec, failures: number) {
     if (stopping) return;
     const startedAt = Date.now();
     const p = spawn(spec.command, spec.args, { stdio: sink ? ['ignore', 'pipe', 'pipe'] : 'inherit', env: { ...process.env, ...spec.env, DUBLYARR_PROCESS: spec.name } });
     if (sink)
-      for (const stream of [p.stdout, p.stderr])
-        if (stream) createInterface({ input: stream }).on('line', (line) => line.trim() && sink.write(toJsonLine(line, spec.name)));
+      for (const [stream, kind] of [[p.stdout, 'stdout'], [p.stderr, 'stderr']] as const)
+        if (stream) createInterface({ input: stream }).on('line', (line) => line.trim() && sink.write(toJsonLine(line, spec.name, kind)));
     procs.set(spec.name, p);
     o.onStart?.(spec.name);
     logger.info(`[supervisor] ${spec.name} запущен (pid ${p.pid})`);
