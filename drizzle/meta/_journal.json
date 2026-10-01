@@ -64,6 +64,13 @@
       "when": 1790856094889,
       "tag": "0008_thin_thanos",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1790860594834,
+      "tag": "0009_misty_blindfold",
+      "breakpoints": true
     }
   ]
 }

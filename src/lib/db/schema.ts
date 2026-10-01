@@ -74,6 +74,8 @@ export const sources = sqliteTable('sources', {
   enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
   timeoutMs: integer('timeout_ms').notNull().default(15000),
   createdAt: ts('created_at').notNull(),
+  failingSince: ts('failing_since'), // с какого момента источник не отвечает
+  downNotified: integer('down_notified', { mode: 'boolean' }).notNull().default(false),
 });
 
 export const jobs = sqliteTable(
@@ -339,6 +341,7 @@ export const wantedState = sqliteTable(
     state: text('state', { enum: ['waiting', 'missing', 'ask'] }).notNull(),
     reason: text('reason').notNull(),
     until: text('until'), // дата открытия ближайшей позиции (для waiting)
+    releaseId: integer('release_id').references(() => releases.id, { onDelete: 'set null' }), // о какой раздаче вопрос (для ask)
     checkedAt: ts('checked_at').notNull(),
   },
   (t) => [uniqueIndex('wanted_state_title_season_number').on(t.titleId, t.season, t.number)],
@@ -396,3 +399,25 @@ export const notices = sqliteTable('notices', {
   text: text('text').notNull(),
   createdAt: ts('created_at').notNull(),
 });
+
+/** Очередь сообщений в Telegram (spec §12). */
+export const notifications = sqliteTable(
+  'notifications',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    key: text('key').notNull(), // от повторов: «import:42»
+    kind: text('kind', { enum: ['downloaded', 'stuck', 'ask', 'original', 'source-down'] }).notNull(),
+    text: text('text').notNull(),
+    buttons: json<{ text: string; data?: string; url?: string }[][]>('buttons'),
+    ref: json<Record<string, unknown>>('ref'),
+    createdAt: ts('created_at').notNull(),
+    nextAt: ts('next_at').notNull(),
+    sentAt: ts('sent_at'),
+    messageId: integer('message_id'),
+    attempts: integer('attempts').notNull().default(0),
+    error: text('error'),
+    answer: text('answer'),
+  },
+  (t) => [uniqueIndex('notifications_key').on(t.key), index('notifications_pending').on(t.sentAt, t.nextAt)],
+);
+export type Notification = typeof notifications.$inferSelect;
