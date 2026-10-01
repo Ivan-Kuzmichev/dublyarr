@@ -83,3 +83,21 @@ describe('удаление сериала', () => {
     expect(existsSync(s.own)).toBe(true);
   });
 });
+
+test('сбой qBittorrent не обрывает удаление: подписка снята, история записана, загрузки сериала больше не импортируются', async () => {
+  const s = await setup();
+  const qbit = { ...s.fq.qbit, list: async () => { throw new Error('qBittorrent не отвечает'); } };
+  await deleteSeries(s.db, { qbit, paths: s.paths }, s.t.id, 'all');
+  expect(s.db.select().from(subscriptions).all()).toEqual([]);
+  expect(s.db.select().from(deletions).all()).toHaveLength(1);
+  const { eq } = await import('drizzle-orm');
+  expect(s.db.select().from(downloads).where(eq(downloads.titleId, s.t.id)).get()!.state).toBe('removed');
+  expect(existsSync(s.own)).toBe(true); // без списка файлов клиента файлы загрузок не трогаем
+});
+
+test('удалённые вручную серии помечены — поиск их не вернёт', async () => {
+  const s = await setup();
+  await deleteSeries(s.db, { qbit: s.fq.qbit, paths: s.paths }, s.t.id, 'files');
+  const { retiredEpisodes } = await import('@/lib/db/schema');
+  expect(s.db.select().from(retiredEpisodes).all().map((r) => r.number).sort()).toEqual([1, 2]);
+});

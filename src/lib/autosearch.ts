@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { downloads, episodeFiles, subscriptions, titles, wantedState, type EpisodeRef, type Release } from './db/schema';
+import { downloads, episodeFiles, retiredEpisodes, subscriptions, titles, wantedState, type EpisodeRef, type Release } from './db/schema';
 import { listEpisodes, listSeasons } from './catalog';
 import { wantedEpisodes } from './subscriptions';
 import { listStudios } from './studios';
@@ -68,6 +68,8 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   const eps = seasons.flatMap((s) => listEpisodes(db, titleId, s.number));
   const fileRows = db.select().from(episodeFiles).where(eq(episodeFiles.titleId, titleId)).all();
   const have = new Set(fileRows.map(key));
+  // удалённые правилами хранения или вручную — не качать снова
+  for (const r of db.select().from(retiredEpisodes).where(eq(retiredEpisodes.titleId, titleId)).all()) have.add(key(r));
   // застрявшие (сутки без сидов) не считаются «уже качается» — для их серий ищем замену
   const stalled = activeDownloads(db, titleId).filter((d) => d.state === 'stalled');
   const stuck = new Set(stalled.flatMap((d) => d.episodes.map(key)));

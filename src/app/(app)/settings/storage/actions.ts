@@ -3,8 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
 import { requireSession } from '@/lib/auth/current';
-import { setSetting } from '@/lib/settings';
-import { parseRetentionForm } from '@/lib/retention-settings';
+import { parseRetentionForm, saveRetentionSettings } from '@/lib/retention-settings';
 import { enqueue } from '@/worker/jobs';
 
 export type SaveState = { ok?: string; error?: string };
@@ -13,7 +12,7 @@ export async function saveRetentionAction(_prev: SaveState, form: FormData): Pro
   await requireSession();
   const s = parseRetentionForm(form);
   if ('error' in s) return { error: s.error };
-  setSetting(getDb(), 'retention', s);
+  saveRetentionSettings(getDb(), s);
   revalidatePath('/settings/storage');
   revalidatePath('/storage');
   return { ok: 'Сохранено' };

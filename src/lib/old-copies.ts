@@ -53,7 +53,8 @@ export async function settleOldCopy(db: Db, media: string, stashed: string, row:
   const abs = insideOld(media, stashed);
   if (!abs) throw new Error('Путь старой копии вне скрытой папки');
   // «сразу» после подтверждения правила — удалить; «через 3 дня» / «при уборке» — ждёт уборки медиатеки
-  if (oldCopyRuleConfirmed(db) && getRetention(db).oldCopy === 'now') {
+  const confirmed = oldCopyRuleConfirmed(db);
+  if (confirmed && getRetention(db).oldCopy === 'now') {
     await rm(abs, { force: true });
     return;
   }
@@ -61,7 +62,8 @@ export async function settleOldCopy(db: Db, media: string, stashed: string, row:
     (s) => s.size,
     () => 0,
   );
-  db.insert(oldCopies).values({ ...row, path: stashed, size, reason, createdAt: now }).run();
+  db.insert(oldCopies).values({ ...row, path: stashed, size, reason, createdAt: now, due: confirmed }).run();
+  if (confirmed) return; // правило подтверждено — копия просто ждёт уборки
   const sum = oldCopiesSummary(db);
   notifyPendingConfirm(db, 'old-copies', `🗂 Старые копии после улучшения ждут подтверждения удаления: ${sum.count} · ${formatSize(sum.size)}`, now);
 }

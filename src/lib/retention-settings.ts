@@ -1,5 +1,7 @@
+import { eq } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { getSetting } from './settings';
+import { subscriptions } from './db/schema';
+import { getSetting, setSetting } from './settings';
 
 // Правила хранения (spec §8): настройки и расписание уборки медиатеки.
 
@@ -72,4 +74,26 @@ export function nextRetentionAt(schedule: RetentionSettings['schedule'], lastRun
   const next = lastSlot(schedule, now);
   next.setDate(next.getDate() + (schedule === 'weekly' ? 7 : 1));
   return next;
+}
+
+const CONFIRMED = { seasons: 'retention.seasons.confirmed', age: 'retention.age.confirmed' } as const;
+
+/**
+ * Сохранить правила. Стали жёстче (меньше сезонов, «тоже чистить» завершённые, меньше дней) — первое срабатывание
+ * снова через подтверждение: под удаление попадает то, чего пользователь ещё не видел.
+ */
+export function saveRetentionSettings(db: Db, next: RetentionSettings) {
+  const prev = getRetention(db);
+  if (next.seasons.keep < prev.seasons.keep || (prev.seasons.ended === 'keep' && next.seasons.ended === 'clean')) setSetting(db, CONFIRMED.seasons, false);
+  if (next.age.days < prev.age.days) setSetting(db, CONFIRMED.age, false);
+  setSetting(db, 'retention', next);
+}
+
+/** Исключения сериала. Новое удаление (снято «хранить все», включено «через N дней») — снова через подтверждение. */
+export function setSeriesExceptions(db: Db, titleId: number, v: { keepAll: boolean; autoDelete: boolean }) {
+  const sub = db.select().from(subscriptions).where(eq(subscriptions.titleId, titleId)).get();
+  if (!sub) return;
+  if (sub.keepAll && !v.keepAll) setSetting(db, CONFIRMED.seasons, false);
+  if (!sub.autoDelete && v.autoDelete) setSetting(db, CONFIRMED.age, false);
+  db.update(subscriptions).set(v).where(eq(subscriptions.titleId, titleId)).run();
 }

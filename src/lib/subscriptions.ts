@@ -1,6 +1,6 @@
 import { and, eq, gte, gt, max, min } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { episodes, seasons, subscriptions, titles, type Episode, type Subscription, type Title } from './db/schema';
+import { episodes, retiredEpisodes, seasons, subscriptions, titles, type Episode, type Subscription, type Title } from './db/schema';
 import type { Profile } from './profile';
 
 export class SubscriptionError extends Error {}
@@ -11,6 +11,8 @@ export function subscribe(db: Db, titleId: number, profile: Profile, now = Date.
   if (!db.select({ id: titles.id }).from(titles).where(eq(titles.id, titleId)).get()) throw new SubscriptionError('Сериал не найден');
   if (getSubscription(db, titleId)) throw new SubscriptionError('Уже есть подписка');
   const maxSeason = db.select({ n: max(seasons.number) }).from(seasons).where(eq(seasons.titleId, titleId)).get()?.n ?? null;
+  // новая подписка — заново: удалённые раньше серии снова нужны
+  db.delete(retiredEpisodes).where(eq(retiredEpisodes.titleId, titleId)).run();
   return db.insert(subscriptions).values({ titleId, profile, maxSeason, subscribedAt: now, updatedAt: now }).returning().get();
 }
 

@@ -17,7 +17,7 @@ const NOW = Date.parse('2026-10-01T12:00:00Z');
 
 test('занятость тома по statfs', async () => {
   const statfs = (async () => ({ bsize: 4096, blocks: 1000, bfree: 300, bavail: 250 })) as never;
-  expect(await diskUsage('/media', statfs)).toEqual({ total: 4096000, free: 1024000, used: 3072000, pct: 75 });
+  expect(await diskUsage('/media', statfs)).toEqual({ total: 4096000, free: 1024000, used: 2867200, pct: 74 }); // как df: занято = blocks − bfree, % от доступного пользователю
   expect(await diskUsage('/nope', (async () => { throw new Error('ENOENT'); }) as never)).toBeNull();
 });
 
@@ -98,7 +98,7 @@ describe('данные «Хранилища»', () => {
       ['Гриффины', 'S01–S03', '2160p', 30, 'S02 + выходящий', 33],
       ['Фрирен', 'S01', '1080p', 4, 'исключение: все', 0],
     ]);
-    expect(d.pending.map((p) => p.label)).toEqual(['Гриффины · S01']);
+    expect(d.pending.map((p) => p.label)).toEqual(['Гриффины · S01']); // по сезону
     expect(d.pendingRule).toBe('seasons');
     expect(Math.round(d.forecast.perWeek / 1024 ** 3)).toBe(3); // (10 + 4) ГБ за месяц → ~3,3 в неделю
     expect(d.forecast.weeksLeft).toBeGreaterThan(1000);

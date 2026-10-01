@@ -328,3 +328,16 @@ test('источник не отвечает — с какого момента 
   await searchTitle(db, t.id, { ...deps.searchOpts, now: 300 });
   expect(db.select().from(sources).get()!.failingSince).toBeNull();
 });
+
+test('серии, удалённые правилами или вручную, не качаются снова; новая подписка снимает отметку', async () => {
+  const { db, t, deps, profile } = await setup();
+  subscribe(db, t.id, profile(), 1);
+  const { retiredEpisodes } = await import('@/lib/db/schema');
+  for (const n of [1, 2]) db.insert(retiredEpisodes).values({ titleId: t.id, season: 1, number: n, at: 1 }).run();
+  expect((await searchSubscription(db, t.id, deps)).started).toBe(0);
+  expect(db.select().from(downloads).all()).toEqual([]);
+  const { unsubscribe } = await import('@/lib/subscriptions');
+  unsubscribe(db, t.id);
+  subscribe(db, t.id, profile(), 1);
+  expect(db.select().from(retiredEpisodes).all()).toEqual([]);
+});

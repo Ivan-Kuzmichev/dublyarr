@@ -1,7 +1,7 @@
 import type { ParsedRelease } from '../parse/types';
 import type { MatchResult } from '../match-types';
 import type { Profile } from '../profile';
-import { sqliteTable, text, integer, real, index, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 
 /** Время — миллисекунды unix. */
 const ts = (name: string) => integer(name, { mode: 'number' });
@@ -393,6 +393,8 @@ export const oldCopies = sqliteTable('old_copies', {
   size: integer('size').notNull(),
   reason: text('reason').notNull(),
   createdAt: ts('created_at').notNull(),
+  // правило уже подтверждено, копия ждёт уборки («через 3 дня» / «при уборке»); false — ждёт подтверждения или оставлена пользователем
+  due: integer('due', { mode: 'boolean' }).notNull().default(false),
 });
 export type OldCopy = typeof oldCopies.$inferSelect;
 
@@ -428,6 +430,20 @@ export const notifications = sqliteTable(
   (t) => [uniqueIndex('notifications_key').on(t.key), index('notifications_pending').on(t.sentAt, t.nextAt)],
 );
 export type Notification = typeof notifications.$inferSelect;
+
+/** Серии, удалённые правилами хранения или вручную: поиск их больше не качает (до новой подписки). */
+export const retiredEpisodes = sqliteTable(
+  'retired_episodes',
+  {
+    titleId: integer('title_id')
+      .notNull()
+      .references(() => titles.id, { onDelete: 'cascade' }),
+    season: integer('season').notNull(),
+    number: integer('number').notNull(),
+    at: ts('at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.titleId, t.season, t.number] })],
+);
 
 /** История удалений медиатеки («Недавно удалено»). */
 export const deletions = sqliteTable('deletions', {

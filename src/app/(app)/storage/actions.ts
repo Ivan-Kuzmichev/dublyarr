@@ -1,6 +1,5 @@
 'use server';
 
-import { eq } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
 import { requireSession } from '@/lib/auth/current';
@@ -9,8 +8,7 @@ import { getQbit } from '@/lib/qbit';
 import { getTitleByTmdbId } from '@/lib/catalog';
 import { deleteSeries } from '@/lib/delete-series';
 import { runRetention } from '@/lib/retention';
-import { getRetention } from '@/lib/retention-settings';
-import { subscriptions } from '@/lib/db/schema';
+import { getRetention, setSeriesExceptions } from '@/lib/retention-settings';
 import { formatSize } from '@/lib/format';
 import type { Paths } from '@/lib/downloads';
 
@@ -61,10 +59,7 @@ export async function setExceptionsAction(form: FormData) {
   const db = getDb();
   const t = getTitleByTmdbId(db, Number(form.get('tmdbId')));
   if (!t) return;
-  db.update(subscriptions)
-    .set({ keepAll: form.get('keepAll') === 'on', autoDelete: form.get('autoDelete') === 'on' })
-    .where(eq(subscriptions.titleId, t.id))
-    .run();
+  setSeriesExceptions(db, t.id, { keepAll: form.get('keepAll') === 'on', autoDelete: form.get('autoDelete') === 'on' });
   revalidatePath(`/series/${t.tmdbId}`);
   revalidatePath('/storage');
 }

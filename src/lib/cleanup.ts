@@ -250,18 +250,27 @@ export async function dropTorrents(db: Db, qbit: Qbit, paths: Paths, rows: Downl
   const ours = norm(path.join(paths.downloads, CATEGORY));
   const kept = new Set<string>();
   const filesOf = new Map<string, string[]>();
+  const inClient = new Set<string>();
+  let unsafe = false;
   for (const t of all) {
     const save = localOf(paths, t.save_path, '.');
     if (!dropping.has(t.hash) && t.category !== CATEGORY && !(save && (save === ours || save.startsWith(`${ours}/`)))) continue;
-    const fs = (await qbit.files(t.hash)).map((f) => localOf(paths, t.save_path, f.name)).filter((x): x is string => !!x);
+    const listed = await qbit.files(t.hash).catch(() => null);
+    if (!listed) {
+      // файлы чужого торрента не прочитать — не удалять ничего, что может быть общим
+      if (!dropping.has(t.hash)) unsafe = true;
+      else inClient.add(t.hash);
+      continue;
+    }
+    const fs = listed.map((f) => localOf(paths, t.save_path, f.name)).filter((x): x is string => !!x);
     if (dropping.has(t.hash)) filesOf.set(t.hash, fs);
     else for (const f of fs) kept.add(f);
   }
   const savePath = `${(paths.qbitDownloads ?? paths.downloads).replace(/\/+$/, '')}/${CATEGORY}`;
   for (const d of rows) {
-    const inClient = filesOf.has(d.hash);
-    const files = filesOf.get(d.hash) ?? (d.files ?? []).map((f) => localOf(paths, savePath, f.name)).filter((x): x is string => !!x);
-    if (inClient) {
+    const present = filesOf.has(d.hash) || inClient.has(d.hash);
+    const files = unsafe ? [] : (filesOf.get(d.hash) ?? (d.files ?? []).map((f) => localOf(paths, savePath, f.name)).filter((x): x is string => !!x));
+    if (present) {
       await qbit.remove([d.hash]);
       res.torrents++;
     }

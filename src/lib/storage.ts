@@ -14,10 +14,11 @@ export type Disk = { total: number; free: number; used: number; pct: number };
 export async function diskUsage(media: string, statfs: typeof fsStatfs = fsStatfs): Promise<Disk | null> {
   try {
     const s = await statfs(media);
+    // как df: занято = blocks − bfree; процент — от доступного пользователю (без блоков, зарезервированных за root)
     const total = s.blocks * s.bsize;
     const free = s.bavail * s.bsize;
-    const used = total - free;
-    return { total, free, used, pct: total ? Math.round((used / total) * 100) : 0 };
+    const used = (s.blocks - s.bfree) * s.bsize;
+    return { total, free, used, pct: used + free ? Math.round((used / (used + free)) * 100) : 0 };
   } catch {
     return null;
   }

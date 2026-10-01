@@ -1,6 +1,6 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { deletions, episodeFiles, episodes, oldCopies, seasons, subscriptions, titles } from './db/schema';
+import { deletions, episodeFiles, episodes, oldCopies, retiredEpisodes, seasons, subscriptions, titles } from './db/schema';
 import { readdir, rm, rmdir } from 'node:fs/promises';
 import path from 'node:path';
 import { getSetting, setSetting } from './settings';
@@ -19,6 +19,11 @@ export type RetentionItem = { key: string; rule: RetentionRule; titleId: number;
 const DAY = 86_400_000;
 const pad = (n: number) => String(n).padStart(2, '0');
 const sRange = (a: number, b: number) => (a === b ? `S${pad(a)}` : `S${pad(a)}–S${pad(b)}`);
+
+/** Серия удалена из медиатеки по правилу или вручную — поиск её больше не качает. */
+export function retireEpisode(db: Db, titleId: number, season: number, number: number, at: number) {
+  db.insert(retiredEpisodes).values({ titleId, season, number, at }).onConflictDoNothing().run();
+}
 
 /** Подпись правила сезонов для сериала и сезоны, которые оно удалило бы сейчас. */
 export function seasonRule(db: Db, titleId: number, settings: RetentionSettings, today: string): { label: string; drop: number[] } {
@@ -60,22 +65,28 @@ export function retentionPlan(db: Db, settings: RetentionSettings, now: number, 
   for (const { s, title } of subs) {
     const { drop } = seasonRule(db, s.titleId, settings, today);
     if (!drop.length) continue;
-    const files = db.select().from(episodeFiles).where(and(eq(episodeFiles.titleId, s.titleId), inArray(episodeFiles.season, drop))).all();
-    if (!files.length) continue;
-    const ended = db.select({ st: titles.status }).from(titles).where(eq(titles.id, s.titleId)).get()?.st;
-    items.push({
-      key: `s:${s.titleId}:${drop.join(',')}`,
-      rule: 'seasons',
-      titleId: s.titleId,
-      label: `${title} · ${sRange(Math.min(...drop), Math.max(...drop))}`,
-      why: ended === 'ended' || ended === 'canceled' ? 'сериал завершён, остаются последние сезоны' : 'старше последнего вышедшего сезона',
-      files: files.map((f) => ({ episodeFileId: f.id, path: f.path, size: f.size })),
-      size: files.reduce((n, f) => n + f.size, 0),
-    });
+    const st = db.select({ st: titles.status }).from(titles).where(eq(titles.id, s.titleId)).get()?.st;
+    // по пункту на сезон: «не удалять» сезон не теряется, когда набор удаляемых сезонов меняется
+    for (const n of drop) {
+      const files = db.select().from(episodeFiles).where(and(eq(episodeFiles.titleId, s.titleId), eq(episodeFiles.season, n))).all();
+      if (!files.length) continue;
+      items.push({
+        key: `s:${s.titleId}:${n}`,
+        rule: 'seasons',
+        titleId: s.titleId,
+        label: `${title} · S${pad(n)}`,
+        why: st === 'ended' || st === 'canceled' ? 'сериал завершён, остаются последние сезоны' : 'старше последнего вышедшего сезона',
+        files: files.map((f) => ({ episodeFileId: f.id, path: f.path, size: f.size })),
+        size: files.reduce((n, f) => n + f.size, 0),
+      });
+    }
   }
 
   const minAge = settings.oldCopy === '3days' ? 3 * DAY : 0;
+  const ocConfirmed = getSetting<boolean>(db, 'retention.oldCopy.confirmed') === true;
   for (const c of db.select().from(oldCopies).all()) {
+    // после подтверждения — только копии, отложенные до уборки; остальные пользователь оставил (или они из 2b)
+    if (ocConfirmed && !c.due) continue;
     if (now - c.createdAt < minAge) continue;
     items.push({
       key: `o:${c.id}`,
@@ -149,21 +160,22 @@ export async function runRetention(db: Db, media: string, settings: RetentionSet
   const keys = opts.confirmKeys ? new Set(opts.confirmKeys) : null;
   const declined = new Set(getSetting<string[]>(db, DECLINED) ?? []);
   if (keys) {
-    for (const i of plan) if (!confirmed[i.rule] && !keys.has(i.key)) declined.add(i.key);
+    // «не удалять» — только неотмеченное из правил, которые пользователь сейчас подтверждал (видел список)
+    const rules = new Set(plan.filter((i) => keys.has(i.key)).map((i) => i.rule));
+    for (const i of plan) if (!confirmed[i.rule] && rules.has(i.rule) && !keys.has(i.key)) declined.add(i.key);
     for (const k of keys) declined.delete(k);
     setSetting(db, DECLINED, [...declined]);
+    for (const r of rules) setSetting(db, CONFIRMED[r], true);
   }
   let pendingSize = 0;
   for (const i of plan) {
     if (declined.has(i.key)) continue;
-    if (keys ? !keys.has(i.key) : !confirmed[i.rule]) {
-      if (!keys) {
-        res.pending++;
-        pendingSize += i.size;
-      }
+    if (keys ? !keys.has(i.key) && !confirmed[i.rule] : !confirmed[i.rule]) {
+      res.pending++;
+      pendingSize += i.size;
       continue;
     }
-    if (keys) setSetting(db, CONFIRMED[i.rule], true);
+    if (keys && !keys.has(i.key)) continue; // подтверждение со страницы выполняет только отмеченное
     let freed = 0;
     for (const f of i.files) {
       const ok = f.oldCopyId ? await deleteMediaFile(media, f.path, OLD_DIR) : await deleteMediaFile(media, f.path);
@@ -171,7 +183,10 @@ export async function runRetention(db: Db, media: string, settings: RetentionSet
         log.warn({ item: i.key, path: f.path }, 'retention: path outside media library');
         continue;
       }
-      if (f.episodeFileId) db.delete(episodeFiles).where(eq(episodeFiles.id, f.episodeFileId)).run();
+      if (f.episodeFileId) {
+        const row = db.delete(episodeFiles).where(eq(episodeFiles.id, f.episodeFileId)).returning().get();
+        if (row) retireEpisode(db, row.titleId, row.season, row.number, now);
+      }
       if (f.oldCopyId) db.delete(oldCopies).where(eq(oldCopies.id, f.oldCopyId)).run();
       res.deleted++;
       freed += f.size;
@@ -179,9 +194,7 @@ export async function runRetention(db: Db, media: string, settings: RetentionSet
     if (freed) db.insert(deletions).values({ titleId: i.titleId, label: i.label, why: i.why, size: freed, at: now }).run();
     res.freed += freed;
   }
-  if (!keys) {
-    setSetting(db, 'retention.pending', { count: res.pending, size: pendingSize });
-    if (res.pending) notifyPendingConfirm(db, 'retention', `🗄 Уборка медиатеки ждёт подтверждения: ${res.pending} · ${formatSize(pendingSize)}`, now);
-  } else setSetting(db, 'retention.pending', { count: 0, size: 0 });
+  setSetting(db, 'retention.pending', { count: res.pending, size: pendingSize });
+  if (!keys && res.pending) notifyPendingConfirm(db, 'retention', `🗄 Уборка медиатеки ждёт подтверждения: ${res.pending} · ${formatSize(pendingSize)}`, now);
   return res;
 }
