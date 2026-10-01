@@ -166,7 +166,8 @@ Self-hosted сервис для одного пользователя: подп�
 - Правила — `src/lib/retention.ts` (`seasonRule`, `retentionPlan`, `runRetention`, `deleteMediaFile`), настройки и расписание — `src/lib/retention-settings.ts`
   (`app_settings['retention']`; сезоны по умолчанию выключены — решение владельца; уборка в 04:00 каждый день / по воскресеньям / вручную, задача `retention.tick`).
 - Первое срабатывание каждого правила — список с галочками на «Хранилище» (флаги `retention.<правило>.confirmed`, «не удалять» — `retention.declined`); удаляются только файлы из `episode_files`/`old_copies` внутри медиатеки; история — таблица `deletions`.
-- Исключения сериала — `subscriptions.keep_all`, `subscriptions.auto_delete`.
+- Исключения сериала — `subscriptions.keep_all`, `subscriptions.auto_delete` (`setSeriesExceptions`); правила сохраняются через `saveRetentionSettings`: стали жёстче — подтверждение правила сбрасывается.
+- Удалённые серии — `retired_episodes`: автопоиск их не качает до новой подписки. Старые копии: `old_copies.due` — отложены подтверждённым правилом до уборки; без него уборка копию не трогает.
 - Диск и переполнение — `src/lib/storage.ts` (`diskUsage` через `fs.statfs`, `checkDisk` в синхронизации, пауза через `applySpeed`); данные экрана — `storageData`.
 - Удаление сериала — `src/lib/delete-series.ts` (решение владельца: и торренты с файлами в папке загрузок; общие с другими торрентами файлы остаются — `cleanup.dropTorrents`).
 
