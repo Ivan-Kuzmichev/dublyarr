@@ -1,7 +1,7 @@
-import { and, eq, inArray } from 'drizzle-orm';
+import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { Db } from './db/client';
 import path from 'node:path';
-import { downloads, episodeFiles, titles, wantedState, type Download, type DownloadFile, type EpisodeRef, type Release } from './db/schema';
+import { downloads, episodeFiles, releases, titles, wantedState, type Download, type DownloadFile, type EpisodeRef, type Release } from './db/schema';
 import { DEFAULT_TEMPLATE, PathError, renderTemplate, toLocalPath } from './library-path';
 import { importFile } from './importer';
 import type { Qbit } from './qbit';
@@ -79,6 +79,13 @@ export async function startRelease(
   }
   // уже скачанная (или убранная только у нас) раздача всё ещё в клиенте — повторный add qBittorrent отвергнет
   if (existing && (await deps.qbit.list(CATEGORY)).some((t) => t.hash === existing.hash)) return resume(db, deps, existing, want);
+  // новая версия уже скачиваемого топика — не второй торрент рядом, а смена версии
+  const prev = Buffer.isBuffer(torrent) && !existing ? topicDownload(db, release) : undefined;
+  if (prev && Buffer.isBuffer(torrent)) {
+    const res = await switchTorrent(db, deps, prev, torrent, want);
+    if (res.switched) return res.download;
+    if (res.reason === 'no-new-episodes') throw new DownloadError(`В раздаче нет файла ${code(want[0])}`);
+  }
 
   const savePath = `${deps.paths.qbitDownloads.replace(/\/+$/, '')}/${CATEGORY}`;
   await deps.qbit.ensureCategory(CATEGORY, savePath);
@@ -158,6 +165,86 @@ async function resume(db: Db, deps: DownloadDeps, d: Download, want: EpisodeRef[
   }
   await deps.qbit.start([d.hash]);
   return update(db, d.id, { episodes, files: next, state: 'downloading', lastError: null, completedAt: null, progress: 0 });
+}
+
+const LIVE: Download['state'][] = ['adding', 'downloading', 'paused', 'stalled', 'completed', 'imported'];
+
+/** Живая загрузка-пак сериала с раздачей того же топика (того же адреса на трекере). */
+export function topicDownload(db: Db, release: Release): Download | undefined {
+  if (!release.detailsUrl) return undefined;
+  return db
+    .select({ d: downloads })
+    .from(downloads)
+    .innerJoin(releases, eq(releases.id, downloads.releaseId))
+    .where(and(eq(downloads.titleId, release.titleId), eq(downloads.kind, 'pack'), eq(releases.detailsUrl, release.detailsUrl), inArray(downloads.state, LIVE)))
+    .orderBy(desc(downloads.addedAt))
+    .get()?.d;
+}
+
+export type SwitchResult = { switched: true; download: Download; added: EpisodeRef[] } | { switched: false; reason: 'same-hash' | 'no-new-episodes' };
+
+/** «+серия 6», «+серии 6–7», «+серии 6, 8». */
+function addedNote(eps: EpisodeRef[]) {
+  const n = eps.map((e) => e.number).sort((a, b) => a - b);
+  if (n.length === 1) return `Обновлена: +серия ${n[0]}`;
+  const run = n.every((x, i) => i === 0 || x === n[i - 1] + 1);
+  return `Обновлена: +серии ${run ? `${n[0]}–${n.at(-1)}` : n.join(', ')}`;
+}
+
+/** Новая версия топика: торрент в ту же папку, включены только нужные серии, старый торрент убирается из клиента (файлы остаются). */
+export async function switchTorrent(db: Db, deps: DownloadDeps, old: Download, torrent: Buffer, want: EpisodeRef[]): Promise<SwitchResult> {
+  const meta = parseTorrent(torrent);
+  if (meta.infohash === old.hash) return { switched: false, reason: 'same-hash' };
+  const have = new Set(
+    db
+      .select()
+      .from(episodeFiles)
+      .where(eq(episodeFiles.titleId, old.titleId))
+      .all()
+      .map((f) => `${f.season}:${f.number}`),
+  );
+  const carry = old.state === 'imported' ? [] : old.episodes.filter((e) => !have.has(`${e.season}:${e.number}`));
+  const all = merge(carry, want);
+  const files: DownloadFile[] = meta.files.map((f) => ({ index: f.index, name: f.path, size: f.size, priority: 1 }));
+  const map = filesForEpisodes(files, old.season, all.filter((e) => e.season === old.season).map((e) => e.number));
+  const found = all.filter((e) => e.season === old.season && map.has(e.number));
+  if (!found.length) return { switched: false, reason: 'no-new-episodes' };
+
+  const savePath = `${deps.paths.qbitDownloads.replace(/\/+$/, '')}/${CATEGORY}`;
+  await deps.qbit.ensureCategory(CATEGORY, savePath);
+  await deps.qbit.add(torrent, { savePath, category: CATEGORY, paused: true });
+  const keep = new Set(found.flatMap((e) => map.get(e.number)!));
+  await deps.qbit.setFilePriority(meta.infohash, files.filter((f) => !keep.has(f.index)).map((f) => f.index), 0);
+  const now = deps.now ?? Date.now();
+  const fresh = db
+    .insert(downloads)
+    .values({
+      hash: meta.infohash,
+      titleId: old.titleId,
+      releaseId: old.releaseId,
+      season: old.season,
+      kind: 'pack',
+      episodes: found,
+      files: files.map((f) => ({ ...f, priority: keep.has(f.index) ? 1 : 0 })),
+      state: 'adding',
+      progress: 0,
+      size: meta.files.reduce((n, f) => n + f.size, 0),
+      name: old.name,
+      studioLabel: old.studioLabel,
+      resolution: old.resolution,
+      addedAt: now,
+    })
+    .returning()
+    .get();
+  try {
+    await deps.qbit.remove([old.hash]);
+  } catch (e) {
+    log.warn({ download: old.id, err: e instanceof Error ? e.message : String(e) }, 'old torrent remove failed');
+  }
+  const added = found.filter((e) => want.some((w) => w.season === e.season && w.number === e.number));
+  update(db, old.id, { state: 'replaced', replacedById: fresh.id, note: addedNote(added.length ? added : found) });
+  await deps.qbit.start([meta.infohash]);
+  return { switched: true, download: update(db, fresh.id, { state: 'downloading' }), added };
 }
 
 /** Включить файлы ещё нужных серий в уже качающемся паке. */
