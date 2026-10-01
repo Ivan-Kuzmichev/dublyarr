@@ -1,0 +1,60 @@
+# Реальные заголовки раздач из Jackett пользователя (через Home Hub, 2026-10-01). Хаб обрезает длинные заголовки — «…» в конце.
+# трекер	заголовок	размер ГБ	теги Jackett (как вернул хаб)
+RuTracker.org	Severance / S1E1-9 of 9 [2022, WEB-DL 1080p] Dub + Original + Sub (Rus, Eng, Heb, Ukr)	35.5	1080p, WEB-DL, дубляж, оригинал, субтитры
+RuTracker.org	Severance / S2E1-10 of 10 [2025, HDR10, HDR10+, Dolby Vision, WEB-DL 2160p] 6 x MVO (HDre…	102.1	2160p, WEB-DL, HDR, дубляж, многоголосый, оригинал, субтитры
+RuTracker.org	Severance / S1E1-9 of 9 [2022, BDRip 1080p] Dub + 4 x MVO (HDrezka Studio, AlexFilm, TVSh…	53.2	1080p, BluRay, дубляж, многоголосый, оригинал, субтитры
+RuTracker.org	Severance / S2E1-10 of 10 [2025, WEB-DL 720p] 6 x MVO + Dub (Red Head Sound) + VO + Origi…	27.5	720p, WEB-DL, дубляж, многоголосый, оригинал, субтитры
+RuTracker.org	Severance / S1E1-9 of 9 [2022, WEBRip] MVO (HDRezka Studio)	5.2	WEBRip, многоголосый
+RuTracker.org	Severance / S2E1-10 of 10 [2025, WEB-DL 1080p] Dub (Red Head Sound) + 6 x MVO (HDrezka St…	52.4	1080p, WEB-DL, дубляж, многоголосый, оригинал, субтитры
+RuTracker.org	Severance / S2E1-10 of 10 [2025, WEB-DL] MVO (HDRezka Studio)	6.6	WEB-DL, многоголосый
+Kinozal	Severance - S1E1-9 - 2022  MVO (LostFilm, HDRezka Studio), Sub HEVC WEBDL 1080p - RUSSIAN	9.6	1080p, WEB-DL, многоголосый, субтитры
+Kinozal	Severance - S1-2E1-19 - 2022-2025  MVO (LostFilm)  WEBDL - RUSSIAN	11.7	WEB-DL, многоголосый
+Kinozal	Severance - S2E1-10 - 2025  DUB, 5 x MVO, MVO (LE-Production), Sub 4K, HEVC, HDR, DV P8 W…	102.1	2160p, WEB-DL, HDR, дубляж, многоголосый, субтитры
+Kinozal	Severance - S1E1-9 - 2022  DUB, Sub HEVC WEBRip 1080p - RUSSIAN	10.8	1080p, WEBRip, дубляж, субтитры
+Kinozal	Severance - S1-2E1-19 - 2022-2025  MVO (AlexFilm), Sub WEBDL 720p - RUSSIAN	27.5	720p, WEB-DL, многоголосый, субтитры
+Kinozal	Severance - S1E1-9 - 2022  DUB, 4 x MVO, Sub Blu-Ray Remux 1080p - RUSSIAN	99.6	1080p, Remux, дубляж, многоголосый, субтитры
+Kinozal	Severance - S2E1-10 - 2025  DUB (Red Head Sound), MVO (HDrezka Studio, LostFilm, AlexFilm…	10.2	1080p, WEB-DL, дубляж, многоголосый, субтитры
+Kinozal	Severance - S2E1-10 - 2025  MVO (LostFilm), Sub  WEBDL - RUSSIAN	7	WEB-DL, многоголосый, субтитры
+Kinozal	Severance - S2E1-10 - 2025  DUB, 5 x MVO, AVO , MVO, Sub WEBDL 720p - RUSSIAN	27.5	720p, WEB-DL, дубляж, многоголосый, авторский, субтитры
+LostFilm.tv	Severance - S2 - rus WEBDL (LostFilm)	7.2	WEB-DL
+LostFilm.tv	Severance - S2 - rus 1080p WEBDL (LostFilm)	27	1080p, WEB-DL
+LostFilm.tv	Severance - S2 - rus 720p WEBDL (LostFilm)	15.2	720p, WEB-DL
+LostFilm.tv	The Bear - S5E8 - The Original Beef of Chicagoland - rus WEBDL (LostFilm)	0.9	WEB-DL, оригинал
+LostFilm.tv	The Bear - S5E8 - The Original Beef of Chicagoland - rus 1080p WEBDL (LostFilm)	3.3	1080p, WEB-DL, оригинал
+LostFilm.tv	The Bear - S5E8 - The Original Beef of Chicagoland - rus 720p WEBDL (LostFilm)	1.9	720p, WEB-DL, оригинал
+RUDUB	Разделение (Severance)S2E01-10 (WEBRip XviD) Полный S2	5.7	WEBRip
+RUDUB	Разделение (Severance)S2E01-10 (HD 720p WEBRip) Полный S2	15.3	720p, WEBRip
+RUDUB	Разделение (Severance)S2E01-10 (HD 1080p WEBRip) Полный S2	27.6	1080p, WEBRip
+RUDUB	Одни из нас (The Last of Us)S2E01-07 (HD 1080p WEBRip) Полный S2	21.1	1080p, WEBRip
+RUDUB	Медведь (The Bear)S5E00-08 (HD 1080p WEBRip) Полный S5	18.4	1080p, WEBRip
+RUDUB	Рик и Морти (Rick and Morty)S9E01-10 (WEBRip XviD) Полный S9	2.7	WEBRip
+RuTracker.org	The Last of Us / S2E1-7 of 7 [2025, WEB-DL] MVO (LostFilm) + Original + Sub (Rus, Eng)	5.3	WEB-DL, многоголосый, оригинал, субтитры
+RuTracker.org	The Last of Us / S2E1-7 of 7 [2025, HDR10, Dolby Vision, WEB-DL 2160p] [Hybrid] 10 x MVO …	75.7	2160p, WEB-DL, HDR, дубляж, многоголосый, оригинал, субтитры
+RuTracker.org	The Last of Us / S2E1-7 of 7 [2025, WEB-DL 720p] Dub (Red Head Sound) + Sub (Rus, Eng) + …	13.7	720p, WEB-DL, дубляж, оригинал, субтитры
+Kinozal	The Last of Us - S2E1-7 - 2025  DUB (Red Head Sound), Sub 4K, HEVC, HDR, Dolby Vision P7 …	207.5	2160p, Remux, HDR, дубляж, субтитры
+Kinozal	The Last of Us - S2E1-7 - 2025  MVO (HDRezka Studio, 1WIN Studio, RuDub) HEVC WEBRip 1080…	6.9	1080p, WEBRip, многоголосый
+RuTracker.org	Rick and Morty / S9E1-10 of 10 (Wesley Archer) [2026, WEB-DL 1080p] 2 x VO ( Syncmer) + U…	10.1	1080p, WEB-DL, оригинал, субтитры
+RuTracker.org	Rick and Morty / S1E1-21 of 21 [2013-2015, BDRip 1080p] VO + Original + Sub (Rus, Eng)	17.8	1080p, BluRay, оригинал, субтитры
+RuTracker.org	Rick and Morty / S2E10 of 10 [2015, BDRemux, AI upscaled to 2160p] VO + Original + Sub (R…	41.4	2160p, BluRay, оригинал, субтитры
+RuTracker.org	Rick and Morty / : 1-5 / E1-51 of 51 [2013-2021, BDRip, WEB-DL] VO + Original	18	WEB-DL, оригинал
+Kinozal	Rick and Morty - S8E1-10 - 2025  3 x MVO, VO, MVO, VO WEBDL 1080p - RUSSIAN	9.9	1080p, WEB-DL, многоголосый
+Kinozal	Rick and Morty - S9E1-10 - 2026  MVO (HDrezka Studio) WEBDL - RUSSIAN	3	WEB-DL, многоголосый
+Kinozal	Rick and Morty - S6E1-10 - 2022  MVO (NewComers) WEBRip 720p - RUSSIAN	5.4	720p, WEBRip, многоголосый
+Kinozal	The Bear - S5E0-8 - 2026  MVO (LostFilm, HDrezka Studio, Red Head Sound), Sub 4K, HEVC, H…	33.6	2160p, WEB-DL, HDR, многоголосый, субтитры
+Kinozal	The Bear - S5E1-8 - 2026  4 x MVO, DVO, Sub WEBDL 1080p - RUSSIAN	11.8	1080p, WEB-DL, многоголосый, двухголосый, субтитры
+Kinozal	Breaking Bear - S1E1-8 - 2026  MVO (RuDub) WEBDL 720p - RUSSIAN	1.9	720p, WEB-DL, многоголосый
+RuTracker.org	The Bear / S5E1-8 of 8 [2026, WEB-DL 720p] MVO (LostFilm) + MVO (HDrezka) + MVO (TVShows)…	7.3	720p, WEB-DL, многоголосый, оригинал, субтитры
+RuTracker.org	(S2) / Sousou no Frieren 2nd Season / Frieren: Beyond Journey's End Season 2 [TV] [E10 of…	14.1	1080p, WEB-DL, субтитры
+RuTracker.org	(S1) / Sousou no Frieren / Frieren: Beyond Journey's End [TV+Special] [E28+11 of 28+11] […	69.1	1080p, BluRay, оригинал, субтитры
+RuTracker.org	(S1) / Sousou no Frieren / Frieren: Beyond Journey's End [TV] [E28 of 28] [RUS(int), JAP+…	9.7	WEBRip, субтитры
+Anilibria	Провожающая в последний путь Фрирен / E01-E28 Sousou no Frieren - AniLiberty.TOP [WEBRip …	7.7	1080p, WEBRip
+Anilibria	Провожающая в последний путь Фрирен 2 / E01-E10 Sousou no Frieren 2nd Season - AniLiberty…	3	1080p, WEB-DL
+Anilibria	Медведь и жрица / E01-E12 Kuma Miko - AniLiberty.TOP [HDTVRip 720p][AVC][1-12]	4.2	720p, HDTV
+Anilibria	Поднятие уровня в одиночку 2: Восстаньте из тени / E01-E13 Ore dake Level Up na Ken Seaso…	3.8	1080p, WEBRip
+Kinozal	Sousou no Frieren - S1E1-28 - 2023-2024  DUB (StudioBand), MVO, Sub HEVC WEBRip 1080p - R…	13.1	1080p, WEBRip, дубляж, многоголосый, субтитры
+Kinozal	Sousou no Frieren - S2E1-10 - 2026  MVO (AniLiberty), Sub WEBDL 1080p - RUSSIAN	14.6	1080p, WEB-DL, многоголосый, субтитры
+Kinozal	Sousou no Frieren 2023-2024 DUB, 4 x MVO, Sub HEVC BDRip 1080p - RUSSIAN	41.3	1080p, BluRay, дубляж, многоголосый, субтитры
+Kinozal	Sousou no Frieren - S2E1-10 - 2026  DUB (StudioBand) WEBDL - RUSSIAN	3.2	WEB-DL, дубляж
+AniDUB	Sousou no Frieren  S02E01-E10 [RUS] [HDTV 1080p]	7.1	1080p, HDTV
+RuTracker.org	(S1) / Ore dake Level Up na Ken / Solo Leveling [TV] [E12 of 12] [RUS(ext), JAP+Sub] [202…	16.5	1080p, WEB-DL, субтитры
+RuTracker.org	S1E1-146 of ??? [2009-2024, WEBRip 576p]	14.5	SD, WEBRip
