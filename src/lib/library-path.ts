@@ -20,6 +20,7 @@ export function renderTemplate(template: string, v: TemplateVars, ext: string): 
     С: two(v.season),
     Е: two(v.episode),
     Студия: v.studio,
+    Перевод: v.studio, // фильм: тип перевода
     Качество: v.quality,
   };
   const parts = template

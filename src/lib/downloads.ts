@@ -3,6 +3,8 @@ import type { Db } from './db/client';
 import path from 'node:path';
 import { downloads, episodeFiles, episodes, oldCopies, releases, studios, subscriptions, titles, wantedState, type Download, type DownloadFile, type EpisodeRef, type Release } from './db/schema';
 import { DEFAULT_TEMPLATE, PathError, renderTemplate, toLocalPath } from './library-path';
+import { DEFAULT_MOVIE_TEMPLATE, mediaRoot, pickMovieFile } from './movie-files';
+import { MOVIE_EP } from './movies';
 import { importFile } from './importer';
 import { access } from 'node:fs/promises';
 import { restoreOldCopy, settleOldCopy, stashOldCopy } from './old-copies';
@@ -176,6 +178,18 @@ function externalIndexes(files: { index: number; name: string }[], season: numbe
 
 /** Пак: приоритет 0 всем, кроме файлов нужных серий; затем запуск. */
 async function selectAndStart(db: Db, qbit: Qbit, d: Download, files: DownloadFile[]): Promise<Download> {
+  if (d.kind === 'movie') {
+    // фильм: только основной видеофайл и внешние дорожки; сэмплы, трейлеры и бонусы не качаем
+    const pick = pickMovieFile(files);
+    if ('error' in pick) {
+      await qbit.remove([d.hash]);
+      return update(db, d.id, { state: 'error', files, lastError: pick.error });
+    }
+    const keep = new Set([pick.main, ...pick.external]);
+    const off = files.filter((f) => !keep.has(f.index)).map((f) => f.index);
+    if (off.length) await qbit.setFilePriority(d.hash, off, 0);
+    d = update(db, d.id, { files: files.map((f) => ({ ...f, priority: keep.has(f.index) ? 1 : 0 })) });
+  }
   if (d.kind === 'pack') {
     const map = filesForEpisodes(files, d.season, d.episodes.map((w) => w.number));
     const found = d.episodes.filter((w) => map.has(w.number));
@@ -378,10 +392,11 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
       res.errors++;
       continue;
     }
-    const wanted = d.kind === 'pack' ? qfiles.filter((f) => f.priority > 0) : qfiles;
+    const partial = d.kind === 'pack' || d.kind === 'movie'; // включены не все файлы раздачи
+    const wanted = partial ? qfiles.filter((f) => f.priority > 0) : qfiles;
     const total = wanted.reduce((n, f) => n + f.size, 0);
-    const progress = d.kind === 'pack' && total > 0 ? wanted.reduce((n, f) => n + f.progress * f.size, 0) / total : t.progress;
-    const done = d.kind === 'pack' ? wanted.length > 0 && wanted.every((f) => f.progress >= 1) : t.progress >= 1;
+    const progress = partial && total > 0 ? wanted.reduce((n, f) => n + f.progress * f.size, 0) / total : t.progress;
+    const done = partial ? wanted.length > 0 && wanted.every((f) => f.progress >= 1) : t.progress >= 1;
     const lastSeededAt = t.num_seeds > 0 ? now : d.lastSeededAt;
     const paused = /^(stopped|paused)/i.test(t.state);
     const stalled = !done && t.num_seeds === 0 && now - (lastSeededAt ?? d.addedAt) > DAY;
@@ -426,6 +441,7 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
 async function importDownload(db: Db, d: Download, savePath: string, files: { index: number; name: string; size: number; progress?: number }[], paths: Paths, now: number, runner: Runner): Promise<EpisodeRef[]> {
   const title = db.select().from(titles).where(eq(titles.id, d.titleId)).get();
   if (!title) throw new Error('Сериал удалён');
+  if (title.kind === 'movie') return importMovie(db, d, title, savePath, files, paths, now, runner);
   const map = filesForEpisodes(files, d.season, d.episodes.filter((e) => e.season === d.season).map((e) => e.number));
   const found = d.episodes.filter((ep) => map.has(ep.number) && files.some((f) => f.index === map.get(ep.number)![0]));
   if (!found.length) throw new Error(`нет файла ${code(d.episodes[0])}`);
@@ -462,6 +478,43 @@ async function importDownload(db: Db, d: Download, savePath: string, files: { in
   return found;
 }
 
+// Фильм: в медиатеке — папка фильмов; файл — основной видеофайл раздачи под условным номером S00E00.
+const MOVIE_AUDIO = [
+  { id: -1, name: 'Дубляж', aliases: ['Dub', 'Dubbing', 'Дубляж', 'Дублированный', 'Дублирование'] },
+  { id: -2, name: 'Многоголосый', aliases: ['MVO', 'DVO', 'Многоголосый', 'Двухголосый'] },
+];
+
+async function importMovie(db: Db, d: Download, title: typeof titles.$inferSelect, savePath: string, files: { index: number; name: string; size: number; progress?: number }[], paths: Paths, now: number, runner: Runner): Promise<EpisodeRef[]> {
+  const root = mediaRoot(paths, 'movie');
+  if (!root) throw new Error('не задана папка фильмов');
+  const pick = pickMovieFile(files);
+  if ('error' in pick) throw new Error(pick.error);
+  const view: Paths = { ...paths, media: root, template: paths.movieTemplate || DEFAULT_MOVIE_TEMPLATE };
+  const ctx = processingContext(db, d, title, files, savePath, view, runner);
+  const ext = new Set(pick.external);
+  const settings = getProcessing(db);
+  const local = (name: string) => toLocalPath(`${savePath.replace(/\/+$/, '')}/${name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
+  const main = files.find((f) => f.index === pick.main)!;
+  const movieCtx: ProcessingContext = {
+    ...ctx,
+    episodesInFile: () => 1,
+    externalFor: () =>
+      settings.external
+        ? findExternal(files.filter((f) => ext.has(f.index) && (f.progress === undefined || f.progress >= 1)).map((f) => f.name), main.name, 0, 0, true).map((e) => ({ ...e, path: local(e.path) }))
+        : [],
+  };
+  update(db, d.id, { processing: true });
+  try {
+    await importEpisode(db, d, MOVIE_EP, title, savePath, main, view, now, movieCtx);
+  } catch (e) {
+    if (e instanceof WrongEpisodeError) throw Object.assign(e, { episodes: [MOVIE_EP] });
+    throw e;
+  } finally {
+    update(db, d.id, { processing: false });
+  }
+  return [MOVIE_EP];
+}
+
 type ProcessingContext = {
   base: Omit<Parameters<typeof processEpisode>[0], 'src' | 'targetDir' | 'runtime' | 'external' | 'episodesInFile' | 'allowRemux'>;
   externalFor: (fileName: string, ep: EpisodeRef) => External[];
@@ -477,12 +530,14 @@ function processingContext(db: Db, d: Download, title: typeof titles.$inferSelec
   const dubs = sub?.profile.dubs ?? [];
   const pos = d.dubPosition !== null ? dubs[d.dubPosition] : undefined;
   const byLabel = allStudios.find((s) => d.studioLabel && [s.name, ...s.aliases].some((v) => normalizeStudio(v) === normalizeStudio(d.studioLabel!)));
-  const wanted = pos?.kind === 'studio' ? [pos.studioId] : byLabel ? [byLabel.id] : [];
-  const backups = dubs.flatMap((x, i) => (x.kind === 'studio' && i !== d.dubPosition ? [x.studioId] : []));
+  const movie = title.kind === 'movie';
+  // фильм: нужная дорожка — по типу перевода («Dub …», «MVO …»), а не по студии
+  const wanted = movie ? (pos?.kind === 'dub' ? [-1] : pos?.kind === 'mvo' ? [-2] : []) : pos?.kind === 'studio' ? [pos.studioId] : byLabel ? [byLabel.id] : [];
+  const backups = movie ? [] : dubs.flatMap((x, i) => (x.kind === 'studio' && i !== d.dubPosition ? [x.studioId] : []));
   const local = (name: string) => toLocalPath(`${savePath.replace(/\/+$/, '')}/${name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
   const videos = files.filter((f) => isVideo(f.name));
   return {
-    base: { runner, settings, wanted, backups, originalLang: title.originalLanguage, studios: allStudios.map((s) => ({ id: s.id, name: s.name, aliases: s.aliases })) },
+    base: { runner, settings, wanted, backups, originalLang: title.originalLanguage, studios: movie ? MOVIE_AUDIO : allStudios.map((s) => ({ id: s.id, name: s.name, aliases: s.aliases })) },
     episodesInFile: (fileName) => {
       const f = files.find((x) => x.name === fileName);
       if (!f) return 1;
@@ -516,7 +571,10 @@ async function importEpisode(
   ctx: ProcessingContext,
 ) {
   const src = toLocalPath(`${savePath.replace(/\/+$/, '')}/${file.name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
-  const runtime = db.select({ r: episodes.runtime }).from(episodes).where(and(eq(episodes.titleId, d.titleId), eq(episodes.season, ep.season), eq(episodes.number, ep.number))).get()?.r ?? null;
+  const runtime =
+    title.kind === 'movie'
+      ? title.runtime
+      : (db.select({ r: episodes.runtime }).from(episodes).where(and(eq(episodes.titleId, d.titleId), eq(episodes.season, ep.season), eq(episodes.number, ep.number))).get()?.r ?? null);
   await mkdir(paths.media, { recursive: true });
   // уже импортировано этой загрузкой и файл на месте — не пересобирать заново на каждом повторе
   const mine = db
@@ -536,11 +594,12 @@ async function importEpisode(
     external: ctx.externalFor(file.name, ep),
     episodesInFile: ctx.episodesInFile(file.name),
     allowRemux: ctx.budget.remux > 0,
+    movie: title.kind === 'movie',
   });
   if (proc.kind === 'remux') ctx.budget.remux--;
   const quality = (proc.probe ? resolutionOf(proc.probe) : null) ?? d.resolution;
   const rel = renderTemplate(
-    paths.template || DEFAULT_TEMPLATE,
+    paths.template || (title.kind === 'movie' ? DEFAULT_MOVIE_TEMPLATE : DEFAULT_TEMPLATE),
     { name: title.nameRu, original: title.nameOriginal, year: title.year, season: ep.season, episode: ep.number, studio: d.studioLabel ?? '', quality: quality ? `${quality}p` : '' },
     proc.kind === 'remux' ? '.mkv' : path.extname(file.name),
   );

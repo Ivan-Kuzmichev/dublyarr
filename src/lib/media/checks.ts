@@ -5,6 +5,16 @@ const fmt = (sec: number) => {
   return m >= 60 ? `${Math.floor(m / 60)} ч ${m % 60} мин` : `${m} мин`;
 };
 
+/** Фильм: длительность против TMDB (запас на режиссёрские версии); без длительности — короче 40 мин похоже на серию. */
+export function wrongMovie(durationSec: number | null, runtimeMin: number | null): string | null {
+  if (!durationSec) return null;
+  if (runtimeMin) {
+    const ratio = durationSec / 60 / runtimeMin;
+    return ratio < 0.6 || ratio > 2 ? `Не тот фильм: ${fmt(durationSec)} вместо ~${runtimeMin} мин` : null;
+  }
+  return durationSec < 40 * 60 ? `Похоже на серию: ${fmt(durationSec)}` : null;
+}
+
 /** Причина, если файл явно не серия; null — похоже на серию (или проверить нечем). */
 export function wrongEpisode(durationSec: number | null, runtimeMin: number | null, episodesInFile = 1): string | null {
   if (!durationSec) return null;
