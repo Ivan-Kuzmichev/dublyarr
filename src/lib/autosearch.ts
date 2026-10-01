@@ -7,6 +7,7 @@ import { listStudios } from './studios';
 import type { Profile } from './profile-core';
 import { searchTitle, type SearchOptions } from './search';
 import { evaluateReleases, type Verdict } from './evaluate';
+import { betterVerdict, upgradeCandidates, upgradeNote } from './upgrade';
 import { planEpisode, seasonFinished, coversWholeSeason, claimedSeasonTotal } from './plan';
 import { activeDownloads, enableFiles, releaseStalled, startRelease, type DownloadDeps, type Paths } from './downloads';
 import type { Qbit } from './qbit';
@@ -57,7 +58,8 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   const profile = sub.profile;
   const seasons = listSeasons(db, titleId);
   const eps = seasons.flatMap((s) => listEpisodes(db, titleId, s.number));
-  const have = new Set(db.select().from(episodeFiles).where(eq(episodeFiles.titleId, titleId)).all().map(key));
+  const fileRows = db.select().from(episodeFiles).where(eq(episodeFiles.titleId, titleId)).all();
+  const have = new Set(fileRows.map(key));
   // застрявшие (сутки без сидов) не считаются «уже качается» — для их серий ищем замену
   const stalled = activeDownloads(db, titleId).filter((d) => d.state === 'stalled');
   const stuck = new Set(stalled.flatMap((d) => d.episodes.map(key)));
@@ -68,7 +70,9 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   const wantedKeys = new Set(wanted.map(key));
   for (const w of db.select().from(wantedState).where(eq(wantedState.titleId, titleId)).all())
     if (!wantedKeys.has(key(w))) clearWanted(db, titleId, w);
-  if (!need.length) return res;
+  // скачанные серии, которые стоит улучшить (озвучка выше по приоритету, целевое качество)
+  const upgrades = upgradeCandidates(sub, fileRows, eps, today).filter((f) => !busy.has(key(f)));
+  if (!need.length && !upgrades.length) return res;
 
   // «Сезон целиком после финала»: незаконченные сезоны ждут, законченные качаются одним паком.
   // Сезон с сериями без даты решается после поиска — по паку, заявляющему весь сезон.
@@ -89,7 +93,7 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
     }
     need = [];
   }
-  if (!need.length && !finished.length && !maybe.length) return res;
+  if (!need.length && !finished.length && !maybe.length && !upgrades.length) return res;
 
   const { releases } = await searchTitle(db, titleId, deps.searchOpts);
   // отвергнутые раздачи: убранная из клиента — целиком, с ошибкой «нет файла» — только для тех серий
@@ -112,7 +116,8 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   const dl: DownloadDeps | null = deps.qbit ? { qbit: deps.qbit, fetchTorrent: deps.fetchTorrent, paths: { qbitDownloads: deps.paths.qbitDownloads ?? deps.paths.downloads }, now } : null;
 
   // Что запустить: раздача → серии (серии одного пака — одной загрузкой).
-  const starts = new Map<number, { release: Release; eps: EpisodeRef[]; kind: 'episode' | 'pack' | 'season'; label: string | null }>();
+  type Start = { release: Release; eps: EpisodeRef[]; kind: 'episode' | 'pack' | 'season'; label: string | null; dubPosition: number | null; note?: string; upgrade?: boolean };
+  const starts = new Map<number, Start>();
 
   const seasonTargets = [...finished];
   for (const s of maybe) {
@@ -139,7 +144,7 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
       continue;
     }
     const r = byId.get(best.releaseId)!;
-    starts.set(r.id, { release: r, eps: seasonEps, kind: 'season', label: studioFor(profile, best, r, names) });
+    starts.set(r.id, { release: r, eps: seasonEps, kind: 'season', label: studioFor(profile, best, r, names), dubPosition: best.position });
   }
 
   const active = activeDownloads(db, titleId).filter((d) => d.state !== 'stalled');
@@ -177,10 +182,22 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
     }
     const r = byId.get(plan.releaseId)!;
     const v = verdicts.find((x) => x.releaseId === r.id);
-    const entry = starts.get(r.id) ?? { release: r, eps: [], kind: plan.action === 'add-pack' ? ('pack' as const) : ('episode' as const), label: studioFor(profile, v, r, names) };
+    const entry = starts.get(r.id) ?? { release: r, eps: [], kind: plan.action === 'add-pack' ? ('pack' as const) : ('episode' as const), label: studioFor(profile, v, r, names), dubPosition: v?.position ?? null };
     entry.eps.push(ep);
     starts.set(r.id, entry);
   }
+
+  // улучшения — отдельными загрузками с подписью; статусы «нужна» их не касаются
+  if (dl)
+    for (const f of upgrades) {
+      const ep = { season: f.season, number: f.number };
+      const verdicts = evaluateReleases(usableFor(ep), ctx, { season: f.season, episode: f.number });
+      const v = betterVerdict(f, verdicts, byId, profile.quality.target);
+      if (!v) continue;
+      const r = byId.get(v.releaseId)!;
+      if (starts.has(r.id)) continue; // раздача уже идёт для нужных серий — улучшение в следующий раз
+      starts.set(r.id, { release: r, eps: [ep], kind: r.parsed.pack ? 'pack' : 'episode', label: studioFor(profile, v, r, names), dubPosition: v.position, note: upgradeNote(f, r, v, profile, (id) => names.get(id)), upgrade: true });
+    }
 
   if (!dl) {
     for (const s of starts.values()) for (const e of s.eps) setWanted(db, titleId, e, 'missing', 'qBittorrent не подключён', null, now);
@@ -188,7 +205,11 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   }
   for (const s of starts.values()) {
     try {
-      const d = await startRelease(db, dl, s.release, s.eps, s.kind, s.label);
+      const d = await startRelease(db, dl, s.release, s.eps, s.kind, s.label, { dubPosition: s.dubPosition, note: s.note });
+      if (s.upgrade) {
+        if (d.state !== 'error') res.started++;
+        continue;
+      }
       if (d.state === 'error') for (const e of s.eps) setWanted(db, titleId, e, 'missing', d.lastError ?? 'Ошибка загрузки', null, now);
       else {
         for (const e of s.eps) clearWanted(db, titleId, e);
@@ -201,6 +222,7 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       log.warn({ titleId, release: s.release.id, err: msg }, 'start failed');
+      if (s.upgrade) continue;
       for (const ep of s.eps) setWanted(db, titleId, ep, 'missing', msg, null, now);
       res.missing += s.eps.length;
     }

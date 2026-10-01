@@ -205,3 +205,25 @@ test('сезон без дат: «весь сезон» заявляют тол�
   expect(ws.length).toBeGreaterThan(0);
   expect(ws.every((w) => w.reason === 'Ждём финал сезона')).toBe(true);
 });
+
+test('серия в запасной озвучке меняется на приоритетную; статуса «нужна» нет', async () => {
+  const { db, t, deps, profile } = await setup();
+  const lf = findStudioByAlias(db, 'LostFilm')!;
+  subscribe(db, t.id, profile({ dubs: [{ kind: 'studio', studioId: lf.id, waitDays: 0 }, { kind: 'any', waitDays: 0 }] }), 1);
+  setAir(db, t.id, 1, '2026-09-28');
+  setAir(db, t.id, 3, '2026-10-20');
+  db.insert(episodeFiles).values({ titleId: t.id, season: 1, number: 1, path: 'x/1.mkv', size: 1, method: 'hardlink', importedAt: 1, studioLabel: 'Кураж-Бамбей', resolution: 720, dubPosition: 1 }).run();
+  db.insert(episodeFiles).values({ titleId: t.id, season: 1, number: 2, path: 'x/2.mkv', size: 1, method: 'hardlink', importedAt: 1, studioLabel: 'LostFilm', resolution: 1080, dubPosition: 0 }).run();
+  const r = await searchSubscription(db, t.id, deps);
+  expect(r.started).toBe(1);
+  expect(db.select().from(downloads).get()).toMatchObject({ episodes: [{ season: 1, number: 1 }], dubPosition: 0, note: 'Улучшение: Кураж-Бамбей → LostFilm', studioLabel: 'LostFilm' });
+  expect(db.select().from(wantedState).all()).toEqual([]);
+  expect((await searchSubscription(db, t.id, deps)).started).toBe(0); // уже качается
+});
+
+test('обычная загрузка запоминает позицию профиля', async () => {
+  const { db, t, deps, profile } = await setup();
+  subscribe(db, t.id, profile(), 1);
+  await searchSubscription(db, t.id, deps);
+  expect(db.select().from(downloads).get()!.dubPosition).toBe(0);
+});

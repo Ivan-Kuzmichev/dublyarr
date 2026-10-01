@@ -99,7 +99,7 @@ export function activityQueue(db: Db, now = Date.now()): QueueRow[] {
     .sort((a, b) => group(a.d) - group(b.d))
     .map(({ d, tmdbId, title, topic }) => {
       const st = stateOf(d, now);
-      const watched = topic && d.kind === 'pack' && ACTIVE.has(d.state) ? 'Пак · следим за обновлениями · ' : '';
+      const watched = (d.note && ACTIVE.has(d.state) ? `${d.note} · ` : '') + (topic && d.kind === 'pack' && ACTIVE.has(d.state) ? 'Пак · следим за обновлениями · ' : '');
       return {
         id: d.id,
         hash: d.hash,

@@ -66,6 +66,7 @@ export async function startRelease(
   want: EpisodeRef[],
   kind: 'episode' | 'pack' | 'season',
   studioLabel: string | null,
+  opts: { dubPosition?: number | null; note?: string } = {},
 ): Promise<Download> {
   const now = deps.now ?? Date.now();
   const torrent = await deps.fetchTorrent(release);
@@ -112,6 +113,8 @@ export async function startRelease(
     name: release.title,
     studioLabel,
     resolution: release.parsed.resolution,
+    dubPosition: opts.dubPosition ?? null,
+    note: opts.note ?? null,
     addedAt: now,
     lastError: null,
     completedAt: null,
@@ -248,6 +251,7 @@ export async function switchTorrent(db: Db, deps: DownloadDeps, old: Download, t
       name: old.name,
       studioLabel: old.studioLabel,
       resolution: old.resolution,
+      dubPosition: old.dubPosition,
       addedAt: now,
     })
     .returning()
@@ -409,7 +413,7 @@ async function importEpisode(
     .get();
   if (own?.downloadId === d.id && own.path === rel) return;
   const r = await importFile(src, paths.media, rel, undefined, { replace: own?.path === rel });
-  const row = { titleId: d.titleId, season: ep.season, number: ep.number, path: rel, size: file.size, downloadId: d.id, studioLabel: d.studioLabel, resolution: d.resolution, method: r.method, importedAt: now };
+  const row = { titleId: d.titleId, season: ep.season, number: ep.number, path: rel, size: file.size, downloadId: d.id, studioLabel: d.studioLabel, resolution: d.resolution, method: r.method, importedAt: now, dubPosition: d.dubPosition };
   db.insert(episodeFiles)
     .values(row)
     .onConflictDoUpdate({ target: [episodeFiles.titleId, episodeFiles.season, episodeFiles.number], set: row })
