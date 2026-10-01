@@ -187,6 +187,22 @@ Self-hosted сервис для одного пользователя: подп�
   «Обучить сейчас» (`laya.train-now`), «не хуже» по log-loss на отложенных 20 % (id % 5), 3 версии + базовая, откат; несовместимая версия `laya`/модели — базовая и переобучение.
 - Экраны: «Настройки → AI» `/settings/ai`, «Дообучение» `/settings/ai/training`, варианты от Laya — карточка в словаре студий.
 
+## Решения (2.1 — API, диагностика, источники)
+
+- Логи: `logger(area)` (`src/lib/log.ts`, постоянная ручка — можно держать в константе модуля), области `LOG_AREAS`, уровни — `app_settings['logging']`
+  (`src/lib/log-settings.ts`, процессы перечитывают раз в 10 с через `getDb`); `LOG_LEVEL` — только начальное значение.
+  Дети пишут JSON в stdout, супервизор — в `/data/logs/dublyarr.log` (10 МБ × 5, `src/entry/log-sink.ts`); чтение — `src/lib/log-read.ts`.
+  Экран — «Настройки → Диагностика» (`/settings/diagnostics`: уровни, журнал, сверка с qBittorrent `src/lib/reconcile.ts`, задачи `src/lib/diagnostics.ts`).
+- API: `/api/v1/*` (`src/app/api/v1/[...path]/route.ts` → `src/lib/api/router.ts`, `read.ts`, `write.ts`, `settings-sections.ts`), токены `api_tokens` (только хэш), выключен по умолчанию.
+  Только локальная сеть: все адреса `X-Forwarded-For`/`X-Real-IP`/`Forwarded` частные (`src/lib/api/lan.ts`; Next ставит XFF = сокет, Pangolin — внешний адрес → 403).
+  «Безопасность», ключ TMDB и бот Telegram через API не меняются. Обработчики зовут те же функции, что actions (`downloadRelease` — `src/lib/manual-download.ts`; JSON → `toFormData` → парсеры форм).
+- Источники: `sources.kind` = `jackett` (адрес без пути, `endpointFor`; адрес одного трекера сохраняется) | `jacred` (JSON `/api/v1.0/torrents`, `src/lib/jacred.ts`,
+  по одному запросу с паузой 1 с, 429 → пауза по Retry-After ≤ 10 с) | `torznab` (полный адрес). Сохранение и проверка — `saveSource` (`src/lib/source-save.ts`).
+- Загрузки: после `add` — ждать появления торрента (`waitForTorrent`, до 15 с), после старта — перепроверка файлов и запуска; синхронизация перезапускает остановленные
+  не пользователем (`downloads.paused_by_user`) и не расписанием, больше 3 раз за час — ошибка; пак с выключенными файлами — перевыбор. Пауза прямо в qBittorrent будет снята.
+- «Сегодня → Новые серии»: кадр серии (`episodes.still_path`) → фон → постер.
+- e2e: `13-api-diagnostics` (API, токен, журнал, «Диагностика»).
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
