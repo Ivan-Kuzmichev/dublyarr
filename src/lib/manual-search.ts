@@ -1,7 +1,9 @@
 import { isMovieProfile } from './movie-profile';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { releases, titles, type Release } from './db/schema';
+import { layaExamples, releases, titles, type Release } from './db/schema';
+import { matchInput, studioInput } from './laya/review';
+import { addExample, lastLayaAnswer, markFinalAnswer } from './laya/examples';
 import { getTitleByTmdbId, listEpisodes, listSeasons } from './catalog';
 import { getSubscription } from './subscriptions';
 import { getDefaultProfile, getMovieDefault } from './profile';
@@ -65,6 +67,10 @@ export async function runManualMovieSearch(db: Db, tmdbId: number, opts: SearchO
 
 /** «Назначить студию»: подпись из заголовка становится вариантом написания студии (или новой студией). */
 export function assignStudio(db: Db, titleId: number, a: { label: string; studioId: number } | { label: string; newName: string }) {
+  // пример для Laya — тот же вопрос, что она увидела бы (до того, как подпись попала в словарь)
+  const title = db.select().from(titles).where(eq(titles.id, titleId)).get();
+  const sample = db.select().from(releases).where(eq(releases.titleId, titleId)).all().find((r) => r.parsed.dubs.some((d) => normalizeStudio(d.label) === normalizeStudio(a.label)));
+  const input = title && sample ? studioInput(db, title, sample, a.label) : null;
   if ('studioId' in a) {
     const s = listStudios(db).find((x) => x.id === a.studioId);
     if (!s) throw new Error('Студия не найдена');
@@ -73,13 +79,25 @@ export function assignStudio(db: Db, titleId: number, a: { label: string; studio
   } else {
     createStudio(db, { name: a.newName, aliases: normalizeStudio(a.newName) === normalizeStudio(a.label) ? [] : [a.label], kind: 'both', trackers: [] });
   }
+  if (input) {
+    const label = 'studioId' in a ? listStudios(db).find((x) => x.id === a.studioId)!.name : a.newName;
+    const { key, ...rest } = input;
+    addExample(db, { task: 'studio', key, input: rest, label, laya: lastLayaAnswer(db, 'studio', key)?.laya, source: 'studio-assign', title: a.label });
+  }
   reparseReleases(db, titleId);
 }
 
 /** Ответ «это он / не он» — правило для трекера и основы заголовка. */
-export function answerMatch(db: Db, titleId: number, releaseId: number, verdict: 'match' | 'reject') {
+export function answerMatch(db: Db, titleId: number, releaseId: number, verdict: 'match' | 'reject', source: 'match-answer' | 'telegram' = 'match-answer') {
   const r = db.select().from(releases).where(eq(releases.id, releaseId)).get();
   if (!r || r.titleId !== titleId) throw new Error('Раздача не найдена');
+  const title = db.select().from(titles).where(eq(titles.id, titleId)).get()!;
+  // пример «тот ли сериал»: тот же вопрос, что у Laya (признаки — до правила пользователя: повторный ответ берёт прежние)
+  const fresh = matchInput(title, r);
+  const prev = db.select().from(layaExamples).where(and(eq(layaExamples.task, 'match'), eq(layaExamples.key, fresh.key))).get();
+  const input = prev?.input ?? { state: fresh.state, question: fresh.question, features: fresh.features };
+  addExample(db, { task: 'match', key: fresh.key, input, label: verdict === 'match', laya: lastLayaAnswer(db, 'match', fresh.key)?.laya, source, title: r.title });
+  if (verdict === 'reject') markFinalAnswer(db, title, r, false);
   addRule(db, titleId, r.trackerName, r.title, verdict);
   reparseReleases(db, titleId);
 }

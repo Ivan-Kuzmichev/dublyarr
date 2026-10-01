@@ -19,6 +19,7 @@ import { isMovieProfile, MOVIE_DUB_LABEL } from '@/lib/movie-profile';
 import { getMovieDefault } from '@/lib/profile';
 import { movieKinds } from '@/lib/movie-evaluate';
 import { MOVIE_EP } from '@/lib/movies';
+import { markFinalAnswer } from '@/lib/laya/examples';
 
 export type AssignState = { ok?: boolean; error?: string };
 
@@ -103,6 +104,7 @@ export async function downloadAction(_prev: DownloadState, form: FormData): Prom
       label,
     );
     if (d.state === 'error') return { error: d.lastError ?? 'Ошибка загрузки' };
+    markFinalAnswer(db, t.title, release, true); // скачал вручную то, что отклонила Laya, — пример «да»
     for (const e of want)
       db.delete(wantedState).where(and(eq(wantedState.titleId, t.title.id), eq(wantedState.season, e.season), eq(wantedState.number, e.number))).run();
   } catch (e) {
@@ -130,6 +132,7 @@ async function downloadMovie(title: Title, releaseId: number): Promise<DownloadS
   try {
     const d = await startRelease(db, { qbit, fetchTorrent: (r) => fetchTorrentFile(r), paths: { qbitDownloads: paths.qbitDownloads ?? paths.downloads } }, release, [MOVIE_EP], 'movie', label, { dubPosition: pos >= 0 ? pos : null });
     if (d.state === 'error') return { error: d.lastError ?? 'Ошибка загрузки' };
+    markFinalAnswer(db, title, release, true);
     db.delete(wantedState).where(and(eq(wantedState.titleId, title.id), eq(wantedState.season, 0), eq(wantedState.number, 0))).run();
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };

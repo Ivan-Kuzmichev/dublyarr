@@ -77,7 +77,7 @@ async function onButton(db: Db, tg: Telegram, q: NonNullable<import('./telegram'
     await tg.answerCallback(q.id, 'Уже решено');
     return 0;
   }
-  answerMatch(db, r.titleId, r.id, kind === 'm' ? 'match' : 'reject');
+  answerMatch(db, r.titleId, r.id, kind === 'm' ? 'match' : 'reject', 'telegram');
   enqueue(db, 'subscriptions.search');
   if (note) db.update(notifications).set({ answer: kind === 'm' ? 'match' : 'reject' }).where(eq(notifications.id, note.id)).run();
   await tg.answerCallback(q.id, 'Отмечено');
