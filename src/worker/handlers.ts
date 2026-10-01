@@ -10,6 +10,8 @@ import { searchAll, searchDueTitles } from '../lib/autosearch';
 import { getSchedule } from '../lib/schedule';
 import { applySpeed } from '../lib/speed';
 import { getCleanup, runCleanup } from '../lib/cleanup';
+import { createTelegram, getTelegramSettings, telegramProxy } from '../lib/telegram';
+import { sendPending } from '../lib/notify';
 import { checkPacks } from '../lib/pack-watch';
 import { getSetting } from '../lib/settings';
 import { beat } from '../lib/heartbeat';
@@ -58,6 +60,13 @@ async function packsJob(db: Db) {
   if (r.checked) log.info(r, 'packs check done');
 }
 
+/** Клиент и чат Telegram, если бот настроен и чат привязан. */
+function telegramFor(db: Db) {
+  const s = getTelegramSettings(db);
+  if (!s?.token || !s.chatId) return null;
+  return { client: createTelegram({ token: s.token, proxy: telegramProxy(db, s) }), chatId: s.chatId };
+}
+
 export const buildHandlers = (db: Db): Record<string, Handler> => ({
   'downloads.sync': () => syncJob(db),
   'subscriptions.search': async () => {
@@ -75,6 +84,12 @@ export const buildHandlers = (db: Db): Record<string, Handler> => ({
     if (r.titles && !getSchedule(db).packChecks) await packsJob(db);
   },
   'packs.check': () => packsJob(db),
+  'telegram.send': async () => {
+    const tg = telegramFor(db);
+    if (!tg) return;
+    const r = await sendPending(db, tg.client, tg.chatId);
+    if (r.sent || r.failed) log.info(r, 'telegram send');
+  },
   'cleanup.run': async () => {
     const qbit = getQbit(db);
     const paths = getSetting<Paths>(db, 'paths');
