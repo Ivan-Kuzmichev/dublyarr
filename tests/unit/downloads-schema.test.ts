@@ -1,6 +1,7 @@
 import { expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { testDb } from './helpers';
+import { eq } from 'drizzle-orm';
 import { downloads, episodeFiles, wantedState, titles, releases, sources } from '@/lib/db/schema';
 import type { ParsedRelease } from '@/lib/parse/types';
 
@@ -28,4 +29,15 @@ test('загрузки, файлы серий, состояние серий: у
   expect(db.select().from(downloads).all()).toEqual([]);
   expect(db.select().from(episodeFiles).all()).toEqual([]);
   expect(db.select().from(wantedState).all()).toEqual([]);
+});
+
+test('заменённая загрузка: ссылка на замену и заметка', () => {
+  const db = testDb();
+  const t = db.insert(titles).values({ tmdbId: 1, kind: 'series', nameRu: 'A', nameOriginal: 'A', originalLanguage: 'en', status: 'returning', createdAt: 1, refreshedAt: 1 }).returning().get();
+  const base = { titleId: t.id, season: 1, kind: 'pack' as const, episodes: [], name: 'A', size: 1, addedAt: 1 };
+  const n = db.insert(downloads).values({ ...base, hash: 'new', state: 'downloading' }).returning().get();
+  const o = db.insert(downloads).values({ ...base, hash: 'old', state: 'replaced', replacedById: n.id, note: 'Обновлена: +серия 3' }).returning().get();
+  expect(o).toMatchObject({ state: 'replaced', replacedById: n.id, note: 'Обновлена: +серия 3' });
+  db.delete(downloads).where(eq(downloads.id, n.id)).run();
+  expect(db.select().from(downloads).get()!.replacedById).toBeNull();
 });

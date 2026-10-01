@@ -1,7 +1,7 @@
 import type { ParsedRelease } from '../parse/types';
 import type { MatchResult } from '../match-types';
 import type { Profile } from '../profile';
-import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, uniqueIndex, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 
 /** Время — миллисекунды unix. */
 const ts = (name: string) => integer(name, { mode: 'number' });
@@ -282,7 +282,7 @@ export const downloads = sqliteTable(
     kind: text('kind', { enum: ['episode', 'pack', 'season'] }).notNull(),
     episodes: json<EpisodeRef[]>('episodes').notNull().default([]), // что из этой раздачи нужно
     files: json<DownloadFile[]>('files'), // снимок файлов раздачи с приоритетами
-    state: text('state', { enum: ['adding', 'downloading', 'paused', 'stalled', 'completed', 'imported', 'error', 'removed'] }).notNull(),
+    state: text('state', { enum: ['adding', 'downloading', 'paused', 'stalled', 'completed', 'imported', 'error', 'removed', 'replaced'] }).notNull(),
     progress: real('progress').notNull().default(0),
     dlSpeed: integer('dl_speed').notNull().default(0),
     eta: integer('eta'),
@@ -296,6 +296,8 @@ export const downloads = sqliteTable(
     importedAt: ts('imported_at'),
     lastSeededAt: ts('last_seeded_at'),
     lastError: text('last_error'),
+    replacedById: integer('replaced_by_id').references((): AnySQLiteColumn => downloads.id, { onDelete: 'set null' }),
+    note: text('note'),
   },
   (t) => [index('downloads_title_state').on(t.titleId, t.state)],
 );

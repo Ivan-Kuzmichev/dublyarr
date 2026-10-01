@@ -43,6 +43,13 @@
       "when": 1790845705218,
       "tag": "0005_material_triton",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1790849664358,
+      "tag": "0006_slimy_shadow_king",
+      "breakpoints": true
     }
   ]
 }
