@@ -1,21 +1,15 @@
 import { log, redactUrl } from '../log';
+import { torznabCaps, TorznabError } from '../torznab';
 
 type Result = { ok: true; categories: number } | { ok: false; error: string };
 
-const reason = (e: unknown) => (e instanceof Error ? e.message : String(e));
-
 /** Проверка Torznab-источника (Jackett/Prowlarr) запросом t=caps. */
-export async function checkTorznab(s: { url: string; apiKey: string }, fetchImpl: typeof fetch = fetch): Promise<Result> {
-  const base = s.url.trim();
-  const url = `${base}${base.includes('?') ? '&' : '?'}t=caps&apikey=${encodeURIComponent(s.apiKey)}`;
+export async function checkTorznab(s: { url: string; apiKey: string; timeoutMs?: number }, fetchImpl: typeof fetch = fetch): Promise<Result> {
   try {
-    const res = await fetchImpl(url, { signal: AbortSignal.timeout(15_000) });
-    const xml = await res.text();
-    if (/<error[^>]*code="100"/.test(xml)) return { ok: false, error: 'Неверный API-ключ' };
-    if (!/<caps[\s>]/.test(xml)) return { ok: false, error: 'Ответ не похож на Torznab' };
-    return { ok: true, categories: (xml.match(/<category\s/g) ?? []).length };
+    return { ok: true, ...(await torznabCaps({ url: s.url, apiKey: s.apiKey, timeoutMs: s.timeoutMs ?? 15_000 }, fetchImpl)) };
   } catch (e) {
-    log.warn({ url: redactUrl(url), err: reason(e) }, 'torznab caps failed');
-    return { ok: false, error: `Источник не отвечает: ${reason(e)}` };
+    const error = e instanceof TorznabError ? e.message : `Источник не отвечает: ${e instanceof Error ? e.message : String(e)}`;
+    log.warn({ url: redactUrl(s.url), err: error }, 'torznab caps failed');
+    return { ok: false, error };
   }
 }

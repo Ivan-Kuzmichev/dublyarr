@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:torznab="http://torznab.com/schemas/2015/feed">
+  <channel>
+    <atom:link href="http://127.0.0.1:9117/" rel="self" type="application/rss+xml" />
+    <title>AggregateSearch</title>
+    <item>
+      <title>Game of Thrones / S1E1-10 of 10 [2011, BDRip 1080p] Dub + MVO (LostFilm, AlexFilm) + Original</title>
+      <guid>https://rutracker.org/forum/viewtopic.php?t=3001</guid>
+      <jackettindexer id="rutracker">RuTracker.org</jackettindexer>
+      <type>semi-private</type>
+      <comments>https://rutracker.org/forum/viewtopic.php?t=3001</comments>
+      <pubDate>Sun, 12 Jun 2016 10:00:00 +0300</pubDate>
+      <size>21474836480</size>
+      <description />
+      <link>http://127.0.0.1:9117/dl/rutracker/?jackett_apikey=SECRETKEY&amp;path=abc&amp;file=Game</link>
+      <category>5000</category>
+      <category>100509</category>
+      <enclosure url="http://127.0.0.1:9117/dl/rutracker/?jackett_apikey=SECRETKEY&amp;path=abc&amp;file=Game" length="21474836480" type="application/x-bittorrent" />
+      <torznab:attr name="category" value="5000" />
+      <torznab:attr name="category" value="100509" />
+      <torznab:attr name="seeders" value="120" />
+      <torznab:attr name="peers" value="130" />
+      <torznab:attr name="infohash" value="AAAA1111BBBB2222CCCC3333DDDD4444EEEE5555" />
+      <torznab:attr name="magneturl" value="magnet:?xt=urn:btih:AAAA1111BBBB2222CCCC3333DDDD4444EEEE5555" />
+      <torznab:attr name="downloadvolumefactor" value="1" />
+    </item>
+    <item>
+      <title>Game of Thrones - S1E1-10 - 2011  MVO (LostFilm), Sub WEBDL 1080p - RUSSIAN</title>
+      <guid>https://kinozal.tv/details.php?id=55</guid>
+      <jackettindexer id="kinozal">Kinozal</jackettindexer>
+      <comments>https://kinozal.tv/details.php?id=55</comments>
+      <pubDate>Mon, 13 Jun 2016 10:00:00 +0300</pubDate>
+      <size>16106127360</size>
+      <link>http://127.0.0.1:9117/dl/kinozal/?jackett_apikey=SECRETKEY&amp;path=k55</link>
+      <category>5000</category>
+      <torznab:attr name="seeders" value="0" />
+      <torznab:attr name="peers" value="2" />
+    </item>
+    <item>
+      <title>Game of Thrones - S1E3 - Lord Snow - rus 1080p WEBDL (LostFilm)</title>
+      <guid>https://www.lostfilm.tv/series/Game_of_Thrones/season_1/episode_3/</guid>
+      <jackettindexer id="lostfilm">LostFilm.tv</jackettindexer>
+      <comments>https://www.lostfilm.tv/series/Game_of_Thrones/season_1/episode_3/</comments>
+      <pubDate>Tue, 29 Sep 2026 10:00:00 +0300</pubDate>
+      <size>2147483648</size>
+      <link>http://127.0.0.1:9117/dl/lostfilm/?jackett_apikey=SECRETKEY&amp;path=lf3</link>
+      <category>5000</category>
+      <torznab:attr name="seeders" value="40" />
+      <torznab:attr name="peers" value="41" />
+      <torznab:attr name="infohash" value="ffff0000ffff0000ffff0000ffff0000ffff0000" />
+    </item>
+    <item>
+      <title>Game of Thrones / S1E1-10 of 10 [2011, BDRip 720p] MVO (Кураж-Бамбей)</title>
+      <guid>https://rutracker.org/forum/viewtopic.php?t=3002</guid>
+      <jackettindexer id="rutracker">RuTracker.org</jackettindexer>
+      <comments>https://rutracker.org/forum/viewtopic.php?t=3002</comments>
+      <pubDate>Sun, 12 Jun 2016 11:00:00 +0300</pubDate>
+      <size>10737418240</size>
+      <link>http://127.0.0.1:9117/dl/rutracker/?jackett_apikey=SECRETKEY&amp;path=def</link>
+      <category>5000</category>
+      <torznab:attr name="seeders" value="15" />
+    </item>
+  </channel>
+</rss>

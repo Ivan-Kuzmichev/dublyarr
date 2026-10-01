@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<indexers>
+  <indexer id="rutracker" configured="true">
+    <title>RuTracker.org</title>
+    <description>RuTracker.org is a RUSSIAN Semi-Private site</description>
+    <link>https://rutracker.org/</link>
+    <language>ru-RU</language>
+    <type>semi-private</type>
+    <caps>
+      <categories>
+        <category id="2000" name="Movies" />
+        <category id="5000" name="TV"><subcat id="5070" name="TV/Anime" /></category>
+      </categories>
+    </caps>
+  </indexer>
+  <indexer id="kinozal" configured="true">
+    <title>Kinozal</title>
+    <caps><categories><category id="5000" name="TV" /></categories></caps>
+  </indexer>
+  <indexer id="lostfilm" configured="true">
+    <title>LostFilm.tv</title>
+    <caps><categories><category id="5000" name="TV" /></categories></caps>
+  </indexer>
+</indexers>
