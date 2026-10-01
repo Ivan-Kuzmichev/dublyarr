@@ -13,6 +13,7 @@ export type Verdict = {
   reason: string;
   position: number | null; // индекс позиции профиля, которой соответствует раздача
   tone: 'best' | 'ok' | 'wait' | 'reject' | 'ask';
+  until?: string; // для ожидания — дата, когда позиция откроется
 };
 type Ctx = { profile: Profile; episodes: Pick<Episode, 'season' | 'number' | 'airDate'>[]; studioName: (id: number) => string | undefined; today: string };
 
@@ -83,7 +84,9 @@ export function evaluateReleases(releases: Release[], ctx: Ctx, target: Target):
     const opensAt = air ? addDays(air, ctx.profile.dubs[pos].waitDays) : null;
     if (opensAt && opensAt > ctx.today) {
       const top = dubLabel(ctx.profile.dubs[0], ctx.studioName);
-      return reject(r, `Рано: ждём ${top} до ${formatShortDate(opensAt, ctx.today)}`, 'wait', pos);
+      const w = reject(r, `Рано: ждём ${top} до ${formatShortDate(opensAt, ctx.today)}`, 'wait', pos);
+      w.verdict.until = opensAt;
+      return w;
     }
     return { r, verdict: { releaseId: r.id, ok: true, best: false, reason: '', position: pos, tone: 'ok' } };
   });

@@ -44,7 +44,7 @@ test('LostFilm отдельной серией — лучший', () => {
 test('ожидание — от даты эфира, граница включительно', () => {
   const hd = rel({ dubs: [dub(HD)], pack: true, episodes: { from: 1, to: 3 } });
   expect(one(hd, '2026-09-30')).toMatchObject({ ok: true, tone: 'best', position: 1 });
-  expect(one(hd, '2026-09-29')).toMatchObject({ ok: false, tone: 'wait', reason: 'Рано: ждём LostFilm до 30 сент' });
+  expect(one(hd, '2026-09-29')).toMatchObject({ ok: false, tone: 'wait', reason: 'Рано: ждём LostFilm до 30 сент', until: '2026-09-30' });
   const tvs = rel({ dubs: [dub(TVS)] });
   expect(one(tvs, '2026-09-30')).toMatchObject({ tone: 'wait', reason: 'Рано: ждём LostFilm до 3 окт' });
   expect(one(tvs, '2026-10-03')).toMatchObject({ ok: true, position: 2 });
