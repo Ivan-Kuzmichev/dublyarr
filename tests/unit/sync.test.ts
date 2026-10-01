@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { testDb } from './helpers';
@@ -138,4 +138,37 @@ test('в паке сезона нет файла одной серии — ос�
   expect(db.select().from(episodeFiles).all()).toHaveLength(2);
   expect(existsSync(path.join(media, 'Игра престолов (2011)', 'Season 01'))).toBe(true);
   expect(db.select().from(wantedState).all()).toEqual([expect.objectContaining({ titleId: t.id, season: 1, number: 3, state: 'missing', reason: 'В раздаче нет файла S01E03' })]);
+});
+
+test('сбой списка файлов у одной загрузки не мешает остальным', async () => {
+  const { db, mk, fq, files, deps, paths, finish } = setup();
+  const a = mk('GoT S01E01', { pack: false });
+  const b2 = mk('GoT S01E02', { pack: false });
+  files.set(a.id, torrent('Game.of.Thrones.S01E01.mkv', null));
+  files.set(b2.id, torrent('Game.of.Thrones.S01E02.mkv', null));
+  const da = await startRelease(db, deps, a, [{ season: 1, number: 1 }], 'episode', 'X');
+  const db2 = await startRelease(db, deps, b2, [{ season: 1, number: 2 }], 'episode', 'X');
+  finish(db2.hash);
+  const qbit = { ...fq.qbit, files: async (h: string) => (h === da.hash ? Promise.reject(new Error('сбой')) : fq.qbit.files(h)) };
+  const res = await syncDownloads(db, { qbit, paths, now: HOUR });
+  expect(res).toMatchObject({ imported: 1, errors: 1 });
+});
+
+test('чужой файл по пути в медиатеке не затирается; своя серия — заменяется', async () => {
+  const { db, mk, fq, files, deps, paths, media, finish } = setup();
+  const r = mk('GoT S01E01', { pack: false });
+  files.set(r.id, torrent('Game.of.Thrones.S01E01.mkv', null));
+  const d = await startRelease(db, deps, r, [{ season: 1, number: 1 }], 'episode', 'X');
+  const rel = 'Игра престолов (2011)/Season 01/Игра престолов S01E01 [X 1080p].mkv';
+  mkdirSync(path.dirname(path.join(media, rel)), { recursive: true });
+  writeFileSync(path.join(media, rel), 'чужое');
+  finish(d.hash);
+  await syncDownloads(db, { qbit: fq.qbit, paths, now: HOUR });
+  expect(db.select().from(downloads).get()).toMatchObject({ state: 'completed', lastError: `Ошибка импорта: Файл уже есть в медиатеке: ${rel}` });
+  expect(readFileSync(path.join(media, rel), 'utf8')).toBe('чужое');
+  // это наш прошлый импорт той же серии — заменяем
+  db.insert(episodeFiles).values({ titleId: d.titleId, season: 1, number: 1, path: rel, size: 1, method: 'copy', importedAt: 1 }).run();
+  await syncDownloads(db, { qbit: fq.qbit, paths, now: 2 * HOUR });
+  expect(db.select().from(downloads).get()!.state).toBe('imported');
+  expect(readFileSync(path.join(media, rel), 'utf8')).toBe('video');
 });

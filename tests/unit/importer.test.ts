@@ -13,13 +13,13 @@ function tmp() {
   return { root, src, media: path.join(root, 'media') };
 }
 
-test('жёсткая ссылка; повторный импорт заменяет', async () => {
+test('жёсткая ссылка; повторный импорт своей серии заменяет', async () => {
   const { src, media } = tmp();
   const r = await importFile(src, media, 'Show (2011)/Season 01/Show S01E01.mkv');
   expect(r.method).toBe('hardlink');
   expect(statSync(r.path).ino).toBe(statSync(src).ino);
   writeFileSync(src + '2', 'другое');
-  const again = await importFile(src + '2', media, 'Show (2011)/Season 01/Show S01E01.mkv');
+  const again = await importFile(src + '2', media, 'Show (2011)/Season 01/Show S01E01.mkv', undefined, { replace: true });
   expect(readFileSync(again.path, 'utf8')).toBe('другое');
 });
 
@@ -41,4 +41,15 @@ test('проверка жёстких ссылок', async () => {
   const { root, media } = tmp();
   expect(await checkHardlink(path.join(root, 'dl'), media)).toEqual({ ok: true, message: 'Жёсткие ссылки работают' });
   expect((await checkHardlink('/nope', media)).ok).toBe(false);
+});
+
+test('по пути уже лежит файл — без замены отказ, файл не тронут, ссылка не делается', async () => {
+  const { src, media } = tmp();
+  mkdirSync(path.join(media, 'S'));
+  writeFileSync(path.join(media, 'S', 'x.mkv'), 'чужое');
+  let links = 0;
+  const fsx = { link: async () => { links++; } };
+  await expect(importFile(src, media, 'S/x.mkv', fsx)).rejects.toThrow('Файл уже есть в медиатеке: S/x.mkv');
+  expect(readFileSync(path.join(media, 'S', 'x.mkv'), 'utf8')).toBe('чужое');
+  expect(links).toBe(0);
 });

@@ -305,9 +305,17 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
       res.updated++;
       continue;
     }
-    const qfiles = await deps.qbit.files(d.hash);
-    if (d.state === 'adding' && d.kind === 'pack' && !d.files?.length) {
-      if (qfiles.length) await selectAndStart(db, deps.qbit, d, qfiles.map((f) => ({ index: f.index, name: f.name, size: f.size, priority: f.priority })));
+    let qfiles: Awaited<ReturnType<Qbit['files']>>;
+    try {
+      qfiles = await deps.qbit.files(d.hash);
+      if (d.state === 'adding' && d.kind === 'pack' && !d.files?.length) {
+        if (qfiles.length) await selectAndStart(db, deps.qbit, d, qfiles.map((f) => ({ index: f.index, name: f.name, size: f.size, priority: f.priority })));
+        continue;
+      }
+    } catch (e) {
+      // сбой у одной загрузки не мешает остальным
+      log.warn({ download: d.id, err: e instanceof Error ? e.message : String(e) }, 'qbit files failed');
+      res.errors++;
       continue;
     }
     const wanted = d.kind === 'pack' ? qfiles.filter((f) => f.priority > 0) : qfiles;
@@ -357,7 +365,12 @@ async function importDownload(db: Db, d: Download, savePath: string, files: { in
       { name: title.nameRu, original: title.nameOriginal, year: title.year, season: ep.season, episode: ep.number, studio: d.studioLabel ?? '', quality: d.resolution ? `${d.resolution}p` : '' },
       path.extname(file.name),
     );
-    const r = await importFile(src, paths.media, rel);
+    const own = db
+      .select()
+      .from(episodeFiles)
+      .where(and(eq(episodeFiles.titleId, d.titleId), eq(episodeFiles.season, ep.season), eq(episodeFiles.number, ep.number)))
+      .get();
+    const r = await importFile(src, paths.media, rel, undefined, { replace: own?.path === rel });
     const row = { titleId: d.titleId, season: ep.season, number: ep.number, path: rel, size: file.size, downloadId: d.id, studioLabel: d.studioLabel, resolution: d.resolution, method: r.method, importedAt: now };
     db.insert(episodeFiles)
       .values(row)
