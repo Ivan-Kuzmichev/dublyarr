@@ -7,7 +7,7 @@ import { dubKey, setWait, toggleDub, type DubPosition, type Profile } from '@/li
 
 export type StudioOption = { id: number; name: string };
 
-type Props = { studios: StudioOption[]; names: Record<number, string>; value: Profile; onChange: (p: Profile) => void };
+type Props = { studios: StudioOption[]; names: Record<number, string>; value: Profile; onChange: (p: Profile) => void; basis?: Record<number, string> };
 
 const H = ({ children, note }: { children: React.ReactNode; note?: string }) => (
   <div className="flex items-baseline justify-between gap-3">
@@ -38,7 +38,7 @@ function Choice<T extends string | number>({ options, value, onChange, label }: 
 type Item = { key: string; label: string; pos: DubPosition };
 
 /** Редактор профиля: окно подписки и профили по умолчанию. */
-export function ProfileEditor({ studios, names, value: p, onChange }: Props) {
+export function ProfileEditor({ studios, names, value: p, onChange, basis }: Props) {
   const [filter, setFilter] = useState('');
   const set = (patch: Partial<Profile>) => onChange({ ...p, ...patch });
 
@@ -68,7 +68,10 @@ export function ProfileEditor({ studios, names, value: p, onChange }: Props) {
             <div key={keyOf(d)} className={`${row} border-accent bg-surface-2`}>
               <button type="button" onClick={() => toggle({ key: keyOf(d), label: labelOf(d), pos: d })} className="flex min-h-11 grow cursor-pointer items-center gap-3 text-left">
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent font-mono text-xs font-semibold text-on-accent">{i + 1}</span>
-                <span className="text-[15px] font-medium">{labelOf(d)}</span>
+                <span className="flex flex-col">
+                  <span className="text-[15px] font-medium">{labelOf(d)}</span>
+                  {basis && d.kind === 'studio' && <span className="text-xs text-faint">прогноз: {basis[d.studioId] ?? 'нет данных'}</span>}
+                </span>
               </button>
               {i === 0 ? (
                 <span className="text-[13px] text-faint">в день эфира</span>

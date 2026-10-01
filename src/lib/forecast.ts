@@ -78,8 +78,13 @@ function etaText(eta: string | null, today: string) {
   return `≈ ${day} ${MONTHS_GEN[m - 1]}`;
 }
 
-/** «до пятницы» на ближайшую неделю, дальше — «до 9 окт». */
-const until = (date: string, today: string) => (daysBetween(date, today) <= 6 ? WEEKDAYS_GEN[new Date(dayOf(date)).getUTCDay()] : formatShortDate(date, today));
+/** «сегодня», «до завтра», «до пятницы» на ближайшую неделю, дальше — «до 9 окт». */
+function until(date: string, today: string) {
+  const d = daysBetween(date, today);
+  if (d <= 0) return 'сегодня';
+  if (d === 1) return 'до завтра';
+  return `до ${d <= 6 ? WEEKDAYS_GEN[new Date(dayOf(date)).getUTCDay()] : formatShortDate(date, today)}`;
+}
 
 export function forecastEpisode(
   profile: Profile,
@@ -108,7 +113,7 @@ export function forecastEpisode(
   const open = next ? addDays(ep.airDate, next.waitDays) : null;
   const first = positions[0]?.label ?? '';
   const fallbackNote = next
-    ? `Если ${first} не выйдет до ${until(open!, today)} — возьму ${next.kind === 'any' ? 'любую' : positions[1].label}${profile.replaceWithHigher ? ', потом заменю' : ''}.`
+    ? `Если ${first} не выйдет ${until(open!, today)} — возьму ${next.kind === 'any' ? 'любую' : positions[1].label}${profile.replaceWithHigher ? ', потом заменю' : ''}.`
     : `Жду только ${first} — запасная озвучка не задана.`;
   return {
     positions,

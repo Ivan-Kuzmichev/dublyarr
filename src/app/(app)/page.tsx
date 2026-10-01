@@ -24,7 +24,7 @@ function Stat({ n, label, tone }: { n: number; label: string; tone: string }) {
   );
 }
 
-const sectionHead = (title: string, link?: { href: string; text: string }, note?: string) => (
+const sectionHead = (title: string, link?: { href: string; text: string }, note?: string, hint?: string) => (
   <div className="flex items-baseline justify-between gap-3">
     <h2 className="m-0 text-xl font-semibold">{title}</h2>
     {link && (
@@ -33,6 +33,7 @@ const sectionHead = (title: string, link?: { href: string; text: string }, note?
       </Link>
     )}
     {note && <span className="font-mono text-[13px] text-progress">{note}</span>}
+    {hint && <span className="text-[13px] text-muted max-lg:hidden">{hint}</span>}
   </div>
 );
 
@@ -103,22 +104,31 @@ export default function TodayPage() {
       {(d.waiting.length > 0 || d.downloads.length > 0 || d.attention.length > 0) && (
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
           <Card className="flex flex-col gap-5 !p-6">
-            {sectionHead('Ждём озвучку')}
+            {sectionHead('Ждём озвучку', undefined, undefined, 'прогноз по истории студий')}
             {d.waiting.length === 0 ? (
               <p className="m-0 text-sm text-muted">Все вышедшие серии уже в нужной озвучке.</p>
             ) : (
               d.waiting.map((w) => (
                 <Link key={`${w.tmdbId}-${w.code}`} href={`/series/${w.tmdbId}`} className="flex items-start gap-4 text-text no-underline hover:text-text">
                   <Poster tmdbId={w.tmdbId} name={w.title} path={w.posterPath} size="w185" className="h-[72px] w-12 shrink-0 rounded-lg" />
-                  <div className="flex min-w-0 grow flex-col gap-1.5">
+                  <div className="flex min-w-0 grow flex-col gap-2">
                     <div className="flex justify-between gap-3">
                       <span className="truncate text-[15px] font-semibold">
                         {w.title} <span className="font-mono text-[13px] font-normal text-muted">{w.code}</span>
                       </span>
-                      {w.until && <span className="text-[13px] font-semibold whitespace-nowrap text-accent">с {w.until}</span>}
+                      <span className={`text-[13px] font-semibold whitespace-nowrap ${w.progress === null ? 'text-faint' : 'text-accent'}`}>{w.etaText}</span>
                     </div>
-                    <span className="text-xs text-faint">Оригинал {w.aired}</span>
-                    <span className="text-[13px] leading-snug text-text-3">{w.reason}</span>
+                    {w.progress !== null && (
+                      <div className="relative h-1.5 rounded-full bg-line">
+                        <div className="absolute inset-y-0 left-0 rounded-full bg-accent" style={{ width: `${Math.round(w.progress * 100)}%` }} />
+                        {w.fallbackMark !== null && <div className="absolute -top-[3px] h-3 w-0.5 bg-text-2" style={{ left: `${Math.round(w.fallbackMark * 100)}%` }} />}
+                      </div>
+                    )}
+                    <div className="flex justify-between gap-3 text-xs text-faint">
+                      <span className="whitespace-nowrap">Оригинал {w.aired}</span>
+                      {w.delayText && <span className="truncate">{w.delayText}</span>}
+                    </div>
+                    <span className="text-[13px] leading-snug text-text-3">{w.fallbackNote || w.reason}</span>
                   </div>
                 </Link>
               ))

@@ -1,8 +1,8 @@
 import { expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { testDb } from './helpers';
-import { episodeStatuses, todayData, calendarWeek, mondayOf } from '@/lib/dashboard';
-import { downloads, episodeFiles, episodes, seasons, subscriptions, titles, wantedState } from '@/lib/db/schema';
+import { episodeStatuses, todayData, calendarWeek, mondayOf, seriesDubColumns, speedBlock, delayBasis } from '@/lib/dashboard';
+import { downloads, episodeFiles, episodes, seasons, studioSightings, studios, subscriptions, titles, wantedState } from '@/lib/db/schema';
 import type { Profile } from '@/lib/profile-core';
 
 process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
@@ -84,4 +84,42 @@ test('«Требует внимания»: нужен ответ и ошибки
     { tmdbId: 7, title: 'Дэдлок', code: 'S01E04', text: 'Не уверен, что это тот сериал', href: '/search/7?s=1&e=4' },
     { tmdbId: 7, title: 'Дэдлок', code: 'S01E05', text: 'В раздаче нет файла S01E05', href: '/activity' },
   ]);
+});
+
+function withForecast() {
+  const s = setup();
+  const hd = s.db.insert(studios).values({ name: 'HDrezka', kind: 'both', source: 'manual', createdAt: 1 }).returning().get();
+  s.db.update(subscriptions).set({ profile: { ...profile, dubs: [{ kind: 'studio', studioId: hd.id, waitDays: 0 }, { kind: 'any', waitDays: 10 }] } }).run();
+  const seen = (n: number, iso: string) => s.db.insert(studioSightings).values({ titleId: s.t.id, studioId: hd.id, season: 1, number: n, seenAt: Date.parse(`${iso}T12:00:00Z`), basis: 'seen', fromPack: false }).run();
+  seen(1, '2026-09-11'); // +2,5
+  seen(2, '2026-09-18'); // +2,5
+  return { ...s, hd };
+}
+
+test('«Ждём озвучку» с прогнозом', () => {
+  const { db } = withForecast();
+  expect(todayData(db, today, NOW).waiting[0]).toMatchObject({
+    code: 'S01E03',
+    etaText: '≈ сегодня',
+    progress: 1,
+    delayText: 'HDrezka обычно +2,5 дня',
+    fallbackNote: 'Если HDrezka не выйдет до субботы — возьму любую, потом заменю.',
+  });
+});
+
+test('календарь: прогноз озвучки — отдельное событие', () => {
+  const { db } = withForecast();
+  const w = calendarWeek(db, '2026-09-21', today);
+  expect(w.days[5].events).toEqual([expect.objectContaining({ code: 'S01E03', kind: 'forecast', sub: 'HDrezka ≈ +2,5 д' })]);
+});
+
+test('карточка: колонки студий, скорость озвучки, основания', () => {
+  const { db, t, hd } = withForecast();
+  const c = seriesDubColumns(db, t.id, 1, today);
+  expect(c.columns).toEqual(['HDrezka', 'Любая']);
+  expect(c.cells.get(1)).toEqual([{ kind: 'done', text: '+2д' }, { kind: 'done', text: '+2д' }]);
+  expect(c.cells.get(3)).toEqual([{ kind: 'expected', text: '26 сент' }, { kind: 'none', text: '—' }]);
+  expect(c.cells.get(5)).toEqual([{ kind: 'none', text: '—' }, { kind: 'none', text: '—' }]);
+  expect(speedBlock(db, t.id)).toEqual([{ name: 'HDrezka', text: '+2,5 дня', width: '100%' }]);
+  expect(delayBasis(db, t.id)).toEqual({ [hd.id]: 'по 2 сериям' });
 });

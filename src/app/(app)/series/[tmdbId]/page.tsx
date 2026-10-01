@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { episodeStatuses, type EpisodeStatus } from '@/lib/dashboard';
+import { episodeStatuses, seriesDubColumns, speedBlock, delayBasis, type EpisodeStatus, type DubCell } from '@/lib/dashboard';
 import { notFound } from 'next/navigation';
 import { PageTitle } from '@/components/shell/PageTitle';
 import { buttonClass } from '@/components/ui/Button';
@@ -29,6 +29,13 @@ const EP_TONE: Record<EpisodeStatus['state'], string> = {
   upcoming: 'text-faint',
   skipped: 'text-faint',
 };
+
+/** Прогноз — пунктирная янтарная рамка; вышла — светлая заливка. */
+function DubBadge({ cell }: { cell: DubCell }) {
+  if (cell.kind === 'none') return <span className="text-[13px] text-dim">—</span>;
+  const cls = cell.kind === 'done' ? 'bg-text-2 text-bg' : 'border-[1.5px] border-dashed border-accent text-accent';
+  return <span className={`inline-flex h-7 min-w-11 items-center justify-center rounded-md px-1.5 font-mono text-xs ${cls}`}>{cell.text}</span>;
+}
 
 export const dynamic = 'force-dynamic';
 
@@ -77,10 +84,14 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
   const current = seasons.some((s) => String(s.number) === seasonParam) ? Number(seasonParam) : pickDefaultSeason(seasons, today);
   const eps = listEpisodes(db, t.id, current);
   const statuses = episodeStatuses(db, t.id, today);
+  const dubCols = seriesDubColumns(db, t.id, current, today);
+  const basis = delayBasis(db, t.id);
+  const cols = `48px minmax(120px,1fr) ${dubCols.columns.map(() => '60px').join(' ')} 150px 110px`;
   const regular = seasons.filter((s) => s.number > 0).length;
   const ordered = [...seasons.filter((s) => s.number > 0), ...seasons.filter((s) => s.number === 0)];
   const backdrop = imageUrl('w1280', t.backdropPath);
   const sub = getSubscription(db, t.id);
+  const speed = sub ? speedBlock(db, t.id) : [];
   const { addable: studios, names: studioNames } = subscribeDialogStudios(db, t.kind);
   const episodeTotal = seasons.filter((s) => s.number > 0).reduce((n, s) => n + s.episodeCount, 0);
   const meta = [
@@ -124,6 +135,7 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
               studios={studios}
               names={studioNames}
               profile={sub?.profile ?? getDefaultProfile(db, t.kind)}
+              basis={basis}
             />
             <Link href={`/search/${t.tmdbId}?s=${current}`} className={buttonClass('secondary', 'md', 'no-underline hover:text-text')}>
               Ручной поиск
@@ -141,6 +153,23 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
       {sub && (
         <div className="lg:order-2">
           <SubscriptionPanel profile={sub.profile} studioNames={studioNames} />
+          {speed.length > 0 && (
+            <section className="mt-5 flex flex-col gap-3.5 rounded-2xl border border-line bg-surface p-5">
+              <h3 className="m-0 text-base font-semibold">Скорость озвучки</h3>
+              {speed.map((x) => (
+                <div key={x.name} className="flex flex-col gap-1.5">
+                  <div className="flex justify-between gap-3 text-sm">
+                    <span>{x.name}</span>
+                    <span className="font-mono text-[13px] text-muted">{x.text}</span>
+                  </div>
+                  <div className="h-1.5 rounded-full bg-line">
+                    <div className="h-1.5 rounded-full bg-text-2" style={{ width: x.width }} />
+                  </div>
+                </div>
+              ))}
+              <span className="text-xs text-faint">После эфира оригинала, медиана по этому сериалу</span>
+            </section>
+          )}
         </div>
       )}
       <section className="flex min-w-0 flex-col gap-4 lg:order-1">
@@ -166,9 +195,17 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
           <p className="m-0 text-[15px] text-muted">Серии ещё не объявлены.</p>
         ) : (
           <div className="overflow-hidden rounded-2xl border border-line">
-            <div className="grid grid-cols-[40px_minmax(0,1fr)_minmax(0,150px)] gap-3.5 bg-surface px-4 py-3 text-[11px] font-semibold tracking-[0.06em] text-faint uppercase lg:grid-cols-[60px_minmax(0,1fr)_200px_140px] lg:px-[18px]">
+            <div
+              className="grid grid-cols-[40px_minmax(0,1fr)_minmax(0,150px)] gap-3.5 bg-surface px-4 py-3 text-[11px] font-semibold tracking-[0.06em] text-faint uppercase lg:[grid-template-columns:var(--cols)] lg:px-[18px]"
+              style={{ '--cols': cols } as React.CSSProperties}
+            >
               <span>№</span>
               <span>Серия</span>
+              {dubCols.columns.map((c) => (
+                <span key={c} className="truncate max-lg:hidden">
+                  {c}
+                </span>
+              ))}
               <span className="max-lg:hidden">Статус</span>
               <span>Эфир</span>
             </div>
@@ -178,13 +215,19 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
               return (
                 <div
                   key={e.number}
-                  className={`grid grid-cols-[40px_minmax(0,1fr)_minmax(0,150px)] items-center gap-3.5 border-t border-line-soft px-4 py-3 text-sm lg:grid-cols-[60px_minmax(0,1fr)_200px_140px] lg:px-[18px] ${future ? 'text-faint' : ''}`}
+                  className={`grid grid-cols-[40px_minmax(0,1fr)_minmax(0,150px)] items-center gap-3.5 border-t border-line-soft px-4 py-3 text-sm lg:[grid-template-columns:var(--cols)] lg:px-[18px] ${future ? 'text-faint' : ''}`}
+                  style={{ '--cols': cols } as React.CSSProperties}
                 >
                   <span className="font-mono text-[13px] text-muted">{String(e.number).padStart(2, '0')}</span>
                   <span className="flex min-w-0 flex-col gap-0.5">
                     <span className={`truncate ${future ? '' : 'font-medium text-text'}`}>{e.name}</span>
                     {st && <span className={`truncate text-xs lg:hidden ${EP_TONE[st.state]}`}>{[st.text, st.detail].filter(Boolean).join(' · ')}</span>}
                   </span>
+                  {(dubCols.cells.get(e.number) ?? dubCols.columns.map(() => null)).map((c, i) => (
+                    <span key={i} className="max-lg:hidden">
+                      {c && <DubBadge cell={c} />}
+                    </span>
+                  ))}
                   <span className="flex min-w-0 flex-col gap-0.5 max-lg:hidden">
                     {st && <span className={`text-[13px] ${EP_TONE[st.state]}`}>{st.text}</span>}
                     {st?.detail && <span className="truncate text-xs text-faint" title={st.detail}>{st.detail}</span>}

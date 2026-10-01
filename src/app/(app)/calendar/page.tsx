@@ -12,6 +12,7 @@ const EVENT = {
   downloaded: 'bg-text-2 border-text-2 text-bg',
   aired: 'border-line-strong text-text-2',
   upcoming: 'border-line-soft text-faint',
+  forecast: 'border-dashed border-accent bg-accent/[0.08] text-[#F3D5AA]',
 } as const;
 
 const navBtn = 'flex h-11 w-11 items-center justify-center rounded-xl border border-line bg-surface text-text-2 hover:text-text';
@@ -51,6 +52,10 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
           Эфир оригинала
         </span>
         <span className="flex items-center gap-2">
+          <span className="h-3.5 w-3.5 rounded border-[1.5px] border-dashed border-accent" />
+          Ожидаемая озвучка
+        </span>
+        <span className="flex items-center gap-2">
           <span className="h-3.5 w-3.5 rounded bg-text-2" />
           Скачано в озвучке
         </span>
@@ -63,7 +68,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
               <span className={`font-display text-xl font-semibold ${d.today ? 'text-accent' : ''}`}>{d.label.split(' ')[1]}</span>
             </div>
             {d.events.map((e) => (
-              <Link key={`${e.tmdbId}-${e.code}`} href={`/series/${e.tmdbId}`} className={`flex flex-col gap-1 rounded-[10px] border-[1.5px] p-2.5 no-underline ${EVENT[e.kind]} hover:opacity-90`}>
+              <Link key={`${e.tmdbId}-${e.code}-${e.kind}`} href={`/series/${e.tmdbId}`} className={`flex flex-col gap-1 rounded-[10px] border-[1.5px] p-2.5 no-underline ${EVENT[e.kind]} hover:opacity-90`}>
                 <span className="text-[13px] leading-tight font-semibold">{e.title}</span>
                 <span className="font-mono text-[11px] opacity-85">{e.code}</span>
                 <span className="text-xs opacity-85">{e.sub}</span>

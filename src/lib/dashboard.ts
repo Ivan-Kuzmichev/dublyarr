@@ -1,6 +1,8 @@
 import { and, eq, gte, inArray, lte } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { downloads, episodeFiles, episodes, subscriptions, titles, wantedState, type Download } from './db/schema';
+import { downloads, episodeFiles, episodes, studios, subscriptions, titles, wantedState, type Download } from './db/schema';
+import { forecastEpisode, formatDelay, studioDelays, titleSightings, type EpisodeForecast, type StudioDelay } from './forecast';
+import { dubLabel, type Profile } from './profile-core';
 import { wantedEpisodes } from './subscriptions';
 import { addDays, formatAirDate, formatShortDate } from './dates';
 import { formatSize } from './format';
@@ -74,9 +76,22 @@ function ago(ms: number) {
 }
 
 export type FreshItem = { tmdbId: number; title: string; posterPath: string | null; code: string; quality: string; state: string; loading: boolean; pct: number };
-export type WaitingItem = { tmdbId: number; title: string; posterPath: string | null; code: string; aired: string; until: string | null; reason: string };
+export type WaitingItem = {
+  tmdbId: number;
+  title: string;
+  posterPath: string | null;
+  code: string;
+  aired: string;
+  until: string | null;
+  reason: string;
+  etaText: string;
+  progress: number | null;
+  fallbackMark: number | null;
+  delayText: string;
+  fallbackNote: string;
+};
 export type AttentionItem = { tmdbId: number; title: string; code: string; text: string; href: string };
-export type WeekItem = { date: string; day: string; tmdbId: number; title: string; code: string; kind: 'downloaded' | 'aired' | 'upcoming'; sub: string };
+export type WeekItem = { date: string; day: string; tmdbId: number; title: string; code: string; kind: 'downloaded' | 'aired' | 'upcoming' | 'forecast'; sub: string };
 
 const WEEKDAYS = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
 const dayLabel = (date: string) => `${WEEKDAYS[new Date(`${date}T00:00:00Z`).getUTCDay()]} ${Number(date.slice(8))}`;
@@ -115,6 +130,45 @@ function airing(db: Db, from: string, to: string, today: string): WeekItem[] {
     });
 }
 
+const studioNames = (db: Db) => {
+  const m = new Map(db.select().from(studios).all().map((x) => [x.id, x.name]));
+  return (id: number) => m.get(id);
+};
+const shortDelay = (days: number) => `+${String(days).replace('.', ',')} д`;
+
+/** Прогноз для серий, которые ждут озвучку: задержки считаются один раз на сериал. */
+function forecaster(db: Db, today: string) {
+  const name = studioNames(db);
+  const cache = new Map<number, { delays: Map<number, StudioDelay>; sightings: ReturnType<typeof titleSightings> }>();
+  return (titleId: number, profile: Profile, season: number, number: number, airDate: string): EpisodeForecast & { delayText: string; sub: string } => {
+    if (!cache.has(titleId)) cache.set(titleId, { delays: studioDelays(db, titleId), sightings: titleSightings(db, titleId) });
+    const c = cache.get(titleId)!;
+    const f = forecastEpisode(profile, { season, number, airDate }, c.delays, c.sightings, name, today);
+    const p = f.positions.find((x) => x.expected && x.delay?.days !== null && x.delay?.days !== undefined);
+    return {
+      ...f,
+      delayText: p ? `${p.label} обычно ${formatDelay(p.delay!.days!)}` : '',
+      sub: p ? `${p.label} ≈ ${shortDelay(p.delay!.days!)}` : '',
+    };
+  };
+}
+
+/** Серии, которые ждут озвучку, с прогнозом. */
+function waitingWithForecast(db: Db, today: string) {
+  const fc = forecaster(db, today);
+  const air = new Map(db.select().from(episodes).all().map((e) => [`${e.titleId}:${key(e.season, e.number)}`, e.airDate]));
+  return db
+    .select()
+    .from(wantedState)
+    .innerJoin(subscriptions, eq(subscriptions.titleId, wantedState.titleId))
+    .where(eq(wantedState.state, 'waiting'))
+    .all()
+    .map(({ wanted_state: w, subscriptions: sub }) => {
+      const aired = air.get(`${w.titleId}:${key(w.season, w.number)}`) ?? null;
+      return { w, aired, f: aired ? fc(w.titleId, sub.profile, w.season, w.number, aired) : null };
+    });
+}
+
 export function todayData(db: Db, today: string, now = Date.now()) {
   const meta = new Map(db.select({ id: titles.id, tmdbId: titles.tmdbId, title: titles.nameRu, posterPath: titles.posterPath }).from(titles).all().map((t) => [t.id, t]));
   const fresh: (FreshItem & { at: number })[] = [];
@@ -138,16 +192,9 @@ export function todayData(db: Db, today: string, now = Date.now()) {
   }
   fresh.sort((a, b) => Number(b.loading) - Number(a.loading) || b.at - a.at);
 
-  const airDates = new Map(db.select().from(episodes).all().map((e) => [`${e.titleId}:${key(e.season, e.number)}`, e.airDate]));
-  const waiting: WaitingItem[] = db
-    .select()
-    .from(wantedState)
-    .innerJoin(subscriptions, eq(subscriptions.titleId, wantedState.titleId))
-    .where(eq(wantedState.state, 'waiting'))
-    .all()
-    .map(({ wanted_state: w }) => {
+  const waiting: WaitingItem[] = waitingWithForecast(db, today)
+    .map(({ w, aired, f }) => {
       const t = meta.get(w.titleId)!;
-      const aired = airDates.get(`${w.titleId}:${key(w.season, w.number)}`);
       return {
         tmdbId: t.tmdbId,
         title: t.title,
@@ -156,7 +203,12 @@ export function todayData(db: Db, today: string, now = Date.now()) {
         aired: aired ? formatShortDate(aired, today) : '—',
         until: w.until ? formatShortDate(w.until, today) : null,
         reason: w.reason,
-        sortKey: w.until ?? '9999',
+        etaText: f?.etaText ?? 'прогноза нет',
+        progress: f?.progress ?? null,
+        fallbackMark: f?.fallbackMark ?? null,
+        delayText: f?.delayText ?? '',
+        fallbackNote: f?.fallbackNote ?? '',
+        sortKey: f?.eta ?? w.until ?? '9999',
       };
     })
     .sort((a, b) => a.sortKey.localeCompare(b.sortKey))
@@ -197,10 +249,72 @@ export function todayData(db: Db, today: string, now = Date.now()) {
 }
 
 export function calendarWeek(db: Db, monday: string, today: string) {
-  const items = airing(db, monday, addDays(monday, 6), today);
+  const sunday = addDays(monday, 6);
+  const meta = new Map(db.select().from(titles).all().map((t) => [t.id, t]));
+  const forecasts: WeekItem[] = waitingWithForecast(db, today)
+    .filter(({ f }) => f?.eta && f.eta >= monday && f.eta <= sunday && f.sub)
+    .map(({ w, f }) => ({ date: f!.eta!, day: dayLabel(f!.eta!), tmdbId: meta.get(w.titleId)!.tmdbId, title: meta.get(w.titleId)!.nameRu, code: code(w.season, w.number), kind: 'forecast' as const, sub: f!.sub }));
+  const items = [...airing(db, monday, sunday, today), ...forecasts];
   const days = Array.from({ length: 7 }, (_, i) => {
     const date = addDays(monday, i);
     return { date, label: dayLabel(date), today: date === today, events: items.filter((x) => x.date === date) };
   });
   return { monday, days };
+}
+
+export type DubCell = { kind: 'done' | 'expected' | 'none'; text: string };
+const NONE: DubCell = { kind: 'none', text: '—' };
+const DAY_MS = 86_400_000;
+const diffDays = (a: string, b: string) => Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / DAY_MS);
+
+/** «сег.», «завтра», «пт» на этой неделе, иначе «3 окт». */
+function expectedText(date: string, today: string) {
+  const d = diffDays(date, today);
+  if (d === 0) return 'сег.';
+  if (d === 1) return 'завтра';
+  if (d > 1 && d <= 6) return WEEKDAYS[new Date(`${date}T00:00:00Z`).getUTCDay()];
+  return formatShortDate(date, today);
+}
+
+/** Колонки озвучек профиля (до 3) в карточке сериала: вышла у студии — «+1д», ждём — дата прогноза. */
+export function seriesDubColumns(db: Db, titleId: number, season: number, today: string): { columns: string[]; cells: Map<number, DubCell[]> } {
+  const sub = db.select().from(subscriptions).where(eq(subscriptions.titleId, titleId)).get();
+  const cells = new Map<number, DubCell[]>();
+  if (!sub) return { columns: [], cells };
+  const name = studioNames(db);
+  const dubs = sub.profile.dubs.filter((d) => d.kind !== 'original').slice(0, 3);
+  const delays = studioDelays(db, titleId);
+  const sightings = titleSightings(db, titleId).filter((x) => x.season === season);
+  for (const e of db.select().from(episodes).where(and(eq(episodes.titleId, titleId), eq(episodes.season, season))).all()) {
+    cells.set(
+      e.number,
+      dubs.map((d) => {
+        if (!e.airDate) return NONE;
+        const seen = sightings.filter((x) => x.number === e.number && (d.kind === 'any' || (d.kind === 'studio' && x.studioId === d.studioId))).sort((a, b) => a.seenAt - b.seenAt)[0];
+        if (seen) return { kind: 'done', text: `+${Math.max(0, diffDays(new Date(seen.seenAt).toISOString().slice(0, 10), e.airDate))}д` };
+        const days = d.kind === 'studio' ? delays.get(d.studioId)?.days : null;
+        if (e.airDate <= today && days !== null && days !== undefined) return { kind: 'expected', text: expectedText(addDays(e.airDate, Math.ceil(days)), today) };
+        return NONE;
+      }),
+    );
+  }
+  return { columns: dubs.map((d) => dubLabel(d, name)), cells };
+}
+
+/** «Скорость озвучки»: студии профиля и замеченные у сериала. */
+export function speedBlock(db: Db, titleId: number): { name: string; text: string; width: string }[] {
+  const sub = db.select().from(subscriptions).where(eq(subscriptions.titleId, titleId)).get();
+  const name = studioNames(db);
+  const delays = studioDelays(db, titleId);
+  const ids = [...new Set([...(sub?.profile.dubs ?? []).flatMap((d) => (d.kind === 'studio' ? [d.studioId] : [])), ...delays.keys()])];
+  const max = Math.max(0, ...ids.map((id) => delays.get(id)?.days ?? 0));
+  return ids.map((id) => {
+    const days = delays.get(id)?.days ?? null;
+    return { name: name(id) ?? '?', text: days === null ? 'нет данных' : formatDelay(days), width: days === null || max === 0 ? '0%' : `${Math.round((days / max) * 100)}%` };
+  });
+}
+
+/** Основание прогноза по студиям — для окна подписки. */
+export function delayBasis(db: Db, titleId: number): Record<number, string> {
+  return Object.fromEntries([...studioDelays(db, titleId).values()].map((d) => [d.studioId, d.basisText]));
 }

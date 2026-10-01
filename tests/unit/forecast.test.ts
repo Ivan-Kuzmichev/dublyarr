@@ -93,3 +93,10 @@ test('прогноз: запасная «Любая», без запасной, 
     fallbackNote: 'Жду только RuDub — запасная озвучка не задана.',
   });
 });
+
+test('строка запасного варианта: сегодня и завтра', () => {
+  const p = profile([{ kind: 'studio', studioId: 1, waitDays: 0 }, { kind: 'studio', studioId: 2, waitDays: 2 }]);
+  const f = (today: string) => forecastEpisode(p, { season: 1, number: 4, airDate: '2026-09-29' }, new Map([delay(1, 2)]), [], name, today).fallbackNote;
+  expect(f('2026-10-01')).toBe('Если HDrezka не выйдет сегодня — возьму LostFilm, потом заменю.');
+  expect(f('2026-09-30')).toBe('Если HDrezka не выйдет до завтра — возьму LostFilm, потом заменю.');
+});
