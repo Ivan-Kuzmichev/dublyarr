@@ -68,3 +68,20 @@ test('используемую студию удалить нельзя', () => 
     .run();
   expect(() => deleteStudio(db, lf.id)).toThrow('Студия используется: подписок — 1');
 });
+
+test('написание из одних знаков препинания не принимается', () => {
+  const db = testDb();
+  expect(() => createStudio(db, { name: '.', aliases: [], kind: 'series', trackers: [] })).toThrow('Введите название студии');
+  const s = createStudio(db, { name: 'Ok', aliases: ['-', ' . '], kind: 'series', trackers: [] });
+  expect(s.aliases).toEqual([]);
+  expect(findStudioByAlias(db, '---')).toBeUndefined();
+});
+
+test('засев и флаг — одной транзакцией: повторный засев после сбоя не падает', () => {
+  const db = testDb();
+  seedStudios(db);
+  // имитация «упали после засева, но до флага»
+  db.$client.prepare("DELETE FROM app_settings WHERE key = 'studios.seeded'").run();
+  expect(() => seedStudios(db)).not.toThrow();
+  expect(listStudios(db)).toHaveLength(STUDIO_SEED.length);
+});

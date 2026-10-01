@@ -7,9 +7,9 @@ import type { StudioOption } from '@/components/subscribe/ProfileEditor';
 import type { Profile } from '@/lib/profile-core';
 import { saveSubscriptionAction } from './subscribe-actions';
 
-type Props = { tmdbId: number; subscribed: boolean; title: string; subtitle: string; studios: StudioOption[]; profile: Profile };
+type Props = { tmdbId: number; subscribed: boolean; title: string; subtitle: string; studios: StudioOption[]; names: Record<number, string>; profile: Profile };
 
-export function SubscribeButton({ tmdbId, subscribed, title, subtitle, studios, profile }: Props) {
+export function SubscribeButton({ tmdbId, subscribed, title, subtitle, studios, names, profile }: Props) {
   const [open, setOpen] = useState(false);
   const [session, setSession] = useState(0); // новый экземпляр окна — свежее состояние формы
   const close = useCallback(() => setOpen(false), []);
@@ -33,6 +33,7 @@ export function SubscribeButton({ tmdbId, subscribed, title, subtitle, studios, 
           title={title}
           subtitle={subtitle}
           studios={studios}
+          names={names}
           initial={profile}
           hidden={{ tmdbId: String(tmdbId) }}
           action={saveSubscriptionAction}

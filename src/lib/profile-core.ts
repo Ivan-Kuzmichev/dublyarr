@@ -147,3 +147,25 @@ export function describeProfile(p: Profile, studioName: (id: number) => string |
         : `С ${code(s.season, s.episode)} ${s.until === 'season_end' ? 'до конца сезона' : 'и дальше'}`;
   return { chain, quality, scope };
 }
+
+// --- порядок озвучек (редактор) ---
+
+/** Ожидание по умолчанию, когда позиция не первая. */
+export const DEFAULT_WAIT: Record<DubPosition['kind'], number> = { studio: 2, any: 5, original: 0 };
+
+export const dubKey = (d: DubPosition) => (d.kind === 'studio' ? `s${d.studioId}` : d.kind);
+
+/**
+ * Добавить или убрать позицию. Новая встаёт перед «Любой» (та всегда последняя).
+ * Первая позиция — без ожидания; позиция, переставшая быть первой с ожиданием 0, получает ожидание по умолчанию.
+ */
+export function toggleDub(dubs: DubPosition[], pos: DubPosition): DubPosition[] {
+  const key = dubKey(pos);
+  let next: DubPosition[];
+  if (dubs.some((d) => dubKey(d) === key)) next = dubs.filter((d) => dubKey(d) !== key);
+  else {
+    const anyIdx = dubs.findIndex((d) => d.kind === 'any');
+    next = pos.kind === 'any' || anyIdx < 0 ? [...dubs, pos] : [...dubs.slice(0, anyIdx), pos, ...dubs.slice(anyIdx)];
+  }
+  return next.map((d, i) => (i === 0 ? { ...d, waitDays: 0 } : d.waitDays === 0 && dubs[0] && dubKey(dubs[0]) === dubKey(d) ? { ...d, waitDays: DEFAULT_WAIT[d.kind] } : d));
+}

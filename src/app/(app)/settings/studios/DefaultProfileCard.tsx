@@ -52,6 +52,7 @@ export function DefaultProfileCard({ kind, profile, studios, studioNames }: Prop
           title={`Профиль по умолчанию: ${title.toLowerCase()}`}
           subtitle="Подставляется в новую подписку по типу сериала"
           studios={studios}
+          names={studioNames}
           initial={profile}
           hidden={{ kind }}
           action={saveDefaultProfileAction}

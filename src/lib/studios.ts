@@ -25,9 +25,9 @@ function uniq(xs: string[], key: (s: string) => string = (s) => s): string[] {
 
 function clean(input: StudioInput): StudioInput {
   const name = input.name.trim();
-  if (!name) throw new StudioError('Введите название студии');
+  if (!normalizeStudio(name)) throw new StudioError('Введите название студии');
   if (name.length > 60) throw new StudioError('Название — не длиннее 60 символов');
-  const aliases = uniq(input.aliases, normalizeStudio).filter((a) => normalizeStudio(a) !== normalizeStudio(name));
+  const aliases = uniq(input.aliases, normalizeStudio).filter((a) => normalizeStudio(a) && normalizeStudio(a) !== normalizeStudio(name));
   return { name, aliases, kind: input.kind, trackers: uniq(input.trackers.map((t) => t.toLowerCase())) };
 }
 
@@ -85,10 +85,11 @@ export function deleteStudio(db: Db, id: number) {
 /** Начальный словарь — один раз за жизнь базы: удалённые пользователем студии не возвращаются. */
 export function seedStudios(db: Db) {
   if (getSetting<boolean>(db, 'studios.seeded')) return;
+  // Флаг — в той же транзакции; уже существующие студии пропускаются (на случай старой базы без флага).
   db.transaction(() => {
-    for (const s of STUDIO_SEED) createStudio(db, s, 'seed');
+    for (const s of STUDIO_SEED) if (!findStudioByAlias(db, s.name)) createStudio(db, s, 'seed');
+    setSetting(db, 'studios.seeded', true);
   });
-  setSetting(db, 'studios.seeded', true);
 }
 
 export function listStudios(db: Db, kind?: 'series' | 'anime'): Studio[] {
@@ -102,6 +103,7 @@ export function listStudios(db: Db, kind?: 'series' | 'anime'): Studio[] {
 
 export function findStudioByAlias(db: Db, text: string): Studio | undefined {
   const n = normalizeStudio(text);
+  if (!n) return undefined;
   return db
     .select()
     .from(studios)

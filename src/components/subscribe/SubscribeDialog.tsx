@@ -16,12 +16,13 @@ type Props = {
   title: string;
   subtitle?: string;
   studios: StudioOption[];
+  names: Record<number, string>;
   initial: Profile;
   hidden: Record<string, string>;
   action: (prev: DialogState, form: FormData) => Promise<DialogState>;
 };
 
-export function SubscribeDialog({ open, onClose, mode, title, subtitle, studios, initial, hidden, action }: Props) {
+export function SubscribeDialog({ open, onClose, mode, title, subtitle, studios, names: allNames, initial, hidden, action }: Props) {
   const titleId = useId();
   const [profile, setProfile] = useState(initial);
   const [confirmUnsub, setConfirmUnsub] = useState(false);
@@ -29,8 +30,7 @@ export function SubscribeDialog({ open, onClose, mode, title, subtitle, studios,
   useEffect(() => {
     if (state.ok) onClose();
   }, [state, onClose]);
-  const names = new Map(studios.map((s) => [s.id, s.name]));
-  const d = describeProfile(profile, (id) => names.get(id));
+  const d = describeProfile(profile, (id) => allNames[id]);
   const primary = mode === 'subscribe' ? 'Подписаться' : 'Сохранить';
 
   return (
@@ -52,7 +52,7 @@ export function SubscribeDialog({ open, onClose, mode, title, subtitle, studios,
           </button>
         </header>
         <div className="min-h-0 overflow-y-auto px-5 py-5 md:px-7">
-          <ProfileEditor studios={studios} value={profile} onChange={setProfile} />
+          <ProfileEditor studios={studios} names={allNames} value={profile} onChange={setProfile} />
         </div>
         <footer className="flex flex-col gap-3 border-t border-line px-5 py-4 md:px-7">
           <p className="m-0 text-[13px] leading-normal text-muted">

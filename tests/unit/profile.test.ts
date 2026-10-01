@@ -157,3 +157,13 @@ test('описание профиля', () => {
     scope: 'Все сезоны',
   });
 });
+
+test('данные окна подписки: добавлять — по типу, подписи — для всех студий', async () => {
+  const { subscribeDialogStudios } = await import('@/lib/profile');
+  const db = testDb();
+  seedStudios(db);
+  const lf = findStudioByAlias(db, 'LostFilm')!;
+  const d = subscribeDialogStudios(db, 'anime');
+  expect(d.addable.some((s) => s.id === lf.id)).toBe(false);
+  expect(d.names[lf.id]).toBe('LostFilm');
+});

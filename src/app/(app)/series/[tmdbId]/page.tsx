@@ -16,8 +16,7 @@ import { RefreshButton } from './RefreshButton';
 import { SubscribeButton } from './SubscribeButton';
 import { SubscriptionPanel } from './SubscriptionPanel';
 import { getSubscription } from '@/lib/subscriptions';
-import { getDefaultProfile } from '@/lib/profile';
-import { listStudios } from '@/lib/studios';
+import { getDefaultProfile, subscribeDialogStudios } from '@/lib/profile';
 
 export const dynamic = 'force-dynamic';
 
@@ -76,8 +75,7 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
   const ordered = [...seasons.filter((s) => s.number > 0), ...seasons.filter((s) => s.number === 0)];
   const backdrop = imageUrl('w1280', t.backdropPath);
   const sub = getSubscription(db, t.id);
-  const studios = listStudios(db, t.kind).map((s) => ({ id: s.id, name: s.name }));
-  const studioNames = Object.fromEntries(listStudios(db).map((s) => [s.id, s.name]));
+  const { addable: studios, names: studioNames } = subscribeDialogStudios(db, t.kind);
   const episodeTotal = seasons.filter((s) => s.number > 0).reduce((n, s) => n + s.episodeCount, 0);
   const meta = [
     t.nameOriginal !== t.nameRu ? t.nameOriginal : null,
@@ -118,6 +116,7 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
               title={t.nameRu}
               subtitle={[t.nameOriginal !== t.nameRu ? t.nameOriginal : null, t.year, `${regular} ${plural(regular, 'сезон', 'сезона', 'сезонов')}, ${episodeTotal} ${plural(episodeTotal, 'серия', 'серии', 'серий')}`, STATUS[t.status]].filter(Boolean).join(' · ')}
               studios={studios}
+              names={studioNames}
               profile={sub?.profile ?? getDefaultProfile(db, t.kind)}
             />
             <RefreshButton tmdbId={t.tmdbId} />

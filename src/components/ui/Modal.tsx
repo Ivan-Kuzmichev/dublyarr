@@ -3,6 +3,8 @@
 import { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
+const FOCUSABLE = 'input:not([type=hidden]), button, select, textarea, a[href], [tabindex]:not([tabindex="-1"])';
+
 type Props = { open: boolean; onClose: () => void; labelledBy: string; children: React.ReactNode; width?: number };
 
 /** Desktop — модалка по центру; телефон — шторка снизу. Esc и клик по фону закрывают. */
@@ -13,8 +15,25 @@ export function Modal({ open, onClose, labelledBy, children, width = 880 }: Prop
     const prevFocus = document.activeElement as HTMLElement | null;
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    box.current?.querySelector<HTMLElement>('input, button, [tabindex]')?.focus();
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const focusables = () =>
+      Array.from(box.current?.querySelectorAll<HTMLElement>(FOCUSABLE) ?? []).filter((el) => !el.hasAttribute('disabled'));
+    focusables()[0]?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') return onClose();
+      if (e.key !== 'Tab') return;
+      // фокус не уходит за пределы окна
+      const els = focusables();
+      if (!els.length) return;
+      const first = els[0];
+      const last = els[els.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        last.focus();
+        e.preventDefault();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        first.focus();
+        e.preventDefault();
+      }
+    };
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('keydown', onKey);

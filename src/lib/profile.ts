@@ -47,3 +47,11 @@ export function saveDefaultProfile(db: Db, kind: 'series' | 'anime', p: Profile)
   setSetting(db, `profile.${kind}`, p);
 }
 
+
+/** Для окна подписки: добавлять можно студии нужного типа, а подписи нужны для всех (тип мог смениться). */
+export function subscribeDialogStudios(db: Db, kind: 'series' | 'anime') {
+  return {
+    addable: listStudios(db, kind).map((s) => ({ id: s.id, name: s.name })),
+    names: Object.fromEntries(listStudios(db).map((s) => [s.id, s.name])) as Record<number, string>,
+  };
+}

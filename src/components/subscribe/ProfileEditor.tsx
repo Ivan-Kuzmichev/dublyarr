@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Stepper } from '@/components/ui/Stepper';
-import type { DubPosition, Profile } from '@/lib/profile-core';
+import { dubKey, toggleDub, type DubPosition, type Profile } from '@/lib/profile-core';
 
 export type StudioOption = { id: number; name: string };
 
-type Props = { studios: StudioOption[]; value: Profile; onChange: (p: Profile) => void };
+type Props = { studios: StudioOption[]; names: Record<number, string>; value: Profile; onChange: (p: Profile) => void };
 
 const H = ({ children, note }: { children: React.ReactNode; note?: string }) => (
   <div className="flex items-baseline justify-between gap-3">
@@ -38,35 +38,22 @@ function Choice<T extends string | number>({ options, value, onChange, label }: 
 type Item = { key: string; label: string; pos: DubPosition };
 
 /** Редактор профиля: окно подписки и профили по умолчанию. */
-export function ProfileEditor({ studios, value: p, onChange }: Props) {
+export function ProfileEditor({ studios, names, value: p, onChange }: Props) {
   const [filter, setFilter] = useState('');
   const set = (patch: Partial<Profile>) => onChange({ ...p, ...patch });
 
-  const keyOf = (d: DubPosition) => (d.kind === 'studio' ? `s${d.studioId}` : d.kind);
+  const keyOf = dubKey;
   const all: Item[] = [
     ...studios.map((s) => ({ key: `s${s.id}`, label: s.name, pos: { kind: 'studio' as const, studioId: s.id, waitDays: 2 } })),
     { key: 'any', label: 'Любая', pos: { kind: 'any', waitDays: 5 } },
     { key: 'original', label: 'Оригинал с субтитрами', pos: { kind: 'original', waitDays: 0 } },
   ];
   const selectedKeys = p.dubs.map(keyOf);
-  const labelOf = (d: DubPosition) => all.find((i) => i.key === keyOf(d))?.label ?? 'Студия удалена';
+  const labelOf = (d: DubPosition) => (d.kind === 'studio' ? (names[d.studioId] ?? 'Студия удалена') : d.kind === 'any' ? 'Любая' : 'Оригинал с субтитрами');
   const q = filter.trim().toLowerCase();
   const rest = all.filter((i) => !selectedKeys.includes(i.key) && (!q || i.label.toLowerCase().includes(q)));
 
-  function toggle(item: Item) {
-    const idx = selectedKeys.indexOf(item.key);
-    if (idx >= 0) {
-      const dubs = p.dubs.filter((_, i) => i !== idx);
-      if (dubs[0]) dubs[0] = { ...dubs[0], waitDays: 0 };
-      return set({ dubs });
-    }
-    // «Любая» всегда последней: новые позиции встают перед ней
-    const anyIdx = p.dubs.findIndex((d) => d.kind === 'any');
-    const pos = { ...item.pos, waitDays: p.dubs.length === 0 ? 0 : item.pos.waitDays };
-    const dubs = item.key === 'any' || anyIdx < 0 ? [...p.dubs, pos] : [...p.dubs.slice(0, anyIdx), pos, ...p.dubs.slice(anyIdx)];
-    if (dubs[0]) dubs[0] = { ...dubs[0], waitDays: 0 };
-    set({ dubs });
-  }
+  const toggle = (item: Item) => set({ dubs: toggleDub(p.dubs, item.pos) });
 
   const row = 'flex min-h-12 items-center gap-3 rounded-[12px] border px-3';
   const q2 = p.quality;
