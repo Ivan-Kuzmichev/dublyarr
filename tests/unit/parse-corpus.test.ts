@@ -1,6 +1,8 @@
 import { expect, test } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { parseEpisodes, parseQuality } from '@/lib/parse/index';
+import { parseDubs, studioMatcher } from '@/lib/parse/dubs';
+import { STUDIO_SEED } from '@/lib/studio-seed';
 
 // Реальные заголовки (tests/fixtures/releases/hub-corpus.tsv): разбор не падает, а для известных — ожидаемые сезоны и качество.
 const rows = readFileSync('tests/fixtures/releases/hub-corpus.tsv', 'utf8')
@@ -41,4 +43,27 @@ test.each(expected)('%s', (prefix, seasons, resolution) => {
   expect(r, prefix).toBeDefined();
   expect(parseEpisodes(r!.title).seasons).toEqual(seasons);
   expect(parseQuality(r!.title, r!.tags).resolution).toBe(resolution);
+});
+
+const studios = STUDIO_SEED.map((s, i) => ({ id: i + 1, name: s.name, aliases: s.aliases, trackers: s.trackers }));
+const find = studioMatcher(studios);
+const dubNames: [string, string[]][] = [
+  ['Severance / S1E1-9 of 9 [2022, BDRip 1080p] Dub + 4 x MVO (HDrezka Studio, AlexFilm', ['HDrezka Studio', 'AlexFilm']],
+  ['Severance / S2E1-10 of 10 [2025, WEB-DL 1080p] Dub (Red Head Sound)', ['Red Head Sound', 'HDrezka Studio']],
+  ['Severance - S1E1-9 - 2022  MVO (LostFilm, HDRezka Studio)', ['LostFilm', 'HDrezka Studio']],
+  ['Severance - S2 - rus 1080p WEBDL (LostFilm)', ['LostFilm']],
+  ['The Last of Us - S2E1-7 - 2025  MVO (HDRezka Studio, 1WIN Studio, RuDub)', ['HDrezka Studio', 'RuDub']],
+  ['Rick and Morty - S9E1-10 - 2026  MVO (HDrezka Studio)', ['HDrezka Studio']],
+  ['The Bear - S5E0-8 - 2026  MVO (LostFilm, HDrezka Studio, Red Head Sound)', ['LostFilm', 'HDrezka Studio', 'Red Head Sound']],
+  ['Sousou no Frieren - S2E1-10 - 2026  MVO (AniLiberty)', ['AniLibria']],
+  ['Провожающая в последний путь Фрирен 2 / E01-E10', ['AniLibria']],
+  ['Sousou no Frieren  S02E01-E10 [RUS] [HDTV 1080p]', ['AniDUB']],
+];
+
+test.each(dubNames)('озвучки: %s', (prefix, expected) => {
+  const r = rows.find((x) => x.title.startsWith(prefix))!;
+  expect(r, prefix).toBeDefined();
+  const id = r.tracker.toLowerCase().replace(/\.(tv|org)$/, '');
+  const got = parseDubs(r.title, r.tags, { id, name: r.tracker }, find, studios).dubs.filter((d) => d.studioId !== null).map((d) => studios[d.studioId! - 1].name);
+  expect(got).toEqual(expected);
 });

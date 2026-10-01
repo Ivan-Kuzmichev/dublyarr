@@ -8,8 +8,9 @@ import type { Profile } from './profile';
 export class StudioError extends Error {}
 export type StudioInput = { name: string; aliases: string[]; kind: Studio['kind']; trackers: string[] };
 
-/** Форма для сравнения написаний: регистр, ё/е, пробелы, точки, дефисы и подчёркивания не важны. */
-export const normalizeStudio = (s: string) => s.toLowerCase().replace(/ё/g, 'е').replace(/[\s.\-_]+/g, '');
+import { normalizeStudio } from './studios-normalize';
+
+export { normalizeStudio };
 
 function uniq(xs: string[], key: (s: string) => string = (s) => s): string[] {
   const seen = new Set<string>();
