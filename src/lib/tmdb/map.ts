@@ -71,6 +71,7 @@ export const mapEpisodes = (s: TmdbSeason) =>
     name: e.name,
     airDate: date(e.air_date),
     runtime: e.runtime ?? null,
+    stillPath: e.still_path ?? null,
   }));
 
 export type ReleaseDates = { theatrical: string | null; digital: string | null; physical: string | null };

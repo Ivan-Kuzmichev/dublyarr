@@ -1,0 +1,1 @@
+ALTER TABLE `episodes` ADD `still_path` text;

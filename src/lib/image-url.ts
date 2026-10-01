@@ -1,6 +1,6 @@
 // Без node-модулей: используется и в клиентских компонентах.
 
-export const IMAGE_SIZES = ['w185', 'w342', 'w780', 'w1280'] as const;
+export const IMAGE_SIZES = ['w185', 'w300', 'w342', 'w780', 'w1280'] as const;
 export type ImageSize = (typeof IMAGE_SIZES)[number];
 
 export const imageUrl = (size: ImageSize, p: string | null) => (p ? `/api/image/${size}${p}` : null);

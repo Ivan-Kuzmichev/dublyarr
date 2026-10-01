@@ -22,7 +22,7 @@ export type TmdbTvDetails = {
 
 export type TmdbSeason = {
   season_number: number;
-  episodes: { episode_number: number; name: string; air_date: string | null; runtime: number | null }[];
+  episodes: { episode_number: number; name: string; air_date: string | null; runtime: number | null; still_path?: string | null }[];
 };
 
 export type TmdbTvListItem = {

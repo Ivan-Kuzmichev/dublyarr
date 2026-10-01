@@ -83,7 +83,9 @@ function ago(ms: number) {
   return `${Math.round(min / 1440)} дн назад`;
 }
 
-export type FreshItem = { tmdbId: number; movie: boolean; title: string; posterPath: string | null; code: string; quality: string; state: string; loading: boolean; pct: number };
+/** Картинка карточки «Новые серии»: кадр серии или фон сериала — широкие, постер — запасной. */
+export type FreshImage = { path: string | null; wide: boolean };
+export type FreshItem = { tmdbId: number; movie: boolean; title: string; image: FreshImage; code: string; quality: string; state: string; loading: boolean; pct: number };
 export type WaitingItem = {
   tmdbId: number;
   movie: boolean;
@@ -181,17 +183,26 @@ function waitingWithForecast(db: Db, today: string) {
 export function todayData(db: Db, today: string, now = Date.now()) {
   const meta = new Map(
     db
-      .select({ id: titles.id, tmdbId: titles.tmdbId, title: titles.nameRu, posterPath: titles.posterPath, kind: titles.kind, releaseDates: titles.releaseDates, digitalSeenAt: titles.digitalSeenAt })
+      .select({ id: titles.id, tmdbId: titles.tmdbId, title: titles.nameRu, posterPath: titles.posterPath, backdropPath: titles.backdropPath, kind: titles.kind, releaseDates: titles.releaseDates, digitalSeenAt: titles.digitalSeenAt })
       .from(titles)
       .all()
       .map((t) => [t.id, { ...t, movie: t.kind === 'movie' }]),
   );
   const fresh: (FreshItem & { at: number })[] = [];
+  const image = (t: { id: number; posterPath: string | null; backdropPath: string | null; movie: boolean }, ep?: { season: number; number: number }): FreshImage => {
+    const still =
+      ep && !t.movie
+        ? db.select({ s: episodes.stillPath }).from(episodes).where(and(eq(episodes.titleId, t.id), eq(episodes.season, ep.season), eq(episodes.number, ep.number))).get()?.s
+        : null;
+    if (still) return { path: still, wide: true };
+    if (t.backdropPath) return { path: t.backdropPath, wide: true };
+    return { path: t.posterPath, wide: false };
+  };
   for (const d of db.select().from(downloads).where(inArray(downloads.state, ACTIVE)).all()) {
     const t = meta.get(d.titleId)!;
     const pct = Math.round(d.progress * 100);
     const c = d.episodes.length === 1 ? code(d.episodes[0].season, d.episodes[0].number) : `S${pad(d.season)} · ${d.episodes.length} сер.`;
-    fresh.push({ tmdbId: t.tmdbId, movie: t.movie, title: t.title, posterPath: t.posterPath, code: d.kind === 'movie' ? 'фильм' : c, quality: quality(d.resolution), state: downloadingText(d), loading: true, pct, at: Number.MAX_SAFE_INTEGER - d.addedAt });
+    fresh.push({ tmdbId: t.tmdbId, movie: t.movie, title: t.title, image: image(t, d.episodes[0]), code: d.kind === 'movie' ? 'фильм' : c, quality: quality(d.resolution), state: downloadingText(d), loading: true, pct, at: Number.MAX_SAFE_INTEGER - d.addedAt });
   }
   for (const f of db.select().from(episodeFiles).where(gte(episodeFiles.importedAt, now - 72 * HOUR)).all().sort((a, b) => b.importedAt - a.importedAt)) {
     const t = meta.get(f.titleId)!;
@@ -199,7 +210,7 @@ export function todayData(db: Db, today: string, now = Date.now()) {
       tmdbId: t.tmdbId,
       movie: t.movie,
       title: t.title,
-      posterPath: t.posterPath,
+      image: image(t, { season: f.season, number: f.number }),
       code: code(f.season, f.number),
       quality: quality(f.resolution),
       state: `${f.studioLabel ? `${f.studioLabel} · ` : ''}скачано ${ago(now - f.importedAt)}`,

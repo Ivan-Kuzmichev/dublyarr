@@ -167,6 +167,7 @@ export const episodes = sqliteTable(
     name: text('name').notNull(),
     airDate: text('air_date'),
     runtime: integer('runtime'),
+    stillPath: text('still_path'), // кадр серии TMDB — для широких карточек «Сегодня»
   },
   (t) => [uniqueIndex('episodes_title_season_number').on(t.titleId, t.season, t.number)],
 );

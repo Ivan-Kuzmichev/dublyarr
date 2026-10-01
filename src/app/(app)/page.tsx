@@ -81,7 +81,7 @@ export default function TodayPage() {
             {d.fresh.map((e) => (
               <Link key={`${e.tmdbId}-${e.code}`} href={titleHref({ kind: e.movie ? 'movie' : 'series', tmdbId: e.tmdbId })} className="flex flex-col gap-3 text-text no-underline hover:text-text">
                 <div className="relative h-[120px] overflow-hidden rounded-[14px] lg:h-[158px]">
-                  <Poster tmdbId={e.tmdbId} name={e.title} path={e.posterPath} size="w342" className="h-full w-full" />
+                  <Poster tmdbId={e.tmdbId} name={e.title} path={e.image.path} size={e.image.wide ? 'w780' : 'w342'} className="h-full w-full" />
                   <span className="absolute top-3 left-3 rounded-md bg-bg/80 px-2 py-1 font-mono text-xs">{e.code}</span>
                   {e.quality && <span className="absolute top-3 right-3 rounded-md bg-bg/80 px-2 py-1 text-xs font-semibold">{e.quality}</span>}
                   {e.loading && (
