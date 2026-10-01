@@ -142,6 +142,15 @@ Self-hosted сервис для одного пользователя: подп�
   кроме файлов живых торрентов. Первое срабатывание — страница `/cleanup` (флаги `cleanup.files.confirmed`, `cleanup.orphans.confirmed`), сводка для «Требует внимания» — `app_settings['cleanup.pending']`.
 - `downloads.files` хранит имена файлов как qBittorrent (с корневой папкой многофайловой раздачи).
 
+## Решения (фаза 2d — Telegram)
+
+- Клиент Bot API — `src/lib/telegram.ts` (токен в адресе — маскируется `maskToken`; прокси — свой или прокси TMDB; env `TELEGRAM_API_BASE` для заглушки).
+- Очередь `notifications` (`src/lib/notify.ts`): событие пишется сразу (ключ от повторов), воркер `telegram.send` раз в 15 с; повторы 2, 4, 8… мин, сутки — «не доставлено».
+- События и тексты — `src/lib/notify-events.ts`, вызовы — в местах событий (импорт, застряла/пропала, `setWanted`, источники, заметки, сводки подтверждений).
+- Входящие — `src/lib/telegram-updates.ts` (`telegram.poll` раз в 15 с, long polling без вебхука): привязка чата одноразовым кодом, кнопки `m:/r:<releaseId>` → `answerMatch`.
+  Только привязанный чат; удаление из Telegram не выполняется (только ссылки на страницы подтверждения).
+- e2e: заглушка Telegram `tests/e2e/telegram-stub.mjs` (порт 3196; `POST /__push`, `GET /__sent`).
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

@@ -32,13 +32,12 @@ export async function telegramAction(_prev: TgState, form: FormData): Promise<Tg
   const tg = createTelegram({ token, proxy: telegramProxy(db, s) });
   const intent = form.get('intent');
   try {
-    if (intent === 'check') return { values, ok: `Бот @${(await tg.getMe()).username}` };
+    // проверка тоже сохраняет: поле токена после действия очищается, а в браузер он не возвращается
+    const me = intent === 'check' || intent === 'pair' ? await tg.getMe() : null;
     saveTelegramSettings(db, s);
+    if (intent === 'check') return { values, ok: `Бот @${me!.username} · сохранено` };
     revalidatePath('/settings/notifications');
-    if (intent === 'pair') {
-      const me = await tg.getMe();
-      return { values, ok: `Отправьте этот код боту @${me.username} в течение 10 минут`, code: startPairing(db) };
-    }
+    if (intent === 'pair') return { values, ok: `Отправьте этот код боту @${me!.username} в течение 10 минут`, code: startPairing(db) };
     if (intent === 'test') {
       if (!s.chatId) return { values, error: 'Сначала привяжите чат' };
       await tg.sendMessage(s.chatId, 'Проверка связи: Dublyarr на месте ✓');

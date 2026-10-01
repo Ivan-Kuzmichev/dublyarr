@@ -23,6 +23,7 @@ export default defineConfig({
       url: 'http://127.0.0.1:3197/api/v2/auth/login',
       env: { QBIT_DIR: path.join(dir, 'qbit'), QBIT_STEP: '1' },
     },
+    { command: 'node tests/e2e/telegram-stub.mjs 3196', url: 'http://127.0.0.1:3196/__sent' },
     {
       command: 'pnpm build && node dist/supervisor.cjs',
       url: 'http://127.0.0.1:3100/api/health',
@@ -34,6 +35,7 @@ export default defineConfig({
         DUBLYARR_SECRET_KEY: randomBytes(32).toString('base64'),
         TMDB_BASE_URL: 'http://127.0.0.1:3199/3',
         TMDB_IMAGE_BASE_URL: 'http://127.0.0.1:3199/t/p',
+        TELEGRAM_API_BASE: 'http://127.0.0.1:3196',
       },
     },
   ],
