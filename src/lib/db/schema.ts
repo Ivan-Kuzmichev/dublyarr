@@ -1,3 +1,5 @@
+import type { ParsedRelease } from '../parse/types';
+import type { MatchResult } from '../match-types';
 import type { Profile } from '../profile';
 import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
@@ -188,3 +190,77 @@ export const subscriptions = sqliteTable('subscriptions', {
 
 export type Studio = typeof studios.$inferSelect;
 export type Subscription = typeof subscriptions.$inferSelect;
+
+// Поиск раздач (фаза 1c)
+
+export const trackers = sqliteTable(
+  'trackers',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    sourceId: integer('source_id')
+      .notNull()
+      .references(() => sources.id, { onDelete: 'cascade' }),
+    indexerId: text('indexer_id').notNull(),
+    name: text('name').notNull(),
+    kind: text('kind', { enum: ['series', 'anime', 'both', 'unknown'] })
+      .notNull()
+      .default('unknown'),
+    role: text('role', { enum: ['primary', 'backup'] }).notNull(),
+    lastOkAt: ts('last_ok_at'),
+    lastError: text('last_error'),
+    lastErrorAt: ts('last_error_at'),
+  },
+  (t) => [uniqueIndex('trackers_source_indexer').on(t.sourceId, t.indexerId)],
+);
+
+export const releases = sqliteTable(
+  'releases',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    titleId: integer('title_id')
+      .notNull()
+      .references(() => titles.id, { onDelete: 'cascade' }),
+    sourceId: integer('source_id')
+      .notNull()
+      .references(() => sources.id, { onDelete: 'cascade' }),
+    trackerId: integer('tracker_id').references(() => trackers.id, { onDelete: 'set null' }),
+    trackerName: text('tracker_name').notNull(),
+    title: text('title').notNull(),
+    attrs: json<Record<string, string | string[]>>('attrs').notNull().default({}),
+    size: integer('size').notNull(),
+    seeders: integer('seeders'),
+    peers: integer('peers'),
+    infohash: text('infohash'),
+    downloadEnc: text('download_enc'), // ссылка на .torrent содержит ключ источника — хранится зашифрованной
+    magnet: text('magnet'),
+    detailsUrl: text('details_url'),
+    publishedAt: ts('published_at'),
+    firstSeenAt: ts('first_seen_at').notNull(),
+    lastSeenAt: ts('last_seen_at').notNull(),
+    parsed: json<ParsedRelease>('parsed').notNull(),
+    match: json<MatchResult>('match').notNull(),
+  },
+  (t) => [
+    uniqueIndex('releases_title_infohash').on(t.titleId, t.infohash),
+    uniqueIndex('releases_title_tracker_name_size').on(t.titleId, t.trackerName, t.title, t.size),
+  ],
+);
+
+export const releaseRules = sqliteTable(
+  'release_rules',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    titleId: integer('title_id')
+      .notNull()
+      .references(() => titles.id, { onDelete: 'cascade' }),
+    trackerName: text('tracker_name'), // null — любой трекер
+    pattern: text('pattern').notNull(), // нормализованная основа заголовка
+    verdict: text('verdict', { enum: ['match', 'reject'] }).notNull(),
+    createdAt: ts('created_at').notNull(),
+  },
+  (t) => [uniqueIndex('release_rules_unique').on(t.titleId, t.trackerName, t.pattern)],
+);
+
+export type Tracker = typeof trackers.$inferSelect;
+export type Release = typeof releases.$inferSelect;
+export type ReleaseRule = typeof releaseRules.$inferSelect;
