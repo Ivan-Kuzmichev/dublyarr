@@ -6,6 +6,7 @@ import { DEFAULT_TEMPLATE, PathError, renderTemplate, toLocalPath } from './libr
 import { importFile } from './importer';
 import { access } from 'node:fs/promises';
 import { restoreOldCopy, settleOldCopy, stashOldCopy } from './old-copies';
+import { notifyGone, notifyImported, notifyStalled } from './notify-events';
 
 const fileExists = (p: string) =>
   access(p).then(
@@ -337,6 +338,7 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
     const t = byHash.get(d.hash);
     if (!t) {
       update(db, d.id, { state: 'removed' });
+      notifyGone(db, d, now);
       res.updated++;
       continue;
     }
@@ -361,6 +363,7 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
     const paused = /^(stopped|paused)/i.test(t.state);
     const stalled = !done && t.num_seeds === 0 && now - (lastSeededAt ?? d.addedAt) > DAY;
     const state = done ? 'completed' : paused ? 'paused' : stalled ? 'stalled' : 'downloading';
+    if (state === 'stalled' && d.state !== 'stalled') notifyStalled(db, d, now);
     update(db, d.id, {
       progress,
       dlSpeed: t.dlspeed,
@@ -375,7 +378,7 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
     if (!done) continue;
     try {
       const got = await importDownload(db, d, t.save_path, qfiles, deps.paths, now);
-      update(db, d.id, { state: 'imported', importedAt: now, lastError: null, episodes: got });
+      notifyImported(db, update(db, d.id, { state: 'imported', importedAt: now, lastError: null, episodes: got }), got, now);
       res.imported++;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

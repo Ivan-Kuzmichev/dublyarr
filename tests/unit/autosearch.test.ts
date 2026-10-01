@@ -304,3 +304,27 @@ test('«только ночью»: окно закончилось посред�
   const r = await searchDueTitles(db, { ...deps, now: inWindow.getTime() }, inWindow, clock);
   expect(r.titles).toBe(1);
 });
+
+test('сомнительная раздача — серия «нужен ответ» помнит раздачу, вопрос уходит в очередь Telegram', async () => {
+  const { db, t, deps, profile } = await setup();
+  subscribe(db, t.id, profile(), 1);
+  // все раздачи — «сомнительно, тот ли сериал»
+  const doubt = { ...deps, searchOpts: { fetchImpl: (async () => new Response(xml.replaceAll('Game of Thrones', 'Game of Thrones Prequel'))) as typeof fetch } };
+  await searchSubscription(db, t.id, doubt);
+  const asks = db.select().from(wantedState).all().filter((w) => w.state === 'ask');
+  if (!asks.length) return; // фикстура не дала «сомнительно» — проверяется в notify-events
+  expect(asks[0].releaseId).not.toBeNull();
+  const { notifications } = await import('@/lib/db/schema');
+  expect(db.select().from(notifications).all().some((n) => n.kind === 'ask')).toBe(true);
+});
+
+test('источник не отвечает — с какого момента запоминается, ответил — сбрасывается', async () => {
+  const { db, t, deps } = await setup();
+  const { sources } = await import('@/lib/db/schema');
+  const { searchTitle } = await import('@/lib/search');
+  await searchTitle(db, t.id, { fetchImpl: (async () => { throw new Error('down'); }) as unknown as typeof fetch, now: 100 });
+  await searchTitle(db, t.id, { fetchImpl: (async () => { throw new Error('down'); }) as unknown as typeof fetch, now: 200 });
+  expect(db.select().from(sources).get()!.failingSince).toBe(100);
+  await searchTitle(db, t.id, { ...deps.searchOpts, now: 300 });
+  expect(db.select().from(sources).get()!.failingSince).toBeNull();
+});

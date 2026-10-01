@@ -5,6 +5,8 @@ import type { Db } from './db/client';
 import { oldCopies } from './db/schema';
 import { getSetting, setSetting } from './settings';
 import { log } from './log';
+import { notifyPendingConfirm } from './notify-events';
+import { formatSize } from './format';
 
 // Правило «Старая копия после улучшения» (spec §8): удалять сразу; первое срабатывание — через подтверждение.
 // До подтверждения старая копия лежит в скрытой папке медиатеки (VidHub её не показывает) и ждёт в списке.
@@ -58,6 +60,8 @@ export async function settleOldCopy(db: Db, media: string, stashed: string, row:
     () => 0,
   );
   db.insert(oldCopies).values({ ...row, path: stashed, size, reason, createdAt: now }).run();
+  const sum = oldCopiesSummary(db);
+  notifyPendingConfirm(db, 'old-copies', `🗂 Старые копии после улучшения ждут подтверждения удаления: ${sum.count} · ${formatSize(sum.size)}`, now);
 }
 
 /** Подтверждение правила: удалить отмеченные старые копии; дальше правило работает само. */

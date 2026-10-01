@@ -1,6 +1,6 @@
 import { and, eq, or } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { releases, titles, trackers, type Release, type Title } from './db/schema';
+import { releases, sources, titles, trackers, type Release, type Title } from './db/schema';
 import { listSeasons } from './catalog';
 import { listStudios } from './studios';
 import { sourcesForSearch } from './sources';
@@ -12,6 +12,7 @@ import { matchRelease, resolveAbsolute, toTitleInfo } from './match';
 import { ruleFor } from './release-rules';
 import { encrypt } from './crypto/secretbox';
 import { recordSightings } from './sightings';
+import { checkSourcesDown } from './notify-events';
 import { log } from './log';
 
 export type SourceStatus = { sourceId: number; name: string; ok: boolean; found: number; ms: number; error?: string };
@@ -59,7 +60,14 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
     }),
   );
   const statuses = settled.map((s) => s.status);
-  for (const s of statuses) markSourceTrackers(db, s.sourceId, s.ok ? null : (s.error ?? 'ошибка'), now);
+  for (const s of statuses) {
+    markSourceTrackers(db, s.sourceId, s.ok ? null : (s.error ?? 'ошибка'), now);
+    // с какого момента источник не отвечает (для уведомления «не отвечает больше часа»)
+    const src = db.select({ since: sources.failingSince }).from(sources).where(eq(sources.id, s.sourceId)).get();
+    if (s.ok && src?.since) db.update(sources).set({ failingSince: null }).where(eq(sources.id, s.sourceId)).run();
+    if (!s.ok && src && !src.since) db.update(sources).set({ failingSince: now }).where(eq(sources.id, s.sourceId)).run();
+  }
+  checkSourcesDown(db, now);
   const okSources = new Set(statuses.filter((s) => s.ok).map((s) => s.sourceId));
 
   // Трекеры результатов (создаются на лету, если источник не умеет t=indexers) и отброс запасных.

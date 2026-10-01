@@ -8,7 +8,7 @@ import { testDb } from './helpers';
 import { fakeQbit } from './fake-qbit';
 import { bencode } from '@/lib/torrent-file';
 import { startRelease, syncDownloads } from '@/lib/downloads';
-import { downloads, episodeFiles, oldCopies, releases, sources, titles, wantedState, type Release } from '@/lib/db/schema';
+import { downloads, episodeFiles, notifications, oldCopies, releases, sources, titles, wantedState, type Release } from '@/lib/db/schema';
 import type { ParsedRelease } from '@/lib/parse/types';
 
 process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
@@ -239,5 +239,38 @@ describe('старая копия после улучшения', () => {
     expect(readFileSync(path.join(media, oldRel), 'utf8')).toBe('старая');
     expect(db.select().from(episodeFiles).get()!.path).toBe(oldRel);
     expect(db.select().from(oldCopies).all()).toEqual([]);
+  });
+});
+
+describe('уведомления о загрузках', () => {
+  const texts = (db: ReturnType<typeof setup>['db']) => db.select().from(notifications).all().map((n) => n.text);
+  test('скачана новая серия — одно сообщение; улучшение — своей строкой', async () => {
+    const { db, mk, fq, files, deps, paths, finish } = setup();
+    const r = mk('GoT S01', {});
+    files.set(r.id, torrent('GoT S01', ['GoT.S01E01.mkv', 'GoT.S01E02.mkv']));
+    const d = await startRelease(db, deps, r, [1, 2].map((number) => ({ season: 1, number })), 'pack', 'LostFilm');
+    finish(d.hash);
+    await syncDownloads(db, { qbit: fq.qbit, paths, now: HOUR });
+    await syncDownloads(db, { qbit: fq.qbit, paths, now: 2 * HOUR });
+    expect(texts(db)).toEqual(['📥 Игра престолов · S01E01–E02 — LostFilm 1080p']);
+    const u = mk('GoT S01E03 2160', { pack: false, resolution: 2160 });
+    files.set(u.id, torrent('GoT.S01E03.mkv', null));
+    const d2 = await startRelease(db, deps, u, [{ season: 1, number: 3 }], 'episode', 'LostFilm', { note: 'Улучшение: 1080p → 2160p' });
+    finish(d2.hash);
+    await syncDownloads(db, { qbit: fq.qbit, paths, now: 3 * HOUR });
+    expect(texts(db)[1]).toBe('📥 Игра престолов · S01E03 — Улучшено: 1080p → 2160p');
+  });
+
+  test('застряла и пропала — по одному сообщению', async () => {
+    const { db, mk, fq, files, deps, paths } = setup();
+    const r = mk('GoT S01E01', { pack: false });
+    files.set(r.id, torrent('Game.of.Thrones.S01E01.mkv', null));
+    const d = await startRelease(db, deps, r, [{ season: 1, number: 1 }], 'episode', 'X');
+    fq.torrents.get(d.hash)!.num_seeds = 0;
+    await syncDownloads(db, { qbit: fq.qbit, paths, now: 25 * HOUR });
+    await syncDownloads(db, { qbit: fq.qbit, paths, now: 26 * HOUR });
+    fq.torrents.clear();
+    await syncDownloads(db, { qbit: fq.qbit, paths, now: 27 * HOUR });
+    expect(texts(db)).toEqual(['⏳ Застряла: Игра престолов · S01E01 — нет сидов больше суток', '⚠️ Раздача пропала из qBittorrent: Игра престолов · S01E01']);
   });
 });

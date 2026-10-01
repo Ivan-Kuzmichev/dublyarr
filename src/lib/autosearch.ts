@@ -14,6 +14,7 @@ import type { Qbit } from './qbit';
 import { todayIso } from './dates';
 import { log } from './log';
 import { eagerTitles } from './forecast';
+import { notifyWanted } from './notify-events';
 import { getSchedule, inNightWindow, searchDue, type ScheduleSettings } from './schedule';
 
 // Поиск и загрузка по подпискам (воркер, раз в час и по кнопке «Искать сейчас»).
@@ -30,12 +31,18 @@ export type AutoDeps = {
 
 const key = (e: EpisodeRef) => `${e.season}:${e.number}`;
 
-function setWanted(db: Db, titleId: number, ep: EpisodeRef, state: 'waiting' | 'missing' | 'ask', reason: string, until: string | null, now: number) {
-  const row = { titleId, season: ep.season, number: ep.number, state, reason, until, checkedAt: now };
+function setWanted(db: Db, titleId: number, ep: EpisodeRef, state: 'waiting' | 'missing' | 'ask', reason: string, until: string | null, now: number, releaseId: number | null = null) {
+  const prev = db
+    .select({ state: wantedState.state })
+    .from(wantedState)
+    .where(and(eq(wantedState.titleId, titleId), eq(wantedState.season, ep.season), eq(wantedState.number, ep.number)))
+    .get();
+  const row = { titleId, season: ep.season, number: ep.number, state, reason, until, releaseId, checkedAt: now };
   db.insert(wantedState)
     .values(row)
     .onConflictDoUpdate({ target: [wantedState.titleId, wantedState.season, wantedState.number], set: row })
     .run();
+  notifyWanted(db, row, prev?.state ?? null, now);
 }
 const clearWanted = (db: Db, titleId: number, ep: EpisodeRef) =>
   db.delete(wantedState).where(and(eq(wantedState.titleId, titleId), eq(wantedState.season, ep.season), eq(wantedState.number, ep.number))).run();
@@ -161,7 +168,8 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
       continue;
     }
     if (plan.action === 'ask' || plan.action === 'none') {
-      setWanted(db, titleId, ep, plan.action === 'ask' ? 'ask' : 'missing', plan.reason, null, now);
+      const askAbout = plan.action === 'ask' ? (verdicts.find((v) => v.tone === 'ask')?.releaseId ?? null) : null;
+      setWanted(db, titleId, ep, plan.action === 'ask' ? 'ask' : 'missing', plan.reason, null, now, askAbout);
       res.missing++;
       continue;
     }

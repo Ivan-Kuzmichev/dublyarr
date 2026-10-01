@@ -7,6 +7,8 @@ import type { Qbit, QbitTorrent } from './qbit';
 import { CATEGORY, type Paths } from './downloads';
 import { toLocalPath } from './library-path';
 import { getSetting, setSetting } from './settings';
+import { notifyPendingConfirm } from './notify-events';
+import { formatSize } from './format';
 
 // Уборка в qBittorrent (spec §7): убрать торрент после импорта / после раздачи, заменённые раздачи, брошенные файлы.
 // Файлы удаляет сам Dublyarr и только внутри {downloads}/dublyarr; файлы живых торрентов не трогаются.
@@ -232,6 +234,7 @@ export async function runCleanup(db: Db, qbit: Qbit, paths: Paths, s: CleanupSet
     }
   }
   if (!keys) setSetting(db, 'cleanup.pending', { count: res.pending, size: pendingSize });
+  if (!keys && res.pending) notifyPendingConfirm(db, 'cleanup', `🧹 Уборка загрузок ждёт подтверждения: ${res.pending} · ${formatSize(pendingSize)}`, now);
   else setSetting(db, 'cleanup.pending', { count: 0, size: 0 });
   return res;
 }
