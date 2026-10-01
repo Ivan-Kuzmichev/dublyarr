@@ -30,6 +30,7 @@ export const SETTINGS_SECTIONS = [
   { id: 'storage', label: 'Хранение', phase: 3 },
   { id: 'notify', label: 'Уведомления', phase: 2 },
   { id: 'ai', label: 'AI', phase: 4 }, // своя страница /settings/ai
+  { id: 'diagnostics', label: 'Диагностика', phase: 5 }, // своя страница /settings/diagnostics
   { id: 'security', label: 'Безопасность', phase: 0 },
 ] as const;
 
