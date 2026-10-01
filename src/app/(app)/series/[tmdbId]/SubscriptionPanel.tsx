@@ -22,7 +22,7 @@ export function SubscriptionPanel({ profile, studioNames }: { profile: Profile; 
           <li key={i} className="flex items-center gap-3 text-sm">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-2 font-mono text-xs text-accent">{i + 1}</span>
             <span className="grow font-medium">{dubLabel(p, name)}</span>
-            <span className="text-[13px] text-faint">{i === 0 ? 'сразу' : `если нет ${p.waitDays} дн`}</span>
+            <span className="text-[13px] text-faint">{i === 0 ? 'сразу' : `если нет — через ${p.waitDays} дн после эфира`}</span>
           </li>
         ))}
       </ol>

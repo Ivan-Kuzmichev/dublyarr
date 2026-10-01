@@ -26,7 +26,7 @@ test('подписка → карточка → библиотека → пра�
   const panel = page.getByRole('region', { name: 'Подписка' });
   await expect(panel.getByText('активна')).toBeVisible();
   await expect(panel.getByText('HDrezka Studio')).toBeVisible();
-  await expect(panel.getByText('если нет 5 дн')).toBeVisible();
+  await expect(panel.getByText('если нет — через 5 дн после эфира')).toBeVisible();
   await expect(panel.getByText('1080p, иначе ниже · HDR')).toBeVisible();
 
   await page.goto('/library');

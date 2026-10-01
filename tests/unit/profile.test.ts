@@ -142,7 +142,7 @@ test('описание профиля', () => {
     ],
   };
   expect(describeProfile(p, (id) => names[id])).toEqual({
-    chain: 'LostFilm → HDrezka Studio (2 дн) → Студия удалена (3 дн) → Любая (5 дн)',
+    chain: 'LostFilm → HDrezka Studio (через 2 дн) → Студия удалена (через 3 дн) → Любая (через 5 дн)',
     quality: '2160p, иначе ниже · HDR',
     scope: 'Только новые серии',
   });
@@ -166,4 +166,20 @@ test('данные окна подписки: добавлять — по тип
   const d = subscribeDialogStudios(db, 'anime');
   expect(d.addable.some((s) => s.id === lf.id)).toBe(false);
   expect(d.names[lf.id]).toBe('LostFilm');
+});
+
+test('ожидания не убывают сверху вниз', () => {
+  expect(
+    validateProfile(
+      {
+        ...base,
+        dubs: [
+          { kind: 'studio', studioId: 1, waitDays: 0 },
+          { kind: 'studio', studioId: 2, waitDays: 5 },
+          { kind: 'any', waitDays: 2 },
+        ],
+      },
+      known,
+    ),
+  ).toEqual({ ok: false, error: 'Ожидание не может быть меньше, чем у позиции выше' });
 });

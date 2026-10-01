@@ -18,3 +18,21 @@ test('позиция, переставшая быть первой, получа
 test('удаление первой: новая первая — без ожидания', () => {
   expect(toggleDub([{ ...lf, waitDays: 0 }, hd, any], lf)).toEqual([{ ...hd, waitDays: 0 }, any]);
 });
+
+test('новая позиция ждёт не меньше предыдущей; «Любая» — не меньше новой', () => {
+  const s3: DubPosition = { kind: 'studio', studioId: 3, waitDays: 2 };
+  expect(toggleDub([{ ...lf, waitDays: 0 }, { ...hd, waitDays: 7 }, any], s3)).toEqual([
+    { ...lf, waitDays: 0 },
+    { ...hd, waitDays: 7 },
+    { ...s3, waitDays: 7 },
+    { kind: 'any', waitDays: 7 },
+  ]);
+});
+
+test('setWait поднимает позиции ниже, если они стали меньше', async () => {
+  const { setWait } = await import('@/lib/profile-core');
+  const dubs: DubPosition[] = [{ ...lf, waitDays: 0 }, { ...hd, waitDays: 2 }, { kind: 'any', waitDays: 5 }];
+  expect(setWait(dubs, 1, 7).map((d) => d.waitDays)).toEqual([0, 7, 7]);
+  expect(setWait(dubs, 2, 3).map((d) => d.waitDays)).toEqual([0, 2, 3]);
+  expect(setWait(dubs, 2, 1).map((d) => d.waitDays)).toEqual([0, 2, 2]); // не ниже позиции выше
+});

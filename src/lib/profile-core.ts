@@ -15,7 +15,7 @@ export type Scope =
   | { mode: 'from'; season: number; episode: number; until: 'season_end' | 'onward' };
 
 export type Profile = {
-  dubs: DubPosition[]; // порядок = приоритет; waitDays — сколько ждать предыдущую позицию
+  dubs: DubPosition[]; // порядок = приоритет; waitDays — через сколько дней после эфира позиция открывается (не убывает)
   quality: Quality;
   scope: Scope;
   wholeSeasonAfterFinale: boolean;
@@ -88,6 +88,13 @@ function scopeOf(raw: unknown): Scope {
   return { mode: 'from', season, episode, until: raw.until };
 }
 
+function monotonic(dubs: DubPosition[]): DubPosition[] {
+  dubs.forEach((d, i) => {
+    if (i > 0 && d.waitDays < dubs[i - 1].waitDays) throw new Invalid('Ожидание не может быть меньше, чем у позиции выше');
+  });
+  return dubs;
+}
+
 /** Строит профиль заново только из известных полей; всё, что пришло от клиента, проверяется. */
 export function validateProfile(raw: unknown, knownStudioIds: Set<number>): ValidationResult {
   try {
@@ -95,7 +102,7 @@ export function validateProfile(raw: unknown, knownStudioIds: Set<number>): Vali
     return {
       ok: true,
       profile: {
-        dubs: dubsOf(raw.dubs, knownStudioIds),
+        dubs: monotonic(dubsOf(raw.dubs, knownStudioIds)),
         quality: qualityOf(raw.quality),
         scope: scopeOf(raw.scope),
         wholeSeasonAfterFinale: bool(raw.wholeSeasonAfterFinale),
@@ -128,7 +135,7 @@ export function dubLabel(d: DubPosition, studioName: (id: number) => string | un
 }
 
 export function describeProfile(p: Profile, studioName: (id: number) => string | undefined) {
-  const chain = p.dubs.map((d, i) => dubLabel(d, studioName) + (i > 0 ? ` (${d.waitDays} дн)` : '')).join(' → ');
+  const chain = p.dubs.map((d, i) => dubLabel(d, studioName) + (i > 0 ? ` (через ${d.waitDays} дн)` : '')).join(' → ');
   const q = p.quality;
   const quality = [
     `${q.target}p${q.allowLower ? ', иначе ниже' : ''}`,
@@ -167,5 +174,25 @@ export function toggleDub(dubs: DubPosition[], pos: DubPosition): DubPosition[] 
     const anyIdx = dubs.findIndex((d) => d.kind === 'any');
     next = pos.kind === 'any' || anyIdx < 0 ? [...dubs, pos] : [...dubs.slice(0, anyIdx), pos, ...dubs.slice(anyIdx)];
   }
-  return next.map((d, i) => (i === 0 ? { ...d, waitDays: 0 } : d.waitDays === 0 && dubs[0] && dubKey(dubs[0]) === dubKey(d) ? { ...d, waitDays: DEFAULT_WAIT[d.kind] } : d));
+  const fixed = next.map((d, i) =>
+    i === 0 ? { ...d, waitDays: 0 } : d.waitDays === 0 && dubs[0] && dubKey(dubs[0]) === dubKey(d) ? { ...d, waitDays: DEFAULT_WAIT[d.kind] } : d,
+  );
+  return raiseFrom(fixed, 1);
+}
+
+/** Ожидания не убывают: каждая позиция — не раньше предыдущей. */
+function raiseFrom(dubs: DubPosition[], from: number): DubPosition[] {
+  const out = [...dubs];
+  for (let i = Math.max(1, from); i < out.length; i++) if (out[i].waitDays < out[i - 1].waitDays) out[i] = { ...out[i], waitDays: out[i - 1].waitDays };
+  return out;
+}
+
+/** Изменить ожидание позиции i (не ниже позиции выше) и поднять позиции ниже. */
+export function setWait(dubs: DubPosition[], i: number, waitDays: number): DubPosition[] {
+  if (i === 0) return dubs;
+  const v = Math.max(waitDays, dubs[i - 1].waitDays);
+  return raiseFrom(
+    dubs.map((d, j) => (j === i ? { ...d, waitDays: v } : d)),
+    i + 1,
+  );
 }

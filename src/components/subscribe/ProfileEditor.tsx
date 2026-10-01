@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Stepper } from '@/components/ui/Stepper';
-import { dubKey, toggleDub, type DubPosition, type Profile } from '@/lib/profile-core';
+import { dubKey, setWait, toggleDub, type DubPosition, type Profile } from '@/lib/profile-core';
 
 export type StudioOption = { id: number; name: string };
 
@@ -71,17 +71,17 @@ export function ProfileEditor({ studios, names, value: p, onChange }: Props) {
                 <span className="text-[15px] font-medium">{labelOf(d)}</span>
               </button>
               {i === 0 ? (
-                <span className="text-[13px] text-faint">сразу</span>
+                <span className="text-[13px] text-faint">в день эфира</span>
               ) : (
                 <span className="flex items-center gap-2 text-[13px] text-muted">
-                  ждать
+                  через
                   <Stepper
-                    label={`Сколько дней ждать перед «${labelOf(d)}»`}
+                    label={`Через сколько дней после эфира брать «${labelOf(d)}»`}
                     value={d.waitDays}
-                    min={0}
+                    min={p.dubs[i - 1].waitDays}
                     max={60}
                     suffix=" дн"
-                    onChange={(v) => set({ dubs: p.dubs.map((x, j) => (j === i ? { ...x, waitDays: v } : x)) })}
+                    onChange={(v) => set({ dubs: setWait(p.dubs, i, v) })}
                   />
                 </span>
               )}
