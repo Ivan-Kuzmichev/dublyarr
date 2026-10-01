@@ -15,7 +15,8 @@ import type { Qbit } from './qbit';
 import { todayIso } from './dates';
 import { log } from './log';
 import { eagerTitles } from './forecast';
-import { notifyWanted } from './notify-events';
+import { clearWanted, setWanted } from './wanted';
+import { searchMovie } from './movie-search';
 import { getSchedule, inNightWindow, searchDue, type ScheduleSettings } from './schedule';
 
 // Поиск и загрузка по подпискам (воркер, раз в час и по кнопке «Искать сейчас»).
@@ -32,22 +33,6 @@ export type AutoDeps = {
 
 const key = (e: EpisodeRef) => `${e.season}:${e.number}`;
 
-function setWanted(db: Db, titleId: number, ep: EpisodeRef, state: 'waiting' | 'missing' | 'ask', reason: string, until: string | null, now: number, releaseId: number | null = null) {
-  const prev = db
-    .select({ state: wantedState.state })
-    .from(wantedState)
-    .where(and(eq(wantedState.titleId, titleId), eq(wantedState.season, ep.season), eq(wantedState.number, ep.number)))
-    .get();
-  const row = { titleId, season: ep.season, number: ep.number, state, reason, until, releaseId, checkedAt: now };
-  db.insert(wantedState)
-    .values(row)
-    .onConflictDoUpdate({ target: [wantedState.titleId, wantedState.season, wantedState.number], set: row })
-    .run();
-  notifyWanted(db, row, prev?.state ?? null, now);
-}
-const clearWanted = (db: Db, titleId: number, ep: EpisodeRef) =>
-  db.delete(wantedState).where(and(eq(wantedState.titleId, titleId), eq(wantedState.season, ep.season), eq(wantedState.number, ep.number))).run();
-
 /** Подпись студии для имени файла: позиция профиля, по которой раздача прошла. */
 function studioFor(profile: Profile, v: Verdict | undefined, r: Release, names: Map<number, string>): string | null {
   const pos = v?.position;
@@ -63,7 +48,8 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   const now = deps.now ?? Date.now();
   const today = deps.today ?? todayIso();
   const row = db.select().from(subscriptions).where(eq(subscriptions.titleId, titleId)).get();
-  if (!row || isMovieProfile(row.profile)) return res; // фильмы ищет searchMovie
+  if (!row) return res;
+  if (isMovieProfile(row.profile)) return searchMovie(db, titleId, deps);
   const sub = { ...row, profile: row.profile };
   const profile = sub.profile;
   const seasons = listSeasons(db, titleId);

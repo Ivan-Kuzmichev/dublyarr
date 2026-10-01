@@ -83,7 +83,7 @@ export async function startRelease(
   deps: DownloadDeps,
   release: Release,
   want: EpisodeRef[],
-  kind: 'episode' | 'pack' | 'season',
+  kind: 'episode' | 'pack' | 'season' | 'movie',
   studioLabel: string | null,
   opts: { dubPosition?: number | null; note?: string } = {},
 ): Promise<Download> {
@@ -104,7 +104,7 @@ export async function startRelease(
     return Object.keys(tag).length ? update(db, d.id, tag) : d;
   }
   // новая версия уже скачиваемого топика — не второй торрент рядом, а смена версии
-  const prev = Buffer.isBuffer(torrent) && !existing ? topicDownload(db, release, want[0]?.season) : undefined;
+  const prev = Buffer.isBuffer(torrent) && !existing && kind !== 'movie' ? topicDownload(db, release, want[0]?.season) : undefined;
   if (prev && Buffer.isBuffer(torrent) && want.every((w) => w.season === prev.season)) {
     const res = await switchTorrent(db, deps, prev, torrent, want);
     if (res.switched) return res.download;
@@ -347,7 +347,7 @@ export async function enableFiles(db: Db, deps: DownloadDeps, downloadId: number
 
 // --- синхронизация и импорт ---
 
-export type Paths = { qbitDownloads?: string; downloads: string; media: string; template?: string };
+export type Paths = { qbitDownloads?: string; downloads: string; media: string; template?: string; movies?: string; movieTemplate?: string };
 const DAY = 86_400_000;
 
 /** Состояние загрузок из qBittorrent; завершённые — импорт нужных файлов в медиатеку. */

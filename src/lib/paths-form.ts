@@ -4,7 +4,7 @@ import type { Paths } from './downloads';
 const LABEL: Record<string, string> = { qbitDownloads: 'Папка загрузок в qBittorrent', downloads: 'Папка загрузок в Dublyarr', media: 'Медиатека' };
 
 /** Пути — абсолютные, без завершающего «/»; пустой путь qBittorrent — такой же, как у Dublyarr. */
-export function parsePathsForm(form: FormData): Required<Paths> | { error: string } {
+export function parsePathsForm(form: FormData): Required<Omit<Paths, 'movies' | 'movieTemplate'>> | { error: string } {
   const read = (k: string) => String(form.get(k) ?? '').trim().replace(/(.)\/+$/, '$1');
   const downloads = read('downloads');
   const media = read('media');

@@ -294,7 +294,7 @@ export const downloads = sqliteTable(
       .references(() => titles.id, { onDelete: 'cascade' }),
     releaseId: integer('release_id').references(() => releases.id, { onDelete: 'set null' }),
     season: integer('season').notNull(),
-    kind: text('kind', { enum: ['episode', 'pack', 'season'] }).notNull(),
+    kind: text('kind', { enum: ['episode', 'pack', 'season', 'movie'] }).notNull(),
     episodes: json<EpisodeRef[]>('episodes').notNull().default([]), // что из этой раздачи нужно
     files: json<DownloadFile[]>('files'), // снимок файлов раздачи с приоритетами
     state: text('state', { enum: ['adding', 'downloading', 'paused', 'stalled', 'completed', 'imported', 'error', 'removed', 'replaced'] }).notNull(),

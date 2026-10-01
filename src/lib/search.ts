@@ -9,6 +9,7 @@ import { torznabSearch, TorznabError, type TorznabItem } from './torznab';
 import { parseRelease } from './parse/dubs';
 import { normalizeTitle } from './parse/normalize';
 import { matchRelease, resolveAbsolute, toTitleInfo } from './match';
+import { isDigital, matchMovie, movieSource } from './movie-evaluate';
 import { ruleFor } from './release-rules';
 import { encrypt } from './crypto/secretbox';
 import { recordSightings } from './sightings';
@@ -19,13 +20,16 @@ export type SourceStatus = { sourceId: number; name: string; ok: boolean; found:
 export type SearchOptions = { fetchImpl?: typeof fetch; now?: number };
 
 const CATEGORIES = [5000, 5070];
+const MOVIE_CATEGORIES = [2000, 2040, 2045, 2050, 2060];
 const MAX_QUERIES = 4;
 const isLatin = (s: string) => /[a-z]/i.test(s) && !/[^\p{Script=Latin}\p{N}\p{P}\p{Zs}\p{S}]/u.test(s);
 const isSearchable = (s: string) => /[a-zа-яё]/i.test(s); // японские иероглифы трекеры не находят
 
 /** Запросы к трекерам: уникальные названия сериала; для аниме — сначала латиница (романдзи, английское). */
-export function queriesFor(t: Pick<Title, 'kind' | 'nameRu' | 'nameOriginal' | 'altNames'>): string[] {
+export function queriesFor(t: Pick<Title, 'kind' | 'nameRu' | 'nameOriginal' | 'altNames'> & { year?: number | null }): string[] {
   const all = [t.nameRu, t.nameOriginal, ...t.altNames].filter(isSearchable);
+  // фильм — с годом: у ремейков и тёзок одно название
+  if (t.kind === 'movie') return [...new Set(all.map(normalizeTitle))].slice(0, 2).map((k) => `${all.find((s) => normalizeTitle(s) === k)}${t.year ? ` ${t.year}` : ''}`);
   const ordered = t.kind === 'anime' ? [...all.filter(isLatin), ...all.filter((s) => !isLatin(s))] : all;
   const seen = new Set<string>();
   return ordered.filter((s) => {
@@ -48,7 +52,7 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
     srcs.map(async (src) => {
       const started = Date.now();
       try {
-        const lists = await Promise.all(queries.map((q) => torznabSearch(src, q, CATEGORIES, opts.fetchImpl)));
+        const lists = await Promise.all(queries.map((q) => torznabSearch(src, q, title.kind === 'movie' ? MOVIE_CATEGORIES : CATEGORIES, opts.fetchImpl)));
         const items = lists.flat();
         const distinct = new Set(items.map((i) => i.infohash ?? `${i.indexerId}|${i.title}|${i.size}`)).size;
         return { status: { sourceId: src.id, name: src.name, ok: true, found: distinct, ms: Date.now() - started } as SourceStatus, items };
@@ -101,7 +105,7 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
   const saved: Release[] = [];
   for (const k of unique.values()) {
     const it = k.item;
-    const { parsed, match } = analyze(db, title.id, info, studios, { title: it.title, attrs: it.attrs, size: it.size, indexerId: it.indexerId ?? '', trackerName: k.trackerName });
+    const { parsed, match } = analyze(db, title, info, studios, { title: it.title, attrs: it.attrs, size: it.size, indexerId: it.indexerId ?? '', trackerName: k.trackerName });
     const fields = {
       sourceId: k.sourceId,
       trackerId: k.trackerId,
@@ -122,7 +126,8 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
     };
     saved.push(upsertRelease(db, title.id, fields, now));
   }
-  recordSightings(db, titleId, saved);
+  if (title.kind === 'movie') noteDigital(db, title, saved, now);
+  else recordSightings(db, titleId, saved);
   return { releases: saved, sources: statuses };
 }
 
@@ -132,13 +137,23 @@ const studioRefs = (db: Db) => listStudios(db).map((s) => ({ id: s.id, name: s.n
 /** Разбор заголовка и оценка «тот ли сериал» (с учётом правил пользователя). */
 function analyze(
   db: Db,
-  titleId: number,
+  title: Title,
   info: ReturnType<typeof toTitleInfo>,
   studios: StudioRefs,
   r: { title: string; attrs: Record<string, string | string[]>; size: number; indexerId: string; trackerName: string },
 ) {
-  const parsed = resolveAbsolute(parseRelease(r.title, r.attrs, { id: r.indexerId, name: r.trackerName }, studios), info);
-  return { parsed, match: matchRelease(parsed, r.size, info, ruleFor(db, titleId, r.trackerName, r.title)) };
+  const rule = ruleFor(db, title.id, r.trackerName, r.title);
+  const raw = parseRelease(r.title, r.attrs, { id: r.indexerId, name: r.trackerName }, studios);
+  if (title.kind === 'movie') return { parsed: raw, match: matchMovie(raw, r.size, title, rule, r.title) };
+  const parsed = resolveAbsolute(raw, info);
+  return { parsed, match: matchRelease(parsed, r.size, info, rule) };
+}
+
+/** Фильм: первая цифровая раздача (WEB-DL/BDRip/Remux) того же фильма — дата цифрового релиза, если TMDB её не знает. */
+function noteDigital(db: Db, title: Title, saved: Release[], now: number) {
+  if (title.digitalSeenAt) return;
+  if (!saved.some((r) => r.match.level === 'match' && isDigital(movieSource(r.title, r.parsed)))) return;
+  db.update(titles).set({ digitalSeenAt: new Date(now).toLocaleDateString('sv-SE') }).where(eq(titles.id, title.id)).run();
 }
 
 /** Переразобрать сохранённые раздачи сериала (после правки словаря или ответа «это он / не он»), без запросов к источникам. */
@@ -150,7 +165,7 @@ export function reparseReleases(db: Db, titleId: number) {
   const ixById = new Map(db.select().from(trackers).all().map((t) => [t.id, t.indexerId]));
   db.transaction(() => {
     for (const r of db.select().from(releases).where(eq(releases.titleId, titleId)).all()) {
-      const res = analyze(db, titleId, info, studios, { ...r, indexerId: (r.trackerId && ixById.get(r.trackerId)) || '' });
+      const res = analyze(db, title, info, studios, { ...r, indexerId: (r.trackerId && ixById.get(r.trackerId)) || '' });
       db.update(releases).set(res).where(eq(releases.id, r.id)).run();
     }
   });

@@ -24,6 +24,7 @@ export function movieKinds(p: ParsedRelease): MovieDubKind[] {
 export type MovieSource = NonNullable<ParsedRelease['source']> | 'disc';
 const DISC = /\b(?:UHD\s+)?BR-?DISK\b|\bBDMV\b|\bVIDEO_TS\b|\bDVD-?[59]\b|\bISO\b/i;
 const DIGITAL = new Set<MovieSource>(['webdl', 'webrip', 'bdrip', 'remux', 'dvd']);
+export const isDigital = (s: MovieSource | null) => !!s && DIGITAL.has(s);
 
 /** Источник: диск (образ BD/DVD) — отдельно; экранка — 'cam'; HDRip — как WEBRip. */
 export function movieSource(title: string, p: ParsedRelease): MovieSource | null {

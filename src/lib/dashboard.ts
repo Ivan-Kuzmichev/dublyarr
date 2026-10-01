@@ -2,6 +2,7 @@ import { isMovieProfile } from './movie-profile';
 import { and, eq, gte, inArray, lte } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { downloads, episodeFiles, episodes, studios, subscriptions, titles, wantedState, type Download } from './db/schema';
+import type { Paths } from './downloads';
 import { forecastEpisode, formatDelay, studioDelays, titleSightings, type EpisodeForecast, type StudioDelay } from './forecast';
 import { dubLabel, type Profile } from './profile-core';
 import { wantedEpisodes } from './subscriptions';
@@ -252,6 +253,10 @@ export function todayData(db: Db, today: string, now = Date.now()) {
       text: `${old.count} ${plural(old.count, 'копия', 'копии', 'копий')} · ${formatSize(old.size)} — подтвердите удаление`,
       href: '/old-copies',
     });
+
+  const movieSubs = db.select({ id: subscriptions.id }).from(subscriptions).innerJoin(titles, eq(titles.id, subscriptions.titleId)).where(eq(titles.kind, 'movie')).all();
+  if (movieSubs.length && !getSetting<Paths>(db, 'paths')?.movies)
+    attention.push({ tmdbId: 0, title: 'Не задана папка фильмов', code: '', text: 'Фильмы не скачиваются, пока её нет', href: '/settings/download' });
 
   const disk = storageState(db);
   if (disk && disk.level !== 'ok') attention.push({ tmdbId: 0, title: 'Мало места на диске', code: '', text: `Занято ${disk.pct} %${disk.level === 'pause' ? ' — загрузки на паузе' : ''}`, href: '/storage' });

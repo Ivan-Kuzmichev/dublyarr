@@ -7,7 +7,7 @@ import { filesForEpisodes } from './episode-file';
 
 export type ActiveDownload = {
   id: number;
-  kind: 'episode' | 'pack' | 'season';
+  kind: 'episode' | 'pack' | 'season' | 'movie';
   season: number;
   episodes: EpisodeRef[];
   files: { index: number; name: string; size: number; priority: number }[] | null;
