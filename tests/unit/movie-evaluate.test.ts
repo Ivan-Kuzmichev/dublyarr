@@ -113,3 +113,20 @@ describe('ожидание дубляжа', () => {
     expect(decideMovie(v, P(), '2026-09-20')).toEqual({ action: 'ask', releaseId: v[0].releaseId, reason: 'Сомнительное совпадение' });
   });
 });
+
+describe('сборники — не фильм', () => {
+  test.each([
+    'Матрица / The Matrix (Вачовски) [1999-2021, BDRemux 2160p] 4 фильма Dub',
+    'Матрица / The Matrix [1999-2021, BDRemux] Dub',
+    'The Matrix 1999-2021 DUB, Sub 4K, HEVC, HDR, Dolby Vision P8 Blu-Ray Remux 2160p - RUSSIAN',
+    'The Matrix: Trilogy [1999, 2003, BDRip 720p] Dub',
+    'Матрица: Трилогия / The Matrix: Trilogy (1999-2003) BDRip',
+    'The Matrix Collection [1999] BDRip 1080p Dub',
+  ])('%s', (title) => {
+    expect(matchMovie(parse(title), 50 * GB, T, undefined, title)).toMatchObject({ level: 'reject', reasons: ['Сборник'] });
+  });
+  test('одиночный фильм с годом — по-прежнему подходит', () => {
+    const title = 'The Matrix [1999, WEB-DL 2160p] Dub';
+    expect(matchMovie(parse(title), 18 * GB, T, undefined, title).level).toBe('match');
+  });
+});

@@ -160,3 +160,33 @@ test('ручной поиск фильма: причины отказа и лу�
   expect(r.profileSource).toBe('subscription');
   expect(r.rows.map((x) => x.verdict.reason)).toEqual(['Лучший · Дубляж', 'Рано: ждём дубляж до 15 окт', 'Не цифровой релиз']);
 });
+
+describe('исправления по ревью 3c', () => {
+  test('удалённый правилом или вручную фильм не качается снова', async () => {
+    const { retiredEpisodes } = await import('@/lib/db/schema');
+    const s = await setup({ items: [DUB] });
+    s.db.insert(retiredEpisodes).values({ titleId: s.t.id, season: 0, number: 0, at: 1 }).run();
+    expect((await searchSubscription(s.db, s.t.id, s.deps)).started).toBe(0);
+    expect(s.state.queries).toEqual([]);
+  });
+  test('многоголосый первым в профиле (или дубляж выключен) — качается сразу, без ожидания', async () => {
+    const first = await setup({ profile: { dubs: [{ kind: 'mvo', on: true }, { kind: 'dub', on: true }, { kind: 'original', on: true }] } });
+    expect((await searchSubscription(first.db, first.t.id, first.deps)).started).toBe(1);
+    const off = await setup({ profile: { dubs: [{ kind: 'dub', on: false }, { kind: 'mvo', on: true }, { kind: 'original', on: true }] } });
+    expect((await searchSubscription(off.db, off.t.id, off.deps)).started).toBe(1);
+  });
+  test('ответ в Telegram по фильму ведёт в ручной поиск фильма', async () => {
+    const { notifyWanted } = await import('@/lib/notify-events');
+    const { notifications, releases } = await import('@/lib/db/schema');
+    const s = await setup();
+    const { setSecretSetting } = await import('@/lib/settings');
+    setSecretSetting(s.db, 'telegram', { token: 'x', baseUrl: 'http://nas:3000' });
+    await searchSubscription(s.db, s.t.id, s.deps);
+    const r = s.db.select().from(releases).get()!;
+    notifyWanted(s.db, { titleId: s.t.id, season: 0, number: 0, state: 'ask', reason: 'Сомнительное совпадение', releaseId: r.id, until: null }, null);
+    const n = s.db.select().from(notifications).all().find((x) => x.kind === 'ask')!;
+    expect(JSON.stringify(n.buttons)).toContain('Не тот фильм');
+    expect(JSON.stringify(n.buttons)).toContain('/search/603?type=movie');
+    expect(n.text).toMatch(/^❓ Матрица: /);
+  });
+});

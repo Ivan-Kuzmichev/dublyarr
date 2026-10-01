@@ -71,13 +71,13 @@ export function notifyWanted(db: Db, w: Pick<WantedState, 'titleId' | 'season' |
       {
         key: `ask:${w.titleId}:${w.season}:${w.number}:${r.id}`,
         kind: 'ask',
-        text: `❓ ${t.nameRu} · ${code}: ${w.reason}\n${r.title}`,
+        text: `❓ ${t.nameRu}${t.kind === 'movie' ? '' : ` · ${code}`}: ${w.reason}\n${r.title}`,
         buttons: [
           [
             { text: 'Это он', data: `m:${r.id}` },
-            { text: 'Не тот сериал', data: `r:${r.id}` },
+            { text: t.kind === 'movie' ? 'Не тот фильм' : 'Не тот сериал', data: `r:${r.id}` },
           ],
-          ...linkButton(db, `/search/${t.tmdbId}?s=${w.season}&e=${w.number}`),
+          ...linkButton(db, t.kind === 'movie' ? `/search/${t.tmdbId}?type=movie` : `/search/${t.tmdbId}?s=${w.season}&e=${w.number}`),
         ],
         ref: { releaseId: r.id, titleId: w.titleId },
       },

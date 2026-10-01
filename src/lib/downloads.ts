@@ -115,7 +115,7 @@ export async function startRelease(
 
   const savePath = `${deps.paths.qbitDownloads.replace(/\/+$/, '')}/${CATEGORY}`;
   await deps.qbit.ensureCategory(CATEGORY, savePath);
-  const magnetPack = !Buffer.isBuffer(torrent) && kind === 'pack';
+  const magnetPack = !Buffer.isBuffer(torrent) && (kind === 'pack' || kind === 'movie'); // файлы выберем, когда будут метаданные
   try {
     await deps.qbit.add(torrent, { savePath, category: CATEGORY, paused: !magnetPack, stopOnMetadata: magnetPack });
   } catch (e) {
@@ -156,7 +156,7 @@ export async function startRelease(
     return db.select().from(downloads).where(eq(downloads.id, other.id)).get()!;
   }
   // magnet-пак без метаданных: файлы выберет синхронизация, когда qBittorrent их получит
-  if (kind === 'pack' && !files.length) return d;
+  if ((kind === 'pack' || kind === 'movie') && !files.length) return d;
   return selectAndStart(db, deps.qbit, d, files);
 }
 
@@ -382,7 +382,7 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
     let qfiles: Awaited<ReturnType<Qbit['files']>>;
     try {
       qfiles = await deps.qbit.files(d.hash);
-      if (d.state === 'adding' && d.kind === 'pack' && !d.files?.length) {
+      if (d.state === 'adding' && (d.kind === 'pack' || d.kind === 'movie') && !d.files?.length) {
         if (qfiles.length) await selectAndStart(db, deps.qbit, d, qfiles.map((f) => ({ index: f.index, name: f.name, size: f.size, priority: f.priority })));
         continue;
       }

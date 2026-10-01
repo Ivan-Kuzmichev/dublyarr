@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { downloads, episodeFiles, releases as releasesT, subscriptions, titles, type EpisodeFile } from './db/schema';
+import { downloads, episodeFiles, releases as releasesT, retiredEpisodes, subscriptions, titles, type EpisodeFile } from './db/schema';
 import { searchTitle } from './search';
 import { evaluateMovie, decideMovie, movieSource, type MovieSource, type MovieVerdict } from './movie-evaluate';
 import { isMovieProfile, MOVIE_DUB_LABEL, type MovieProfile } from './movie-profile';
@@ -56,6 +56,8 @@ export async function searchMovie(db: Db, titleId: number, deps: AutoDeps) {
   if (!sub || !isMovieProfile(sub.profile)) return res;
   const profile = sub.profile;
   const ep = MOVIE_EP;
+  // удалён правилом хранения или вручную («только файлы») — заново не качаем, пока не переподпишутся
+  if (db.select().from(retiredEpisodes).where(and(eq(retiredEpisodes.titleId, titleId), eq(retiredEpisodes.season, 0), eq(retiredEpisodes.number, 0))).get()) return res;
   if (!deps.paths.movies) {
     setWanted(db, titleId, ep, 'missing', 'Не задана папка фильмов', null, now);
     res.missing++;

@@ -35,6 +35,9 @@ export function movieSource(title: string, p: ParsedRelease): MovieSource | null
   return null;
 }
 
+// Сборник: диапазон или перечень лет, «трилогия», «4 фильма», Collection — в одном торренте несколько фильмов
+const COLLECTION = /\b(?:19|20)\d{2}\s*(?:[-–—]|,\s*)(?:19|20)\d{2}\b|трилоги|квадрилоги|дилоги|тетралоги|пенталоги|гексалоги|коллекци|антологи|\b\d+\s*фильм|\b(?:collection|trilogy|duology|quadrilogy|anthology)\b/i;
+
 /** Год из заголовка, если парсер не нашёл его в скобках (Kinozal: «Superman 2025 DUB …»). */
 const yearOf = (p: ParsedRelease, title: string) => p.year ?? Number(title.match(/\b(19\d{2}|20\d{2})\b/)?.[1] ?? 0) ?? null;
 
@@ -49,6 +52,7 @@ export function matchMovie(
   if (rule === 'reject') return { score: 0, level: 'reject', reasons: ['В чёрном списке'], rule };
   if (rule === 'match') return { score: 1, level: 'match', reasons: ['Подтверждено вручную'], rule };
   if (p.seasons.length || p.episodes) return { score: 0, level: 'reject', reasons: ['Это сериал'] };
+  if (COLLECTION.test(title)) return { score: 0, level: 'reject', reasons: ['Сборник'] };
   const reasons: string[] = [];
   const names = [t.nameRu, t.nameOriginal, ...t.altNames];
   const nameScore = Math.max(0, ...p.names.flatMap((a) => names.map((b) => dice(a, b))));
@@ -98,7 +102,9 @@ export function evaluateMovie(releases: Release[], ctx: Ctx): MovieVerdict[] {
     const kinds = movieKinds(p);
     const pos = profile.dubs.findIndex((d) => d.on && kinds.includes(d.kind));
     if (pos < 0) return reject(r, 'Нет нужного перевода');
-    if (profile.dubs[pos].kind !== 'dub' && (!opensAt || opensAt > today)) {
+    // ждём дубляж, только если он включён и стоит выше этой позиции
+    const dubAbove = profile.dubs.slice(0, pos).some((d) => d.on && d.kind === 'dub');
+    if (dubAbove && (!opensAt || opensAt > today)) {
       const top = firstDub ? MOVIE_DUB_LABEL[firstDub.kind].toLowerCase() : 'перевод';
       const w = reject(r, opensAt ? `Рано: ждём ${top} до ${formatShortDate(opensAt, today)}` : 'Рано: ждём цифровой релиз', 'wait', pos);
       if (opensAt) w.v.until = opensAt;

@@ -160,3 +160,18 @@ test('папки фильмов нет — импорт не идёт, поня�
   await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: HOUR });
   expect(s.db.select().from(downloads).get()!.lastError).toBe('Ошибка импорта: не задана папка фильмов');
 });
+
+test('раздача-магнет фильма: ждём метаданные, затем выбираем основной файл', async () => {
+  const s = setup();
+  const r = s.mk('The Matrix [1999, WEB-DL 1080p] Dub');
+  const hash = 'c'.repeat(40);
+  const deps = { ...s.deps, fetchTorrent: async () => ({ magnet: `magnet:?xt=urn:btih:${hash}` }) };
+  const d = await startRelease(s.db, deps, r, [{ season: 0, number: 0 }], 'movie', 'Дубляж', { dubPosition: 0 });
+  expect(d.state).toBe('adding');
+  // qBittorrent получил метаданные
+  const tor = s.fq.torrents.get(hash)!;
+  tor.files = FILES.map(([name, size], index) => ({ index, name: `${NAME}/${name}`, size, progress: 0, priority: 1 }));
+  await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: HOUR });
+  expect(s.db.select().from(downloads).get()).toMatchObject({ state: 'downloading' });
+  expect(tor.files.filter((f) => f.priority > 0).map((f) => f.name)).toEqual([`${NAME}/The.Matrix.1999.1080p.mkv`, `${NAME}/Subs/The.Matrix.1999.rus.srt`]);
+});
