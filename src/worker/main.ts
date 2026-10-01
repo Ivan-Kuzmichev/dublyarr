@@ -23,8 +23,9 @@ let layaOk = false;
 async function checkLaya() {
   try {
     const r = await fetch(`http://127.0.0.1:${getConfig().layaPort}/health`, { signal: AbortSignal.timeout(3000) });
-    layaOk = r.ok;
-    beat(db, 'laya', r.ok, await r.text());
+    const text = await r.text();
+    layaOk = r.ok && /"status":\s*"ready"/.test(text); // пока скачивает/загружает — проверяем чаще
+    beat(db, 'laya', r.ok, text);
   } catch (e) {
     layaOk = false;
     beat(db, 'laya', false, e instanceof Error ? e.message : String(e));

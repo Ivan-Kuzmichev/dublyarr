@@ -24,10 +24,21 @@ export function serviceStatuses(db: Db, now = Date.now()): ServiceStatus[] {
           : { name: 'qBittorrent', state: 'warn', note: 'не отвечает' };
   const worker: ServiceStatus =
     w && now - w.at < 30_000 ? { name: 'Воркер', state: 'ok', note: 'работает' } : { name: 'Воркер', state: 'off', note: 'не отвечает' };
+  // info — ответ /health laya-serve (JSON); старые записи — просто текст
+  let health: { status?: string } = {};
+  try {
+    health = l?.info ? JSON.parse(l.info) : {};
+  } catch {
+    health = {};
+  }
   const laya: ServiceStatus = !l
     ? { name: 'Laya', state: 'off', note: 'нет данных' }
-    : l.ok && now - l.at < 180_000
-      ? { name: 'Laya', state: 'ok', note: 'работает' }
-      : { name: 'Laya', state: 'warn', note: 'недоступна' };
+    : !l.ok || now - l.at >= 180_000 || health.status === 'error'
+      ? { name: 'Laya', state: 'warn', note: 'недоступна' }
+      : health.status === 'downloading'
+        ? { name: 'Laya', state: 'warn', note: 'скачивает модель' }
+        : health.status === 'loading'
+          ? { name: 'Laya', state: 'warn', note: 'загружает модель' }
+          : { name: 'Laya', state: 'ok', note: 'работает' };
   return [qbit, worker, laya];
 }
