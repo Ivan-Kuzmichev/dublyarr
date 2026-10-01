@@ -18,10 +18,17 @@ function json(res, status, body) {
   res.end(JSON.stringify(body));
 }
 
+// POST /__air?ep=3&date=2011-05-01 — у серии сезона 1 появляется дата эфира
+const aired = new Map();
+
 http
   .createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     const p = url.pathname;
+    if (req.method === 'POST' && p === '/__air') {
+      aired.set(Number(url.searchParams.get('ep')), url.searchParams.get('date'));
+      return res.end('ok');
+    }
     const key = url.searchParams.get('api_key') ?? req.headers.authorization?.replace('Bearer ', '');
     if (p.startsWith('/t/p/')) {
       res.writeHead(200, { 'content-type': 'image/png' });
@@ -41,7 +48,9 @@ http
     m = p.match(/^\/3\/tv\/(\d+)\/season\/(\d+)$/);
     if (m) {
       const name = `tv-${m[1]}-season-${m[2]}`;
-      return json(res, 200, existsSync(path.join(dir, `${name}.json`)) ? fx(name) : { season_number: Number(m[2]), episodes: [] });
+      const season = existsSync(path.join(dir, `${name}.json`)) ? fx(name) : { season_number: Number(m[2]), episodes: [] };
+      if (m[2] === '1') for (const e of season.episodes) if (aired.has(e.episode_number)) e.air_date = aired.get(e.episode_number);
+      return json(res, 200, season);
     }
     json(res, 404, {});
   })

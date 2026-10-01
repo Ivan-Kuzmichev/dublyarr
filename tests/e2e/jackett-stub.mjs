@@ -14,14 +14,21 @@ const EXTRA = `<item><title>Game of Thrones / S1E1-10 of 10 [2011, WEB-DL 1080p]
 const EMPTY = '<?xml version="1.0"?><rss version="2.0"><channel><title>empty</title></channel></rss>';
 const CAPS = '<?xml version="1.0"?><caps><server title="Jackett stub"/><categories><category id="5000" name="TV"/><category id="5070" name="Anime"/></categories></caps>';
 
+// POST /__update — топики паков «обновились»: новая версия .torrent (другой хэш, те же файлы)
+let version = 1;
+
 http
   .createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
+    if (req.method === 'POST' && url.pathname === '/__update') {
+      version++;
+      return res.end(String(version));
+    }
     if (url.pathname.startsWith('/dl/')) {
       // настоящие .torrent для раздач из фикстуры: пак сезона из 10 серий или одна серия
       const p = url.searchParams.get('path') ?? '';
       const eps = Array.from({ length: 10 }, (_, i) => `Game.of.Thrones.S01E${String(i + 1).padStart(2, '0')}.1080p.mkv`);
-      const body = p === 'lf3' ? makeTorrent('Game.of.Thrones.S01E03.1080p.LostFilm.mkv', null) : makeTorrent(`Game of Thrones S01 ${p}`, eps);
+      const body = p === 'lf3' ? makeTorrent('Game.of.Thrones.S01E03.1080p.LostFilm.mkv', null) : makeTorrent(`Game of Thrones S01 ${p}`, eps, version);
       res.writeHead(200, { 'content-type': 'application/x-bittorrent' });
       return res.end(body);
     }

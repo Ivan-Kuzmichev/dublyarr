@@ -53,8 +53,9 @@ export function readTorrent(buf) {
   return { hash: createHash('sha1').update(buf.subarray(s, e)).digest('hex'), name, files };
 }
 
-export function makeTorrent(name, files) {
-  const info = { name, 'piece length': 262144, pieces: Buffer.alloc(20) };
+/** version — номер версии топика: те же имя и файлы, другой хэш. */
+export function makeTorrent(name, files, version = 1) {
+  const info = { name, 'piece length': 262144 * version, pieces: Buffer.alloc(20) };
   if (files) info.files = files.map((f) => ({ length: 1024, path: [f] }));
   else info.length = 1024;
   return bencode({ announce: 'http://tracker.local/announce', info });
