@@ -67,3 +67,11 @@ test('лимит Telegram — ждать retry_after; бот заблокиро�
   await sendPending(db, blocked.tg, '42', 60_000);
   expect(db.select().from(notifications).all().every((n) => n.error === 'Бот заблокирован в чате')).toBe(true);
 });
+
+test('разбор формы событий', async () => {
+  const { parseEventsForm } = await import('@/lib/notify');
+  const f = new FormData();
+  f.set('downloaded', 'on');
+  f.set('original', 'on');
+  expect(parseEventsForm(f)).toEqual({ downloaded: true, stuck: false, ask: false, original: true, 'source-down': false });
+});

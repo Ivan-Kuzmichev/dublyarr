@@ -65,3 +65,7 @@ export async function sendPending(db: Db, tg: Telegram, chatId: string, now = Da
   }
   return res;
 }
+
+export function parseEventsForm(form: FormData): Record<NotifyKind, boolean> {
+  return Object.fromEntries((Object.keys(DEFAULT_EVENTS) as NotifyKind[]).map((k) => [k, form.get(k) === 'on'])) as Record<NotifyKind, boolean>;
+}
