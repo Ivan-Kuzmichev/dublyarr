@@ -302,6 +302,7 @@ export const downloads = sqliteTable(
     lastError: text('last_error'),
     dubPosition: integer('dub_position'),
     pausedBySchedule: integer('paused_by_schedule', { mode: 'boolean' }).notNull().default(false),
+    processing: integer('processing', { mode: 'boolean' }).notNull().default(false), // идёт пересборка
     replacedById: integer('replaced_by_id').references((): AnySQLiteColumn => downloads.id, { onDelete: 'set null' }),
     note: text('note'),
   },
@@ -325,6 +326,10 @@ export const episodeFiles = sqliteTable(
     method: text('method', { enum: ['hardlink', 'copy'] }).notNull(),
     importedAt: ts('imported_at').notNull(),
     dubPosition: integer('dub_position'), // позиция профиля, по которой взята серия
+    processed: integer('processed', { mode: 'boolean' }).notNull().default(false), // пересобран mkvmerge
+    hdr: integer('hdr', { mode: 'boolean' }).notNull().default(false),
+    duration: integer('duration'), // секунды, по ffprobe
+    tracks: json<{ before: { kind: string; name: string; flag?: string }[]; after: { kind: string; name: string; flag?: string }[] }>('tracks'),
   },
   (t) => [uniqueIndex('episode_files_title_season_number').on(t.titleId, t.season, t.number)],
 );

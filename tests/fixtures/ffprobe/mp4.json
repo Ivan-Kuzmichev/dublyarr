@@ -1,0 +1,7 @@
+{
+  "streams": [
+    { "index": 0, "codec_name": "h264", "codec_type": "video", "width": 1920, "height": 1080, "disposition": { "default": 1 }, "tags": { "language": "und" } },
+    { "index": 1, "codec_name": "aac", "codec_type": "audio", "channels": 2, "disposition": { "default": 1 }, "tags": { "language": "rus", "handler_name": "LostFilm.TV" } }
+  ],
+  "format": { "format_name": "mov,mp4,m4a,3gp,3g2,mj2", "duration": "2700.0" }
+}

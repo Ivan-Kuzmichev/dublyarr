@@ -1,0 +1,7 @@
+{
+  "streams": [
+    { "index": 0, "codec_name": "hevc", "codec_type": "video", "width": 3840, "height": 2160, "color_transfer": "smpte2084", "side_data_list": [{ "side_data_type": "DOVI configuration record" }], "disposition": { "default": 1 }, "tags": {} },
+    { "index": 1, "codec_name": "eac3", "codec_type": "audio", "channels": 6, "disposition": { "default": 1 }, "tags": { "language": "rus" } }
+  ],
+  "format": { "format_name": "matroska,webm" }
+}
