@@ -16,6 +16,9 @@ export type QbitTorrent = {
   save_path: string;
   content_path: string;
   category: string;
+  ratio?: number;
+  completion_on?: number; // секунды, -1/0 — не завершён
+  dl_limit?: number;
 };
 export type QbitFile = { index: number; name: string; size: number; progress: number; priority: number };
 export type QbitErrorCode = 'auth' | 'network' | 'http' | 'banned';
@@ -37,6 +40,8 @@ export type Qbit = {
   start(hashes: string[]): Promise<void>;
   stop(hashes: string[]): Promise<void>;
   remove(hashes: string[]): Promise<void>;
+  /** Лимит загрузки на каждый торрент, байт/с; 0 — без лимита. */
+  setDownloadLimit(hashes: string[], bytesPerSec: number): Promise<void>;
   ensureCategory(name: string, savePath: string): Promise<void>;
 };
 
@@ -131,6 +136,10 @@ export function createQbit(cfg: QbitConfig, opts: { fetchImpl?: typeof fetch } =
     async setFilePriority(hash, indexes, priority) {
       if (!indexes.length) return;
       await ok('/api/v2/torrents/filePrio', form({ hash, id: indexes.join('|'), priority: String(priority) }));
+    },
+    async setDownloadLimit(hashes, bytesPerSec) {
+      if (!hashes.length) return;
+      await ok('/api/v2/torrents/setDownloadLimit', form({ hashes: hashes.join('|'), limit: String(Math.max(0, Math.round(bytesPerSec))) }));
     },
     async start(hashes) {
       await ok(`/api/v2/torrents/${(await isModern()) ? 'start' : 'resume'}`, form({ hashes: hashes.join('|') }));

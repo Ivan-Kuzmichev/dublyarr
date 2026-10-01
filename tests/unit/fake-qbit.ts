@@ -44,6 +44,13 @@ export function fakeQbit() {
       calls.push('remove');
       for (const x of h) torrents.delete(x);
     },
+    async setDownloadLimit(h, limit) {
+      calls.push(`limit:${limit}`);
+      for (const x of h) {
+        const t = torrents.get(x);
+        if (t) t.dl_limit = limit;
+      }
+    },
     ensureCategory: async () => {
       calls.push('category');
     },

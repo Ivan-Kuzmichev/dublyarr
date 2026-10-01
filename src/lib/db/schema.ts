@@ -184,7 +184,8 @@ export const subscriptions = sqliteTable('subscriptions', {
     .unique()
     .references(() => titles.id, { onDelete: 'cascade' }),
   profile: json<Profile>('profile').notNull(),
-  maxSeason: integer('max_season'), // последний сезон, на который распространяется подписка (null — без границы)
+  maxSeason: integer('max_season'),
+  lastSearchedAt: ts('last_searched_at'), // последний сезон, на который распространяется подписка (null — без границы)
   subscribedAt: ts('subscribed_at').notNull(),
   updatedAt: ts('updated_at').notNull(),
 });
@@ -298,6 +299,7 @@ export const downloads = sqliteTable(
     lastSeededAt: ts('last_seeded_at'),
     lastError: text('last_error'),
     dubPosition: integer('dub_position'),
+    pausedBySchedule: integer('paused_by_schedule', { mode: 'boolean' }).notNull().default(false),
     replacedById: integer('replaced_by_id').references((): AnySQLiteColumn => downloads.id, { onDelete: 'set null' }),
     note: text('note'),
   },

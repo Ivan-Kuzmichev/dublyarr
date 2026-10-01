@@ -89,6 +89,8 @@ test('файлы, приоритеты, удаление без файлов, к
   expect(f.log.find((r) => r.path === '/api/v2/torrents/filePrio')!.body).toBe('hash=h&id=0%7C2&priority=0');
   await q.remove(['h']);
   expect(f.log.find((r) => r.path === '/api/v2/torrents/delete')!.body).toBe('hashes=h&deleteFiles=false');
+  await q.setDownloadLimit(['a', 'b'], 1048576);
+  expect(f.log.find((r) => r.path === '/api/v2/torrents/setDownloadLimit')!.body).toBe('hashes=a%7Cb&limit=1048576');
   await expect(q.ensureCategory('dublyarr', '/downloads/dublyarr')).resolves.toBeUndefined();
 });
 
