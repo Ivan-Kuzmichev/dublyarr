@@ -187,7 +187,9 @@ export const subscriptions = sqliteTable('subscriptions', {
     .references(() => titles.id, { onDelete: 'cascade' }),
   profile: json<Profile>('profile').notNull(),
   maxSeason: integer('max_season'),
-  lastSearchedAt: ts('last_searched_at'), // последний сезон, на который распространяется подписка (null — без границы)
+  lastSearchedAt: ts('last_searched_at'),
+  keepAll: integer('keep_all', { mode: 'boolean' }).notNull().default(false), // исключение: хранить все сезоны
+  autoDelete: integer('auto_delete', { mode: 'boolean' }).notNull().default(false), // удалять через N дней после скачивания // последний сезон, на который распространяется подписка (null — без границы)
   subscribedAt: ts('subscribed_at').notNull(),
   updatedAt: ts('updated_at').notNull(),
 });
@@ -426,3 +428,13 @@ export const notifications = sqliteTable(
   (t) => [uniqueIndex('notifications_key').on(t.key), index('notifications_pending').on(t.sentAt, t.nextAt)],
 );
 export type Notification = typeof notifications.$inferSelect;
+
+/** История удалений медиатеки («Недавно удалено»). */
+export const deletions = sqliteTable('deletions', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  titleId: integer('title_id').references(() => titles.id, { onDelete: 'set null' }),
+  label: text('label').notNull(),
+  why: text('why').notNull(),
+  size: integer('size').notNull(),
+  at: ts('at').notNull(),
+});
