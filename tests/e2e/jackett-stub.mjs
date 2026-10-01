@@ -2,6 +2,7 @@
 import http from 'node:http';
 import { readFileSync } from 'node:fs';
 import path from 'node:path';
+import { makeTorrent } from './bencode.mjs';
 
 const port = Number(process.argv[2] ?? 3198);
 const dir = path.join(import.meta.dirname, '..', 'fixtures', 'torznab');
@@ -17,8 +18,12 @@ http
   .createServer((req, res) => {
     const url = new URL(req.url, `http://${req.headers.host}`);
     if (url.pathname.startsWith('/dl/')) {
+      // настоящие .torrent для раздач из фикстуры: пак сезона из 10 серий или одна серия
+      const p = url.searchParams.get('path') ?? '';
+      const eps = Array.from({ length: 10 }, (_, i) => `Game.of.Thrones.S01E${String(i + 1).padStart(2, '0')}.1080p.mkv`);
+      const body = p === 'lf3' ? makeTorrent('Game.of.Thrones.S01E03.1080p.LostFilm.mkv', null) : makeTorrent(`Game of Thrones S01 ${p}`, eps);
       res.writeHead(200, { 'content-type': 'application/x-bittorrent' });
-      return res.end('d8:announce0:e');
+      return res.end(body);
     }
     const send = (body) => {
       res.writeHead(200, { 'content-type': 'application/xml' });

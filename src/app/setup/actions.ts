@@ -15,6 +15,9 @@ import { checkTorznab } from '@/lib/integrations/torznab';
 import { addSource, listSources, removeSource } from '@/lib/sources';
 import { checkWritableDir } from '@/lib/fs-check';
 import { requireSetupSession } from './guard';
+import { revalidatePath } from 'next/cache';
+import { torznabIndexers } from '@/lib/torznab';
+import { syncTrackers } from '@/lib/trackers';
 import { checkAndSaveTmdb } from '@/lib/tmdb/form';
 import { formValues } from '@/lib/form-values';
 
@@ -94,13 +97,22 @@ export async function addSourceAction(_prev: StepState, form: FormData): Promise
   if (!/^https?:\/\//.test(s.url)) return { values, fieldErrors: { url: 'Адрес вида http://jackett:9117/api/v2.0/indexers/all/results/torznab/' } };
   const r = await checkTorznab(s);
   if (!r.ok) return { values, error: r.error };
-  addSource(db, s);
+  const { id } = addSource(db, s);
+  // сразу список трекеров источника (для основного/запасного); не умеет — соберётся при поиске
+  try {
+    const list = await torznabIndexers({ url: s.url, apiKey: s.apiKey, timeoutMs: 15_000 });
+    if (list) syncTrackers(db, id, list);
+  } catch {
+    // не страшно: трекеры появятся при первом поиске
+  }
+  revalidatePath('/setup/sources');
   return { ok: `«${s.name}» добавлен · категорий: ${r.categories}` };
 }
 
 export async function removeSourceAction(form: FormData) {
   await requireSetupSession();
-  removeSource(getDb(), Number(form.get('id')));
+  const id = Number(form.get('id'));
+  if (Number.isInteger(id) && id > 0) removeSource(getDb(), id);
   redirect('/setup/sources');
 }
 
