@@ -6,6 +6,10 @@ import path from 'node:path';
 const port = Number(process.argv[2] ?? 3198);
 const dir = path.join(import.meta.dirname, '..', 'fixtures', 'torznab');
 const read = (n) => readFileSync(path.join(dir, n), 'utf8');
+// Для e2e — ещё одна раздача с неизвестной студией (в фикстуре её нет, чтобы не менять unit-тесты).
+const EXTRA = `<item><title>Game of Thrones / S1E1-10 of 10 [2011, WEB-DL 1080p] MVO (Zaycev Studio)</title><guid>https://rutracker.org/forum/viewtopic.php?t=3003</guid>
+<jackettindexer id="rutracker">RuTracker.org</jackettindexer><size>12884901888</size><link>http://127.0.0.1:3198/dl/rutracker/?path=z</link>
+<torznab:attr name="seeders" value="7" /></item>`;
 const EMPTY = '<?xml version="1.0"?><rss version="2.0"><channel><title>empty</title></channel></rss>';
 const CAPS = '<?xml version="1.0"?><caps><server title="Jackett stub"/><categories><category id="5000" name="TV"/><category id="5070" name="Anime"/></categories></caps>';
 
@@ -26,7 +30,7 @@ http
     if (t === 'indexers') return send(read('indexers-jackett.xml'));
     if (t === 'search') {
       const q = (url.searchParams.get('q') ?? '').toLowerCase();
-      return send(/game|thrones|игра|престол|got/.test(q) ? read('search-jackett.xml') : EMPTY);
+      return send(/game|thrones|игра|престол|got/.test(q) ? read('search-jackett.xml').replace('</channel>', `${EXTRA}</channel>`) : EMPTY);
     }
     res.writeHead(404);
     res.end();

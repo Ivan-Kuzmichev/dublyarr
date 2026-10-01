@@ -17,6 +17,7 @@ export default defineConfig({
   fullyParallel: false,
   webServer: [
     { command: 'node tests/e2e/tmdb-stub.mjs 3199', url: 'http://127.0.0.1:3199/3/configuration?api_key=ok' },
+    { command: 'node tests/e2e/jackett-stub.mjs 3198', url: 'http://127.0.0.1:3198/api?t=caps&apikey=ok' },
     {
       command: 'pnpm build && node dist/supervisor.cjs',
       url: 'http://127.0.0.1:3100/api/health',

@@ -81,6 +81,19 @@ Self-hosted сервис для одного пользователя: подп�
 - Окно подписки = `ProfileEditor` + `SubscribeDialog` (то же для профилей по умолчанию); модалка/шторка — `ui/Modal`.
 - e2e: вход с кодом — `tests/e2e/helpers.ts` (`loginWithCode`); сценарии идут на одной базе и учитывают изменения предыдущих.
 
+## Решения (фаза 1c — поиск и разбор)
+
+- Ожидание позиции профиля — «через N дней после эфира», ожидания не убывают сверху вниз (решение владельца).
+- Torznab: `src/lib/torznab.ts` (`fast-xml-parser`), поиск по сериалу — `src/lib/search.ts` (`searchTitle`: все источники параллельно,
+  склейка по infohash или трекер+заголовок+размер, результаты запасного источника трекера отбрасываются, если основной ответил).
+  Трекеры и роли — `src/lib/trackers.ts`. Ссылка на .torrent хранится зашифрованной (`releases.download_enc`).
+- Разбор заголовка — чистые модули `src/lib/parse/*` (`parseRelease`); в раздаче — **список** озвучек; студии ищутся только целыми токенами.
+  Корпус реальных заголовков — `tests/fixtures/releases/hub-corpus.tsv` (тесты `parse-corpus`).
+- «Тот ли сериал» — `src/lib/match.ts` (0,6 название · 0,15 год · 0,15 сезоны · 0,1 размер; ≥ 0,8 — подходит, 0,5–0,8 — сомнительно), правила пользователя — `release-rules.ts`.
+- Вердикты и лучшая раздача — `src/lib/evaluate.ts` (`evaluateReleases`), место под Laya — `finalCheck`. 1d берёт их же.
+- Ручной поиск — `/search/[tmdbId]?s=&e=` (`src/lib/manual-search.ts`); каждое открытие опрашивает источники.
+- e2e: заглушка Jackett `tests/e2e/jackett-stub.mjs` (порт 3198).
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
