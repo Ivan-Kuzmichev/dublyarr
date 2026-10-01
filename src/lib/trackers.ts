@@ -89,3 +89,22 @@ export function trackersTable(db: Db): TrackerRow[] {
   }
   return [...byIndexer.values()].sort((a, b) => a.name.localeCompare(b.name, 'ru'));
 }
+
+export type SourceCard = { id: number; name: string; url: string; trackers: number; lastOkAt: number | null; lastError: string | null };
+
+/** Карточки источников в настройках: число трекеров и последнее состояние. */
+export function sourceCards(db: Db): SourceCard[] {
+  const all = db.select().from(trackers).all();
+  return db
+    .select()
+    .from(sources)
+    .orderBy(sources.id)
+    .all()
+    .map((s) => {
+      const mine = all.filter((t) => t.sourceId === s.id);
+      const ok = Math.max(0, ...mine.map((t) => t.lastOkAt ?? 0));
+      const errAt = Math.max(0, ...mine.map((t) => t.lastErrorAt ?? 0));
+      const lastError = errAt > ok ? (mine.find((t) => t.lastErrorAt === errAt)?.lastError ?? null) : null;
+      return { id: s.id, name: s.name, url: s.url, trackers: mine.length, lastOkAt: ok || null, lastError };
+    });
+}

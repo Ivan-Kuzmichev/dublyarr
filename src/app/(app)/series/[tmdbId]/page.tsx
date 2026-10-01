@@ -12,6 +12,7 @@ import { imageUrl, posterColor } from '@/lib/image-url';
 import { formatAirDate, pickDefaultSeason, todayIso } from '@/lib/dates';
 import type { Title } from '@/lib/db/schema';
 import { KindSwitch } from './KindSwitch';
+import { plural } from '@/lib/plural';
 import { RefreshButton } from './RefreshButton';
 import { SubscribeButton } from './SubscribeButton';
 import { SubscriptionPanel } from './SubscriptionPanel';
@@ -28,13 +29,6 @@ const STATUS: Record<Title['status'], string> = {
   planned: 'анонсирован',
 };
 
-const plural = (n: number, one: string, few: string, many: string) => {
-  const m10 = n % 10;
-  const m100 = n % 100;
-  if (m10 === 1 && m100 !== 11) return one;
-  if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
-  return many;
-};
 
 async function load(tmdbId: number): Promise<{ ok: true; r: OpenResult } | { ok: false; error: string }> {
   const db = getDb();

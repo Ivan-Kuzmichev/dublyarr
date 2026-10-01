@@ -3,10 +3,16 @@ import type { Db } from './db/client';
 import { sources } from './db/schema';
 import { decrypt, encrypt } from './crypto/secretbox';
 
-export function addSource(db: Db, s: { name: string; url: string; apiKey: string }) {
+export function addSource(db: Db, s: { name: string; url: string; apiKey: string; timeoutMs?: number }) {
   return db
     .insert(sources)
-    .values({ name: s.name.trim(), url: s.url.trim(), apiKeyEnc: s.apiKey ? encrypt(s.apiKey) : null, createdAt: Date.now() })
+    .values({
+      name: s.name.trim(),
+      url: s.url.trim(),
+      apiKeyEnc: s.apiKey ? encrypt(s.apiKey) : null,
+      ...(s.timeoutMs ? { timeoutMs: s.timeoutMs } : {}),
+      createdAt: Date.now(),
+    })
     .returning({ id: sources.id })
     .get();
 }
@@ -26,4 +32,18 @@ export function sourcesForSearch(db: Db) {
     .orderBy(sources.id)
     .all()
     .map((s) => ({ id: s.id, name: s.name, url: s.url, apiKey: s.apiKeyEnc ? decrypt(s.apiKeyEnc) : '', timeoutMs: s.timeoutMs }));
+}
+
+/** Правка источника; пустой ключ — оставить сохранённый. */
+export function updateSource(db: Db, id: number, s: { name: string; url: string; apiKey: string; timeoutMs: number }) {
+  db.update(sources)
+    .set({ name: s.name, url: s.url, timeoutMs: s.timeoutMs, ...(s.apiKey ? { apiKeyEnc: encrypt(s.apiKey) } : {}) })
+    .where(eq(sources.id, id))
+    .run();
+}
+
+/** Ключ сохранённого источника (для проверки при правке без нового ключа). */
+export function savedApiKey(db: Db, id: number): string {
+  const row = db.select({ k: sources.apiKeyEnc }).from(sources).where(eq(sources.id, id)).get();
+  return row?.k ? decrypt(row.k) : '';
 }
