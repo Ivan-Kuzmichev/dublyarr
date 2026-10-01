@@ -10,6 +10,7 @@ import { activityQueue, type QueueRow } from './activity';
 import { getQbit } from './qbit';
 import { oldCopiesSummary, oldCopyRuleConfirmed } from './old-copies';
 import { plural } from './plural';
+import { recentNotices } from './notices';
 
 // Данные экранов «Сегодня», «Календарь» и колонки «Статус» в карточке сериала.
 
@@ -254,6 +255,7 @@ export function todayData(db: Db, today: string, now = Date.now()) {
     fresh: fresh.map(({ at: _a, ...rest }) => rest),
     waiting,
     attention,
+    news: recentNotices(db, now),
     downloads: downloadsList,
     week: airing(db, today, addDays(today, 6), today),
     qbitConfigured: !!getQbit(db),

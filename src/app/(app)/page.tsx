@@ -41,7 +41,7 @@ export default function TodayPage() {
   const today = todayIso();
   const d = todayData(getDb(), today);
   const speed = d.downloads.reduce((n, r) => n + r.speedBps, 0);
-  const empty = !d.fresh.length && !d.waiting.length && !d.downloads.length && !d.week.length && !d.attention.length;
+  const empty = !d.fresh.length && !d.waiting.length && !d.downloads.length && !d.week.length && !d.attention.length && !d.news.length;
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-end justify-between gap-5">
@@ -176,6 +176,20 @@ export default function TodayPage() {
             )}
           </div>
         </div>
+      )}
+
+      {d.news.length > 0 && (
+        <section className="flex flex-col gap-3">
+          {sectionHead('Новости')}
+          <div className="flex flex-col gap-2">
+            {d.news.map((n) => (
+              <Link key={`${n.tmdbId}-${n.createdAt}`} href={`/series/${n.tmdbId}`} className="flex items-baseline gap-2 rounded-xl border border-line bg-surface px-4 py-3 text-sm text-text no-underline hover:text-text">
+                <span className="font-semibold">{n.title}</span>
+                <span className="text-text-2">{n.text}</span>
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
 
       {d.week.length > 0 && (

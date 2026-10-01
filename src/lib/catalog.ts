@@ -4,6 +4,7 @@ import { episodes, seasons, titles, type Episode, type Season, type Title } from
 import type { Tmdb } from './tmdb/client';
 import { mapDetails, mapEpisodes, mapSeasons } from './tmdb/map';
 import type { TmdbSeason } from './tmdb/types';
+import { extendSeasons } from './seasons-watch';
 
 /** Карточку старше этого обновляем при открытии. */
 export const STALE_MS = 12 * 3_600_000;
@@ -47,7 +48,7 @@ export async function syncTitle(db: Db, tmdb: Tmdb, tmdbId: number, opts: { allS
 
   // Все запросы сделаны — пишем одной транзакцией. Строку перечитываем внутри: пока шли запросы,
   // пользователь мог сменить тип, а параллельное открытие — уже вставить сериал.
-  return db.transaction((tx) => {
+  const title = db.transaction((tx) => {
     const current = tx.select().from(titles).where(eq(titles.tmdbId, tmdbId)).get();
     const kind = current?.kindManual ? current.kind : fields.kind;
     const row = tx
@@ -92,6 +93,9 @@ export async function syncTitle(db: Db, tmdb: Tmdb, tmdbId: number, opts: { allS
     }
     return row;
   });
+  // новый сезон у сериала из подписки — расширить подписку или оставить заметку (spec §11)
+  extendSeasons(db, title.id, now);
+  return title;
 }
 
 // Если TMDB не ответил, карточка какое-то время не ждёт его снова (иначе каждое открытие — таймаут).

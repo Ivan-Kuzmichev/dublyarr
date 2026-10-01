@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { testDb } from './helpers';
 import { episodeStatuses, todayData, calendarWeek, mondayOf, seriesDubColumns, speedBlock, delayBasis } from '@/lib/dashboard';
 import { setSetting } from '@/lib/settings';
-import { downloads, episodeFiles, episodes, oldCopies, seasons, studioSightings, studios, subscriptions, titles, wantedState } from '@/lib/db/schema';
+import { downloads, episodeFiles, episodes, notices, oldCopies, seasons, studioSightings, studios, subscriptions, titles, wantedState } from '@/lib/db/schema';
 import type { Profile } from '@/lib/profile-core';
 
 process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
@@ -132,4 +132,10 @@ test('«Требует внимания»: старые копии ждут по
   expect(todayData(db, today, NOW).attention).toContainEqual({ tmdbId: 0, title: 'Старые копии после улучшения', code: '', text: '2 копии · 4 ГБ — подтвердите удаление', href: '/old-copies' });
   setSetting(db, 'retention.oldCopy.confirmed', true);
   expect(todayData(db, today, NOW).attention.some((a) => a.href === '/old-copies')).toBe(false);
+});
+
+test('«Сегодня»: новости — заметки за 3 дня', () => {
+  const { db, t } = setup();
+  db.insert(notices).values({ titleId: t.id, kind: 'season-subscribed', text: 'Подписался на 2-й сезон', createdAt: NOW - HOUR }).run();
+  expect(todayData(db, today, NOW).news).toEqual([{ tmdbId: 7, title: 'Дэдлок', text: 'Подписался на 2-й сезон', createdAt: NOW - HOUR }]);
 });

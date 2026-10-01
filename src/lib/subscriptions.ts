@@ -1,6 +1,6 @@
-import { and, eq, gte, gt, min } from 'drizzle-orm';
+import { and, eq, gte, gt, max, min } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { episodes, subscriptions, titles, type Episode, type Subscription, type Title } from './db/schema';
+import { episodes, seasons, subscriptions, titles, type Episode, type Subscription, type Title } from './db/schema';
 import type { Profile } from './profile';
 
 export class SubscriptionError extends Error {}
@@ -10,7 +10,8 @@ export const getSubscription = (db: Db, titleId: number) => db.select().from(sub
 export function subscribe(db: Db, titleId: number, profile: Profile, now = Date.now()): Subscription {
   if (!db.select({ id: titles.id }).from(titles).where(eq(titles.id, titleId)).get()) throw new SubscriptionError('Сериал не найден');
   if (getSubscription(db, titleId)) throw new SubscriptionError('Уже есть подписка');
-  return db.insert(subscriptions).values({ titleId, profile, subscribedAt: now, updatedAt: now }).returning().get();
+  const maxSeason = db.select({ n: max(seasons.number) }).from(seasons).where(eq(seasons.titleId, titleId)).get()?.n ?? null;
+  return db.insert(subscriptions).values({ titleId, profile, maxSeason, subscribedAt: now, updatedAt: now }).returning().get();
 }
 
 export function updateSubscription(db: Db, titleId: number, profile: Profile, now = Date.now()): Subscription {
@@ -24,11 +25,13 @@ export const unsubscribe = (db: Db, titleId: number) => db.delete(subscriptions)
 type Ep = Pick<Episode, 'season' | 'number' | 'airDate'>;
 
 /** Какие вышедшие серии нужны по подписке (без спецвыпусков и серий без даты). Сегодняшняя — уже нужна. */
-export function wantedEpisodes(sub: Pick<Subscription, 'profile' | 'subscribedAt'>, eps: Ep[], today: string) {
+export function wantedEpisodes(sub: Pick<Subscription, 'profile' | 'subscribedAt'> & { maxSeason?: number | null }, eps: Ep[], today: string) {
   const since = new Date(sub.subscribedAt).toLocaleDateString('sv-SE');
   const s = sub.profile.scope;
   return eps
     .filter((e): e is Ep & { airDate: string } => e.season > 0 && !!e.airDate && e.airDate <= today)
+    // сезоны за границей подписки (без «подписаться на новый сезон») не нужны
+    .filter((e) => sub.maxSeason === null || sub.maxSeason === undefined || e.season <= sub.maxSeason)
     .filter((e) => {
       if (s.mode === 'all') return true;
       if (s.mode === 'new') return e.airDate >= since;
