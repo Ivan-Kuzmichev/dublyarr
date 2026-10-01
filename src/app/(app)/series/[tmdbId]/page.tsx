@@ -17,6 +17,9 @@ import { plural } from '@/lib/plural';
 import { RefreshButton } from './RefreshButton';
 import { SubscribeButton } from './SubscribeButton';
 import { SubscriptionPanel } from './SubscriptionPanel';
+import { RetentionToggles } from './RetentionToggles';
+import { DeleteSeriesDialog } from '@/app/(app)/storage/DeleteSeriesDialog';
+import { getRetention } from '@/lib/retention-settings';
 import { getSubscription } from '@/lib/subscriptions';
 import { getDefaultProfile, subscribeDialogStudios } from '@/lib/profile';
 
@@ -153,6 +156,13 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
       {sub && (
         <div className="lg:order-2">
           <SubscriptionPanel profile={sub.profile} studioNames={studioNames} />
+          <section className="mt-5 flex flex-col gap-2 rounded-2xl border border-line bg-surface p-5">
+            <h3 className="m-0 text-base font-semibold">Хранение</h3>
+            <RetentionToggles tmdbId={t.tmdbId} keepAll={sub.keepAll} autoDelete={sub.autoDelete} days={getRetention(db).age.days} />
+            <div className="pt-2">
+              <DeleteSeriesDialog tmdbId={t.tmdbId} title={t.nameRu} trigger="button" />
+            </div>
+          </section>
           {speed.length > 0 && (
             <section className="mt-5 flex flex-col gap-3.5 rounded-2xl border border-line bg-surface p-5">
               <h3 className="m-0 text-base font-semibold">Скорость озвучки</h3>
