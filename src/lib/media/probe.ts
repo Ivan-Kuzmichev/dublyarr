@@ -27,7 +27,7 @@ type Raw = {
     height?: number;
     color_transfer?: string;
     side_data_list?: { side_data_type?: string }[];
-    disposition?: { default?: number; forced?: number };
+    disposition?: { default?: number; forced?: number; attached_pic?: number };
     tags?: Record<string, string>;
   }[];
   format?: { format_name?: string; duration?: string };
@@ -41,7 +41,8 @@ export function parseProbe(json: unknown): Probe {
   const streams = (raw.streams ?? []).map((s): Stream => {
     const tags = Object.fromEntries(Object.entries(s.tags ?? {}).map(([k, v]) => [k.toLowerCase(), v]));
     const lang = tags.language && tags.language !== 'und' ? tags.language.toLowerCase() : null;
-    const type = TYPES[s.codec_type ?? ''] ?? 'other';
+    // обложка-вложение (attached_pic) — не дорожка mkvmerge
+    const type = s.disposition?.attached_pic === 1 ? 'other' : (TYPES[s.codec_type ?? ''] ?? 'other');
     const dv = (s.side_data_list ?? []).some((d) => /DOVI/i.test(d.side_data_type ?? ''));
     return {
       index: s.index,

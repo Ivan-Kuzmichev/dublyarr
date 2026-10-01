@@ -38,3 +38,8 @@ test('Dolby Vision и нет длительности', () => {
   expect(hdrOf(p)).toBe(true);
   expect(p.duration).toBeNull();
 });
+
+test('обложка-вложение (attached_pic) — не видеодорожка', () => {
+  const p = parseProbe({ streams: [{ index: 0, codec_type: 'video', codec_name: 'h264', width: 1920, height: 1080, disposition: { default: 1 } }, { index: 1, codec_type: 'video', codec_name: 'mjpeg', width: 600, height: 900, disposition: { attached_pic: 1 } }], format: { format_name: 'matroska' } });
+  expect(p.streams.map((s) => s.type)).toEqual(['video', 'other']);
+});

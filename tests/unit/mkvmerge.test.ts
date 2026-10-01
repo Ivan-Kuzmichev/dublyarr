@@ -38,10 +38,15 @@ test('внешние дорожки — отдельными входами с �
 });
 
 test('та ли серия по длительности', () => {
-  expect(wrongEpisode(130 * 60, 55)).toBe('Не та серия: 2 ч 10 мин вместо ~55 мин');
   expect(wrongEpisode(20 * 60, 55)).toBe('Не та серия: 20 мин вместо ~55 мин');
   expect(wrongEpisode(50 * 60, 55)).toBeNull();
   expect(wrongEpisode(45 * 60, null)).toBeNull();
   expect(wrongEpisode(125 * 60, null)).toBe('Похоже на фильм: 2 ч 5 мин');
   expect(wrongEpisode(null, 55)).toBeNull();
+});
+
+test('двойная серия и длинный финал — не «не та серия»', () => {
+  expect(wrongEpisode(125 * 60, 55)).toBeNull(); // 2,3× — финал
+  expect(wrongEpisode(150 * 60, 55)).toBe('Не та серия: 2 ч 30 мин вместо ~55 мин');
+  expect(wrongEpisode(110 * 60, 55, 2)).toBeNull(); // файл на две серии
 });

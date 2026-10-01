@@ -3,6 +3,7 @@ import { setSetting } from '@/lib/settings';
 import { randomBytes } from 'node:crypto';
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync, rmSync, copyFileSync, readdirSync } from 'node:fs';
 import type { Runner } from '@/lib/media/runner';
+import { cleanRemuxTmp } from '@/lib/media/process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { testDb } from './helpers';
@@ -349,9 +350,9 @@ describe('пересборка при импорте', () => {
   test('не та серия — не импортируется, загрузка с ошибкой, торрент убран', async () => {
     const s = setup();
     const d = await start(s);
-    const { runner } = fakeRunner({ json: probeJson({ durationMin: 130 }) });
+    const { runner } = fakeRunner({ json: probeJson({ durationMin: 150 }) });
     await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: HOUR, runner });
-    expect(s.db.select().from(downloads).get()).toMatchObject({ state: 'error', lastError: 'Не та серия: 2 ч 10 мин вместо ~55 мин' });
+    expect(s.db.select().from(downloads).get()).toMatchObject({ state: 'error', lastError: 'Не та серия: 2 ч 30 мин вместо ~55 мин' });
     expect(s.fq.torrents.has(d.hash)).toBe(false);
     expect(s.db.select().from(episodeFiles).all()).toEqual([]);
   });
@@ -363,4 +364,79 @@ describe('пересборка при импорте', () => {
     await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: HOUR, runner });
     expect(s.db.select().from(episodeFiles).get()).toMatchObject({ processed: false, path: rel.replace('.mkv', '.mkv') });
   });
+});
+
+describe('пересборка: исправления по ревью', () => {
+  const multiProbe = (container = 'matroska,webm') => ({
+    streams: [
+      { index: 0, codec_name: 'h264', codec_type: 'video', width: 1920, height: 1080, disposition: { default: 1 }, tags: {} },
+      { index: 1, codec_name: 'aac', codec_type: 'audio', channels: 2, disposition: { default: 1 }, tags: { language: 'eng', title: 'Original' } },
+      { index: 2, codec_name: 'ac3', codec_type: 'audio', channels: 6, disposition: { default: 0 }, tags: { language: 'rus', title: 'LostFilm' } },
+    ],
+    format: { format_name: container, duration: '3000' },
+  });
+  function runnerOf(json: unknown) {
+    const calls: string[][] = [];
+    const runner: Runner = {
+      available: async () => ({ ffprobe: true, mkvmerge: true }),
+      probe: async () => json,
+      async mkvmerge(args) {
+        calls.push(args);
+        writeFileSync(args[1], 'пересобрано');
+        return { code: 0, output: '' };
+      },
+    };
+    return { runner, calls };
+  }
+  async function packSetup(files: string[]) {
+    const s = setup();
+    const studio = s.db.insert(studios).values({ name: 'LostFilm', kind: 'both', source: 'manual', createdAt: 1 }).returning().get();
+    s.db.insert(subscriptions).values({ titleId: s.t.id, profile: { dubs: [{ kind: 'studio', studioId: studio.id, waitDays: 0 }], quality: { target: 1080, allowLower: true, preferHdr: false, maxSizeGb: null }, scope: { mode: 'all' }, wholeSeasonAfterFinale: false, replaceWithHigher: true, autoNextSeason: true }, subscribedAt: 1, updatedAt: 1 }).run();
+    for (const n of [1, 2]) s.db.insert(episodes).values({ titleId: s.t.id, season: 1, number: n, name: `E${n}`, airDate: '2011-04-17', runtime: 55 }).run();
+    const r = s.mk('GoT S01', {});
+    s.files.set(r.id, torrent('GoT S01', files));
+    const d = await startRelease(s.db, s.deps, r, [1, 2].map((number) => ({ season: 1, number })), 'pack', 'LostFilm', { dubPosition: 0 });
+    return { ...s, d };
+  }
+
+  test('за проход — одна пересборка; уже импортированное не пересобирается снова', async () => {
+    const s = await packSetup(['GoT.S01E01.mkv', 'GoT.S01E02.mkv']);
+    s.finish(s.d.hash);
+    const { runner, calls } = runnerOf(multiProbe());
+    await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: HOUR, runner });
+    expect(calls).toHaveLength(1);
+    expect(s.db.select().from(episodeFiles).all()).toHaveLength(1);
+    expect(s.db.select().from(downloads).get()!.state).toBe('completed');
+    await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: 2 * HOUR, runner });
+    expect(calls).toHaveLength(2);
+    expect(s.db.select().from(episodeFiles).all()).toHaveLength(2);
+    expect(s.db.select().from(downloads).get()!.state).toBe('imported');
+    expect(calls[0][1]).toContain('/.dublyarr-tmp/');
+  });
+
+  test('внешние дорожки серии включаются к закачке и вшиваются', async () => {
+    const s = await packSetup(['GoT.S01E01.mkv', 'GoT.S01E02.mkv', 'Rus Sound/LostFilm/GoT.S01E01.mka', 'Rus Sound/LostFilm/GoT.S01E02.mka']);
+    expect(s.fq.torrents.get(s.d.hash)!.files.map((f) => f.priority)).toEqual([1, 1, 1, 1]);
+    s.finish(s.d.hash);
+    const { runner, calls } = runnerOf(multiProbe());
+    await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: HOUR, runner });
+    expect(calls[0].some((a) => a.endsWith('Rus Sound/LostFilm/GoT.S01E01.mka'))).toBe(true);
+  });
+
+  test('не mkv — кладётся как есть, без пересборки', async () => {
+    const s = await packSetup(['GoT.S01E01.mp4', 'GoT.S01E02.mp4']);
+    s.finish(s.d.hash);
+    const { runner, calls } = runnerOf(multiProbe('mov,mp4,m4a,3gp,3g2,mj2'));
+    await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: HOUR, runner });
+    expect(calls).toEqual([]);
+    expect(s.db.select().from(episodeFiles).all().map((f) => f.path.endsWith('.mp4'))).toEqual([true, true]);
+  });
+});
+
+test('временные файлы пересборки чистятся при старте', async () => {
+  const media = mkdtempSync(path.join(tmpdir(), 'dy-tmp-'));
+  mkdirSync(path.join(media, '.dublyarr-tmp'));
+  writeFileSync(path.join(media, '.dublyarr-tmp', '.dy-1.tmp.mkv'), 'x');
+  await cleanRemuxTmp(media);
+  expect(readdirSync(path.join(media, '.dublyarr-tmp'))).toEqual([]);
 });

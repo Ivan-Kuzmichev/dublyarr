@@ -6,11 +6,12 @@ const fmt = (sec: number) => {
 };
 
 /** Причина, если файл явно не серия; null — похоже на серию (или проверить нечем). */
-export function wrongEpisode(durationSec: number | null, runtimeMin: number | null): string | null {
+export function wrongEpisode(durationSec: number | null, runtimeMin: number | null, episodesInFile = 1): string | null {
   if (!durationSec) return null;
   if (runtimeMin) {
-    const ratio = durationSec / 60 / runtimeMin;
-    return ratio < 0.5 || ratio > 2 ? `Не та серия: ${fmt(durationSec)} вместо ~${runtimeMin} мин` : null;
+    // запас 2,5× — финалы бывают длиннее, чем пишет TMDB; файл на две серии — двойная длительность
+    const ratio = durationSec / 60 / (runtimeMin * episodesInFile);
+    return ratio < 0.5 || ratio > 2.5 ? `Не та серия: ${fmt(durationSec)} вместо ~${runtimeMin * episodesInFile} мин` : null;
   }
-  return durationSec > 100 * 60 ? `Похоже на фильм: ${fmt(durationSec)}` : null;
+  return durationSec > 100 * 60 * episodesInFile ? `Похоже на фильм: ${fmt(durationSec)}` : null;
 }

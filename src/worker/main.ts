@@ -10,6 +10,8 @@ import { getSchedule } from '../lib/schedule';
 const TICK_EVERY = 5 * 60_000;
 import { PACK_CHECK_EVERY } from '../lib/pack-watch';
 import { backfillSightings } from '../lib/sightings';
+import { cleanRemuxTmp } from '../lib/media/process';
+import { getSetting } from '../lib/settings';
 import { scheduleDaily, scheduleEvery } from './schedule';
 
 const db = getDb();
@@ -31,6 +33,12 @@ async function checkLaya() {
 
 async function loop() {
   requeueStale(db);
+  try {
+    const media = getSetting<{ media: string }>(db, 'paths')?.media;
+    if (media) await cleanRemuxTmp(media); // недоделанные пересборки после падения
+  } catch (e) {
+    log.warn({ err: e instanceof Error ? e.message : String(e) }, 'remux tmp cleanup failed');
+  }
   try {
     backfillSightings(db);
   } catch (e) {

@@ -8,7 +8,7 @@ import { access } from 'node:fs/promises';
 import { restoreOldCopy, settleOldCopy, stashOldCopy } from './old-copies';
 import { notifyGone, notifyImported, notifyStalled } from './notify-events';
 import { mkdir, rm, stat } from 'node:fs/promises';
-import { processEpisode, WrongEpisodeError, type ProcessResult } from './media/process';
+import { processEpisode, RemuxDeferred, WrongEpisodeError, type ProcessResult } from './media/process';
 import { systemRunner, type Runner } from './media/runner';
 import { findExternal, getProcessing, describePlan, type External } from './media/tracks';
 import { hdrOf, resolutionOf } from './media/probe';
@@ -158,6 +158,22 @@ export async function startRelease(
   return selectAndStart(db, deps.qbit, d, files);
 }
 
+/** Внешние .mka/.srt этих серий в раздаче (их тоже нужно качать, чтобы вшить). */
+function externalIndexes(files: { index: number; name: string }[], season: number, map: Map<number, number[]>): number[] {
+  const names = files.map((f) => f.name);
+  const videos = files.filter((f) => isVideo(f.name)).length;
+  const out: number[] = [];
+  for (const [ep, idx] of map) {
+    const video = files.find((f) => f.index === idx[0]);
+    if (!video) continue;
+    for (const e of findExternal(names, video.name, season, ep, videos === 1)) {
+      const f = files.find((x) => x.name === e.path);
+      if (f) out.push(f.index);
+    }
+  }
+  return out;
+}
+
 /** Пак: приоритет 0 всем, кроме файлов нужных серий; затем запуск. */
 async function selectAndStart(db: Db, qbit: Qbit, d: Download, files: DownloadFile[]): Promise<Download> {
   if (d.kind === 'pack') {
@@ -167,7 +183,7 @@ async function selectAndStart(db: Db, qbit: Qbit, d: Download, files: DownloadFi
       await qbit.remove([d.hash]);
       return update(db, d.id, { state: 'error', files, lastError: `В раздаче нет файла ${code(d.episodes[0])}` });
     }
-    const keep = new Set(found.flatMap((w) => map.get(w.number)!));
+    const keep = new Set([...found.flatMap((w) => map.get(w.number)!), ...externalIndexes(files, d.season, map)]);
     const off = files.filter((f) => !keep.has(f.index)).map((f) => f.index);
     await qbit.setFilePriority(d.hash, off, 0);
     d = update(db, d.id, { episodes: found, files: files.map((f) => ({ ...f, priority: keep.has(f.index) ? 1 : 0 })) });
@@ -185,7 +201,7 @@ async function resume(db: Db, deps: DownloadDeps, d: Download, want: EpisodeRef[
     const map = filesForEpisodes(files, d.season, want.map((w) => w.number));
     episodes = want.filter((w) => map.has(w.number));
     if (!episodes.length) throw new DownloadError(`В раздаче нет файла ${code(want[0])}`);
-    const on = new Set(episodes.flatMap((w) => map.get(w.number)!));
+    const on = new Set([...episodes.flatMap((w) => map.get(w.number)!), ...externalIndexes(files, d.season, map)]);
     await deps.qbit.setFilePriority(d.hash, [...on], 1);
     next = files.map((f) => (on.has(f.index) ? { ...f, priority: 1 } : f));
   }
@@ -249,7 +265,7 @@ export async function switchTorrent(db: Db, deps: DownloadDeps, old: Download, t
   await deps.qbit.ensureCategory(CATEGORY, savePath);
   // прерванная прошлая смена могла оставить торрент в клиенте без записи — подхватываем его
   if (!(await deps.qbit.list(CATEGORY)).some((t) => t.hash === meta.infohash)) await deps.qbit.add(torrent, { savePath, category: CATEGORY, paused: true });
-  const keep = new Set(found.flatMap((e) => map.get(e.number)!));
+  const keep = new Set([...found.flatMap((e) => map.get(e.number)!), ...externalIndexes(files, old.season, map)]);
   try {
     await deps.qbit.setFilePriority(meta.infohash, files.filter((f) => !keep.has(f.index)).map((f) => f.index), 0);
   } catch (e) {
@@ -317,7 +333,7 @@ export async function enableFiles(db: Db, deps: DownloadDeps, downloadId: number
     return;
   }
   const map = filesForEpisodes(d.files, d.season, want.map((w) => w.number));
-  const idx = [...map.values()].flat();
+  const idx = [...[...map.values()].flat(), ...externalIndexes(d.files, d.season, map)];
   if (idx.length) {
     await deps.qbit.setFilePriority(d.hash, idx, 1);
     if (d.state === 'completed') await deps.qbit.start([d.hash]);
@@ -389,6 +405,7 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
       res.imported++;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
+      if (e instanceof RemuxDeferred) continue; // остальные серии пересоберутся в следующий проход
       if (e instanceof WrongEpisodeError) {
         // не та серия: раздача отвергнута для этих серий (ошибка загрузки), торрент убран из клиента без файлов, поиск заново
         const wrong = (e as WrongEpisodeError & { episodes?: EpisodeRef[] }).episodes ?? d.episodes;
@@ -406,7 +423,7 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
   return res;
 }
 
-async function importDownload(db: Db, d: Download, savePath: string, files: { index: number; name: string; size: number }[], paths: Paths, now: number, runner: Runner): Promise<EpisodeRef[]> {
+async function importDownload(db: Db, d: Download, savePath: string, files: { index: number; name: string; size: number; progress?: number }[], paths: Paths, now: number, runner: Runner): Promise<EpisodeRef[]> {
   const title = db.select().from(titles).where(eq(titles.id, d.titleId)).get();
   if (!title) throw new Error('Сериал удалён');
   const map = filesForEpisodes(files, d.season, d.episodes.filter((e) => e.season === d.season).map((e) => e.number));
@@ -422,6 +439,7 @@ async function importDownload(db: Db, d: Download, savePath: string, files: { in
   }
   // каждая серия отдельно: сбой одной не мешает остальным, уже импортированные этой загрузкой не копируются заново
   let failure: unknown = null;
+  let deferred = false;
   const wrong: EpisodeRef[] = [];
   const ctx = processingContext(db, d, title, files, savePath, paths, runner);
   update(db, d.id, { processing: true });
@@ -429,23 +447,30 @@ async function importDownload(db: Db, d: Download, savePath: string, files: { in
     try {
       await importEpisode(db, d, ep, title, savePath, files.find((f) => f.index === map.get(ep.number)![0])!, paths, now, ctx);
     } catch (e) {
+      if (e instanceof RemuxDeferred) {
+        deferred = true;
+        continue;
+      }
       if (e instanceof WrongEpisodeError) wrong.push(ep);
       failure ??= e;
     }
   }
   update(db, d.id, { processing: false });
+  if (deferred && !failure && !wrong.length) throw new RemuxDeferred('остальные серии — в следующий проход');
   if (wrong.length) throw Object.assign(new WrongEpisodeError((failure as Error).message), { episodes: wrong });
   if (failure) throw failure;
   return found;
 }
 
 type ProcessingContext = {
-  base: Omit<Parameters<typeof processEpisode>[0], 'src' | 'targetDir' | 'runtime' | 'external'>;
+  base: Omit<Parameters<typeof processEpisode>[0], 'src' | 'targetDir' | 'runtime' | 'external' | 'episodesInFile' | 'allowRemux'>;
   externalFor: (fileName: string, ep: EpisodeRef) => External[];
+  episodesInFile: (fileName: string) => number;
+  budget: { remux: number };
 };
 
 /** Что нужно для пересборки: настройки, нужная и запасные студии, язык оригинала, внешние дорожки раздачи. */
-function processingContext(db: Db, d: Download, title: typeof titles.$inferSelect, files: { name: string }[], savePath: string, paths: Paths, runner: Runner): ProcessingContext {
+function processingContext(db: Db, d: Download, title: typeof titles.$inferSelect, files: { index: number; name: string; size: number; progress?: number }[], savePath: string, paths: Paths, runner: Runner): ProcessingContext {
   const settings = getProcessing(db);
   const allStudios = db.select().from(studios).all();
   const sub = db.select().from(subscriptions).where(eq(subscriptions.titleId, d.titleId)).get();
@@ -458,10 +483,18 @@ function processingContext(db: Db, d: Download, title: typeof titles.$inferSelec
   const videos = files.filter((f) => isVideo(f.name));
   return {
     base: { runner, settings, wanted, backups, originalLang: title.originalLanguage, studios: allStudios.map((s) => ({ id: s.id, name: s.name, aliases: s.aliases })) },
+    episodesInFile: (fileName) => {
+      const f = files.find((x) => x.name === fileName);
+      if (!f) return 1;
+      const map = filesForEpisodes(files, d.season, d.episodes.map((e) => e.number));
+      return Math.max(1, [...map.values()].filter((idx) => idx.includes(f.index)).length);
+    },
+    budget: { remux: 1 },
     externalFor: (fileName, ep) =>
       settings.external
         ? findExternal(
-            files.map((f) => f.name),
+            // только докачанные внешние дорожки
+            files.filter((f) => f.progress === undefined || f.progress >= 1).map((f) => f.name),
             fileName,
             ep.season,
             ep.number,
@@ -485,7 +518,26 @@ async function importEpisode(
   const src = toLocalPath(`${savePath.replace(/\/+$/, '')}/${file.name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
   const runtime = db.select({ r: episodes.runtime }).from(episodes).where(and(eq(episodes.titleId, d.titleId), eq(episodes.season, ep.season), eq(episodes.number, ep.number))).get()?.r ?? null;
   await mkdir(paths.media, { recursive: true });
-  const proc = await processEpisode({ ...ctx.base, src, targetDir: paths.media, runtime, external: ctx.externalFor(file.name, ep) });
+  // уже импортировано этой загрузкой и файл на месте — не пересобирать заново на каждом повторе
+  const mine = db
+    .select()
+    .from(episodeFiles)
+    .where(and(eq(episodeFiles.titleId, d.titleId), eq(episodeFiles.season, ep.season), eq(episodeFiles.number, ep.number)))
+    .get();
+  if (mine?.downloadId === d.id && (await fileExists(path.resolve(paths.media, mine.path)))) {
+    if (mine.dubPosition !== d.dubPosition) db.update(episodeFiles).set({ dubPosition: d.dubPosition }).where(eq(episodeFiles.id, mine.id)).run();
+    return;
+  }
+  const proc = await processEpisode({
+    ...ctx.base,
+    src,
+    targetDir: paths.media,
+    runtime,
+    external: ctx.externalFor(file.name, ep),
+    episodesInFile: ctx.episodesInFile(file.name),
+    allowRemux: ctx.budget.remux > 0,
+  });
+  if (proc.kind === 'remux') ctx.budget.remux--;
   const quality = (proc.probe ? resolutionOf(proc.probe) : null) ?? d.resolution;
   const rel = renderTemplate(
     paths.template || DEFAULT_TEMPLATE,
