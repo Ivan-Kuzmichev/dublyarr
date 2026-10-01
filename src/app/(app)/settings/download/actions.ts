@@ -9,6 +9,8 @@ import { parsePathsForm } from '@/lib/paths-form';
 import { checkWritableDir } from '@/lib/fs-check';
 import { checkHardlink } from '@/lib/importer';
 import { formValues } from '@/lib/form-values';
+import { parseCleanupForm } from '@/lib/cleanup';
+import { enqueue } from '@/worker/jobs';
 
 export type FormState = { ok?: string; error?: string; values?: Record<string, string> };
 
@@ -42,4 +44,15 @@ export async function savePathsAction(_prev: FormState, form: FormData): Promise
     revalidatePath('/settings/download');
   }
   return { values, ok: `${form.get('intent') === 'check' ? 'Папки доступны' : 'Сохранено'} · ${link.message}` };
+}
+
+export async function saveCleanupAction(_prev: FormState, form: FormData): Promise<FormState> {
+  await requireSession();
+  const c = parseCleanupForm(form);
+  if ('error' in c) return { error: c.error };
+  const db = getDb();
+  setSetting(db, 'cleanup', c);
+  enqueue(db, 'cleanup.run'); // сводка «ждёт подтверждения» обновится сразу, а не через час
+  revalidatePath('/settings/download');
+  return { ok: 'Сохранено' };
 }

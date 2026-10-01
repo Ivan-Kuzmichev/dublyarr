@@ -139,3 +139,12 @@ test('«Сегодня»: новости — заметки за 3 дня', () =
   db.insert(notices).values({ titleId: t.id, kind: 'season-subscribed', text: 'Подписался на 2-й сезон', createdAt: NOW - HOUR }).run();
   expect(todayData(db, today, NOW).news).toEqual([{ tmdbId: 7, title: 'Дэдлок', text: 'Подписался на 2-й сезон', createdAt: NOW - HOUR }]);
 });
+
+test('«Требует внимания»: уборка загрузок ждёт подтверждения', () => {
+  const { db } = setup();
+  expect(todayData(db, today, NOW).attention.some((a) => a.href === '/cleanup')).toBe(false);
+  setSetting(db, 'cleanup.pending', { count: 3, size: 5 * 1024 ** 3 });
+  expect(todayData(db, today, NOW).attention).toContainEqual({ tmdbId: 0, title: 'Уборка загрузок', code: '', text: '3 · 5 ГБ — подтвердите удаление', href: '/cleanup' });
+  setSetting(db, 'cleanup.pending', { count: 0, size: 0 });
+  expect(todayData(db, today, NOW).attention.some((a) => a.href === '/cleanup')).toBe(false);
+});

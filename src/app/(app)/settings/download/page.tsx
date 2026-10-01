@@ -7,6 +7,8 @@ import type { Paths } from '@/lib/downloads';
 import type { QbitConfig } from '@/lib/integrations/qbittorrent';
 import { QbitCard } from './QbitCard';
 import { PathsCard } from './PathsCard';
+import { CleanupCard } from './CleanupCard';
+import { getCleanup } from '@/lib/cleanup';
 
 export const metadata = { title: 'Загрузка и папки · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -58,6 +60,7 @@ export default function DownloadSettingsPage() {
           ))}
         </ol>
       </Card>
+      <CleanupCard value={getCleanup(db)} />
     </>
   );
 }

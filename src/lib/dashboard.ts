@@ -11,6 +11,7 @@ import { getQbit } from './qbit';
 import { oldCopiesSummary, oldCopyRuleConfirmed } from './old-copies';
 import { plural } from './plural';
 import { recentNotices } from './notices';
+import { getSetting } from './settings';
 
 // Данные экранов «Сегодня», «Календарь» и колонки «Статус» в карточке сериала.
 
@@ -249,6 +250,9 @@ export function todayData(db: Db, today: string, now = Date.now()) {
       text: `${old.count} ${plural(old.count, 'копия', 'копии', 'копий')} · ${formatSize(old.size)} — подтвердите удаление`,
       href: '/old-copies',
     });
+
+  const cleanup = getSetting<{ count: number; size: number }>(db, 'cleanup.pending');
+  if (cleanup?.count) attention.push({ tmdbId: 0, title: 'Уборка загрузок', code: '', text: `${cleanup.count} · ${formatSize(cleanup.size)} — подтвердите удаление`, href: '/cleanup' });
 
   const downloadsList: QueueRow[] = activityQueue(db, now).filter((r) => r.active);
   return {
