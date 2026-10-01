@@ -8,6 +8,8 @@ import { addDays, formatAirDate, formatShortDate } from './dates';
 import { formatSize } from './format';
 import { activityQueue, type QueueRow } from './activity';
 import { getQbit } from './qbit';
+import { oldCopiesSummary, oldCopyRuleConfirmed } from './old-copies';
+import { plural } from './plural';
 
 // Данные экранов «Сегодня», «Календарь» и колонки «Статус» в карточке сериала.
 
@@ -236,6 +238,16 @@ export function todayData(db: Db, today: string, now = Date.now()) {
         return { tmdbId: t.tmdbId, title: t.title, code: c, text: d.lastError ?? 'Ошибка загрузки', href: '/activity' };
       }),
   ];
+
+  const old = oldCopiesSummary(db);
+  if (old.count && !oldCopyRuleConfirmed(db))
+    attention.push({
+      tmdbId: 0,
+      title: 'Старые копии после улучшения',
+      code: '',
+      text: `${old.count} ${plural(old.count, 'копия', 'копии', 'копий')} · ${formatSize(old.size)} — подтвердите удаление`,
+      href: '/old-copies',
+    });
 
   const downloadsList: QueueRow[] = activityQueue(db, now).filter((r) => r.active);
   return {

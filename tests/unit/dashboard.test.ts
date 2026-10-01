@@ -2,7 +2,8 @@ import { expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { testDb } from './helpers';
 import { episodeStatuses, todayData, calendarWeek, mondayOf, seriesDubColumns, speedBlock, delayBasis } from '@/lib/dashboard';
-import { downloads, episodeFiles, episodes, seasons, studioSightings, studios, subscriptions, titles, wantedState } from '@/lib/db/schema';
+import { setSetting } from '@/lib/settings';
+import { downloads, episodeFiles, episodes, oldCopies, seasons, studioSightings, studios, subscriptions, titles, wantedState } from '@/lib/db/schema';
 import type { Profile } from '@/lib/profile-core';
 
 process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
@@ -122,4 +123,13 @@ test('карточка: колонки студий, скорость озвуч
   expect(c.cells.get(5)).toEqual([{ kind: 'none', text: '—' }, { kind: 'none', text: '—' }]);
   expect(speedBlock(db, t.id)).toEqual([{ name: 'HDrezka', text: '+2,5 дня', width: '100%' }]);
   expect(delayBasis(db, t.id)).toEqual({ [hd.id]: 'по 2 сериям' });
+});
+
+test('«Требует внимания»: старые копии ждут подтверждения правила', () => {
+  const { db, t } = setup();
+  db.insert(oldCopies).values({ titleId: t.id, season: 1, number: 1, path: '.dublyarr-old/a.mkv', size: 3 * 1024 ** 3, reason: 'X → Y', createdAt: 1 }).run();
+  db.insert(oldCopies).values({ titleId: t.id, season: 1, number: 2, path: '.dublyarr-old/b.mkv', size: 1024 ** 3, reason: 'X → Y', createdAt: 1 }).run();
+  expect(todayData(db, today, NOW).attention).toContainEqual({ tmdbId: 0, title: 'Старые копии после улучшения', code: '', text: '2 копии · 4 ГБ — подтвердите удаление', href: '/old-copies' });
+  setSetting(db, 'retention.oldCopy.confirmed', true);
+  expect(todayData(db, today, NOW).attention.some((a) => a.href === '/old-copies')).toBe(false);
 });
