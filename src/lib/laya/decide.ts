@@ -48,3 +48,18 @@ export async function decide<T extends string | boolean>(db: Db, task: LayaTask,
     .run();
   return { by: 'laya', answer: answer as T, p, raw, sure: sure(p, answer) };
 }
+
+/** Уже известный ответ (кэш) без запроса к Laya — для синхронного переразбора раздач. */
+export function cachedDecision<T extends string | boolean>(db: Db, task: LayaTask, key: string): Decision<T> | null {
+  const settings = getLayaSettings(db);
+  if (!settings.tasks[task]) return null;
+  const { version } = currentAdapters(db);
+  const c = db
+    .select()
+    .from(layaAnswers)
+    .where(and(eq(layaAnswers.task, task), eq(layaAnswers.key, key), eq(layaAnswers.version, version)))
+    .get();
+  if (!c) return null;
+  const sure = (typeof c.answer === 'boolean' ? Math.max(c.p, 1 - c.p) : c.p) >= settings.threshold;
+  return { by: 'laya', answer: c.answer as T, p: c.p, raw: c.raw, sure };
+}

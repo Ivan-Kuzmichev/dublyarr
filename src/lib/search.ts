@@ -15,9 +15,12 @@ import { encrypt } from './crypto/secretbox';
 import { recordSightings } from './sightings';
 import { checkSourcesDown } from './notify-events';
 import { log } from './log';
+import { applyMatchDecision, matchKey, reviewMatches } from './laya/review';
+import { cachedDecision, SEARCH_BUDGET } from './laya/decide';
+import type { LayaClient } from './laya/client';
 
 export type SourceStatus = { sourceId: number; name: string; ok: boolean; found: number; ms: number; error?: string };
-export type SearchOptions = { fetchImpl?: typeof fetch; now?: number };
+export type SearchOptions = { fetchImpl?: typeof fetch; now?: number; layaClient?: LayaClient };
 
 const CATEGORIES = [5000, 5070];
 const MOVIE_CATEGORIES = [2000, 2040, 2045, 2050, 2060];
@@ -126,9 +129,12 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
     };
     saved.push(upsertRelease(db, title.id, fields, now));
   }
-  if (title.kind === 'movie') noteDigital(db, title, saved, now);
-  else recordSightings(db, titleId, saved);
-  return { releases: saved, sources: statuses };
+  // Laya: сомнительные совпадения (бюджет вопросов на поиск — CPU NAS)
+  const budget = { left: SEARCH_BUDGET };
+  const reviewed = await reviewMatches(db, title, saved, { budget, client: opts.layaClient });
+  if (title.kind === 'movie') noteDigital(db, title, reviewed, now);
+  else recordSightings(db, titleId, reviewed);
+  return { releases: reviewed, sources: statuses };
 }
 
 type StudioRefs = ReturnType<typeof studioRefs>;
@@ -144,9 +150,10 @@ function analyze(
 ) {
   const rule = ruleFor(db, title.id, r.trackerName, r.title);
   const raw = parseRelease(r.title, r.attrs, { id: r.indexerId, name: r.trackerName }, studios);
-  if (title.kind === 'movie') return { parsed: raw, match: matchMovie(raw, r.size, title, rule, r.title) };
-  const parsed = resolveAbsolute(raw, info);
-  return { parsed, match: matchRelease(parsed, r.size, info, rule) };
+  const parsed = title.kind === 'movie' ? raw : resolveAbsolute(raw, info);
+  const match = title.kind === 'movie' ? matchMovie(raw, r.size, title, rule, r.title) : matchRelease(parsed, r.size, info, rule);
+  // уже известный ответ Laya по сомнительному совпадению (переразбор не спрашивает её заново)
+  return { parsed, match: match.level === 'doubt' && !match.rule ? applyMatchDecision(match, cachedDecision<boolean>(db, 'match', matchKey(title, r))) : match };
 }
 
 /** Фильм: первая цифровая раздача (WEB-DL/BDRip/Remux) того же фильма — дата цифрового релиза, если TMDB её не знает. */

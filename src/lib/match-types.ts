@@ -3,4 +3,5 @@ export type MatchResult = {
   level: 'match' | 'doubt' | 'reject';
   reasons: string[];
   rule?: 'match' | 'reject';
+  laya?: { p: number; answer: boolean }; // решение Laya по сомнительному совпадению (P(true))
 };
