@@ -8,6 +8,7 @@ import { getQbit } from '../lib/qbit';
 import { fetchTorrentFile, syncDownloads, type Paths } from '../lib/downloads';
 import { searchAll, searchDueTitles } from '../lib/autosearch';
 import { getSchedule } from '../lib/schedule';
+import { applySpeed } from '../lib/speed';
 import { checkPacks } from '../lib/pack-watch';
 import { getSetting } from '../lib/settings';
 import { beat } from '../lib/heartbeat';
@@ -40,6 +41,7 @@ export async function syncJob(db: Db) {
   }
   try {
     await syncDownloads(db, { qbit, paths });
+    await applySpeed(db, qbit, new Date());
     const n = db.select().from(downloads).where(eq(downloads.state, 'downloading')).all().length;
     beat(db, 'qbit', true, n ? `${n} ↓` : 'ок');
   } catch (e) {
