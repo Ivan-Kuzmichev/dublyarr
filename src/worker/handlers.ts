@@ -7,6 +7,7 @@ import type { Handler } from './jobs';
 import { getQbit } from '../lib/qbit';
 import { fetchTorrentFile, syncDownloads, type Paths } from '../lib/downloads';
 import { searchAll } from '../lib/autosearch';
+import { checkPacks } from '../lib/pack-watch';
 import { getSetting } from '../lib/settings';
 import { beat } from '../lib/heartbeat';
 import { downloads } from '../lib/db/schema';
@@ -52,6 +53,13 @@ export const buildHandlers = (db: Db): Record<string, Handler> => ({
     if (!paths) return;
     const r = await searchAll(db, { qbit: getQbit(db), fetchTorrent: (rel) => fetchTorrentFile(rel), paths });
     log.info(r, 'subscriptions search done');
+  },
+  'packs.check': async () => {
+    const qbit = getQbit(db);
+    const paths = getSetting<Paths>(db, 'paths');
+    if (!qbit || !paths) return;
+    const r = await checkPacks(db, { qbit, fetchTorrent: (rel) => fetchTorrentFile(rel), paths: { qbitDownloads: paths.qbitDownloads ?? paths.downloads } });
+    if (r.checked) log.info(r, 'packs check done');
   },
   'tmdb.refresh-all': async () => {
     const r = await refreshAll(db, getTmdb(db));
