@@ -5,7 +5,8 @@ import { syncTitle, titlesDueForRefresh } from '../lib/catalog';
 import { log } from '../lib/log';
 import type { Handler } from './jobs';
 import { getQbit } from '../lib/qbit';
-import { syncDownloads, type Paths } from '../lib/downloads';
+import { fetchTorrentFile, syncDownloads, type Paths } from '../lib/downloads';
+import { searchAll } from '../lib/autosearch';
 import { getSetting } from '../lib/settings';
 import { beat } from '../lib/heartbeat';
 import { downloads } from '../lib/db/schema';
@@ -46,6 +47,12 @@ export async function syncJob(db: Db) {
 
 export const buildHandlers = (db: Db): Record<string, Handler> => ({
   'downloads.sync': () => syncJob(db),
+  'subscriptions.search': async () => {
+    const paths = getSetting<Paths>(db, 'paths');
+    if (!paths) return;
+    const r = await searchAll(db, { qbit: getQbit(db), fetchTorrent: (rel) => fetchTorrentFile(rel), paths });
+    log.info(r, 'subscriptions search done');
+  },
   'tmdb.refresh-all': async () => {
     const r = await refreshAll(db, getTmdb(db));
     log.info(r, 'tmdb refresh done');

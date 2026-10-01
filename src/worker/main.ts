@@ -4,6 +4,7 @@ import { log } from '../lib/log';
 import { beat } from '../lib/heartbeat';
 import { runOnce, requeueStale, pruneJobs } from './jobs';
 import { buildHandlers } from './handlers';
+import { SEARCH_EVERY } from '../lib/autosearch';
 import { scheduleDaily, scheduleEvery } from './schedule';
 
 const db = getDb();
@@ -35,6 +36,7 @@ async function loop() {
     }
     scheduleDaily(db, 'tmdb.refresh-all');
     scheduleEvery(db, 'downloads.sync', 60_000);
+    scheduleEvery(db, 'subscriptions.search', SEARCH_EVERY);
     pruneJobs(db);
     while (!stopping && (await runOnce(db, handlers))) {
       // разбираем очередь до конца
