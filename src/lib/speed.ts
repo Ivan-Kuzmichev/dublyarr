@@ -4,6 +4,7 @@ import { downloads } from './db/schema';
 import type { Qbit } from './qbit';
 import { CATEGORY } from './downloads';
 import { getSpeed, speedAt, type SpeedState } from './schedule';
+import { storagePaused } from './storage';
 
 // Расписание скорости (spec §5) — только для торрентов Dublyarr (решение владельца).
 // У qBittorrent нет общего лимита на категорию, поэтому лимит делится поровну между качающимися.
@@ -12,7 +13,8 @@ const MB = 1024 ** 2;
 
 export async function applySpeed(db: Db, qbit: Qbit, now: Date): Promise<SpeedState> {
   const s = getSpeed(db);
-  const state = speedAt(s.grid, now);
+  // мало места на диске медиатеки — пауза независимо от сетки (spec §8)
+  const state = storagePaused(db) ? 'pause' : speedAt(s.grid, now);
   const active = db.select().from(downloads).where(inArray(downloads.state, ['downloading', 'stalled'])).all();
 
   if (state === 'pause') {

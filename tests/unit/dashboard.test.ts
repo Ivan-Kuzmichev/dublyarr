@@ -154,3 +154,9 @@ test('подстрока файла: HDR и «пересобран»', () => {
   db.update(episodeFiles).set({ hdr: true, processed: true }).run();
   expect(episodeStatuses(db, t.id, today).get('1:1')).toMatchObject({ detail: 'HDrezka Studio · 1080p HDR · 2 ГБ · пересобран' });
 });
+
+test('«Требует внимания»: уборка медиатеки ждёт подтверждения', () => {
+  const { db } = setup();
+  setSetting(db, 'retention.pending', { count: 2, size: 700 * 1024 ** 3 });
+  expect(todayData(db, today, NOW).attention).toContainEqual({ tmdbId: 0, title: 'Уборка медиатеки', code: '', text: '2 · 700 ГБ — подтвердите удаление', href: '/storage' });
+});

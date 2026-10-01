@@ -9,6 +9,7 @@ import { fetchTorrentFile, syncDownloads, type Paths } from '../lib/downloads';
 import { searchAll, searchDueTitles } from '../lib/autosearch';
 import { getSchedule } from '../lib/schedule';
 import { applySpeed } from '../lib/speed';
+import { checkDisk, diskUsage } from '../lib/storage';
 import { getCleanup, runCleanup } from '../lib/cleanup';
 import { createTelegram, getTelegramSettings, telegramProxy } from '../lib/telegram';
 import { sendPending } from '../lib/notify';
@@ -47,6 +48,7 @@ export async function syncJob(db: Db) {
   }
   try {
     await syncDownloads(db, { qbit, paths });
+    checkDisk(db, await diskUsage(paths.media), getRetention(db), Date.now());
     await applySpeed(db, qbit, new Date());
     const n = db.select().from(downloads).where(eq(downloads.state, 'downloading')).all().length;
     beat(db, 'qbit', true, n ? `${n} ↓` : 'ок');

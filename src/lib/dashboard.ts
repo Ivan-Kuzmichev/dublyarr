@@ -12,6 +12,7 @@ import { oldCopiesSummary, oldCopyRuleConfirmed } from './old-copies';
 import { plural } from './plural';
 import { recentNotices } from './notices';
 import { getSetting } from './settings';
+import { storageState } from './storage';
 
 // Данные экранов «Сегодня», «Календарь» и колонки «Статус» в карточке сериала.
 
@@ -251,6 +252,10 @@ export function todayData(db: Db, today: string, now = Date.now()) {
       href: '/old-copies',
     });
 
+  const disk = storageState(db);
+  if (disk && disk.level !== 'ok') attention.push({ tmdbId: 0, title: 'Мало места на диске', code: '', text: `Занято ${disk.pct} %${disk.level === 'pause' ? ' — загрузки на паузе' : ''}`, href: '/storage' });
+  const retention = getSetting<{ count: number; size: number }>(db, 'retention.pending');
+  if (retention?.count) attention.push({ tmdbId: 0, title: 'Уборка медиатеки', code: '', text: `${retention.count} · ${formatSize(retention.size)} — подтвердите удаление`, href: '/storage' });
   const cleanup = getSetting<{ count: number; size: number }>(db, 'cleanup.pending');
   if (cleanup?.count) attention.push({ tmdbId: 0, title: 'Уборка загрузок', code: '', text: `${cleanup.count} · ${formatSize(cleanup.size)} — подтвердите удаление`, href: '/cleanup' });
 

@@ -3,6 +3,7 @@ import type { Db } from './db/client';
 import { downloads, releases, titles, type Download } from './db/schema';
 import { CATEGORY } from './downloads';
 import type { Qbit } from './qbit';
+import { storagePaused } from './storage';
 import { plural } from './plural';
 
 // Очередь «Активности»: загрузки с понятными состояниями.
@@ -48,13 +49,13 @@ function codeOf(d: Download): string {
   return `${s} · ${d.episodes.length} ${plural(d.episodes.length, 'серия', 'серии', 'серий')}`;
 }
 
-function stateOf(d: Download, now: number): Pick<QueueRow, 'state' | 'tone'> {
+function stateOf(d: Download, now: number, lowDisk = false): Pick<QueueRow, 'state' | 'tone'> {
   const pct = Math.round(d.progress * 100);
   switch (d.state) {
     case 'adding':
       return { state: 'Добавляется', tone: 'muted' };
     case 'paused':
-      return { state: `${d.pausedBySchedule ? 'Пауза по расписанию' : 'На паузе'} · ${pct} %`, tone: 'muted' };
+      return { state: `${d.pausedBySchedule ? (lowDisk ? 'Пауза: мало места' : 'Пауза по расписанию') : 'На паузе'} · ${pct} %`, tone: 'muted' };
     case 'stalled':
       return { state: `Нет сидов ${Math.round((now - (d.lastSeededAt ?? d.addedAt)) / HOUR)} ч · ${pct} %`, tone: 'danger' };
     case 'completed':
@@ -84,6 +85,7 @@ export function activityQueue(db: Db, now = Date.now()): QueueRow[] {
     .leftJoin(releases, eq(releases.id, downloads.releaseId))
     .orderBy(desc(downloads.addedAt), asc(downloads.id))
     .all();
+  const lowDisk = storagePaused(db);
   // когда заменили — время добавления замены
   const addedAt = new Map(rows.map(({ d }) => [d.id, d.addedAt]));
   const recent = (t: number | null | undefined) => t !== null && t !== undefined && now - t < 24 * HOUR;
@@ -99,7 +101,7 @@ export function activityQueue(db: Db, now = Date.now()): QueueRow[] {
     .filter(({ d }) => group(d) >= 0)
     .sort((a, b) => group(a.d) - group(b.d))
     .map(({ d, tmdbId, title, topic }) => {
-      const st = stateOf(d, now);
+      const st = stateOf(d, now, lowDisk);
       const watched = (d.note && ACTIVE.has(d.state) ? `${d.note} · ` : '') + (topic && d.kind === 'pack' && ACTIVE.has(d.state) ? 'Пак · следим за обновлениями · ' : '');
       return {
         id: d.id,
