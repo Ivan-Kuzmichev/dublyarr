@@ -15,7 +15,9 @@ export function subscribe(db: Db, titleId: number, profile: Profile, now = Date.
 }
 
 export function updateSubscription(db: Db, titleId: number, profile: Profile, now = Date.now()): Subscription {
-  const row = db.update(subscriptions).set({ profile, updatedAt: now }).where(eq(subscriptions.titleId, titleId)).returning().get();
+  // правка подписки, как и подписка, включает все известные сезоны (иначе новый сезон не включить)
+  const maxSeason = db.select({ n: max(seasons.number) }).from(seasons).where(eq(seasons.titleId, titleId)).get()?.n ?? null;
+  const row = db.update(subscriptions).set({ profile, maxSeason, updatedAt: now }).where(eq(subscriptions.titleId, titleId)).returning().get();
   if (!row) throw new SubscriptionError('Подписки нет');
   return row;
 }

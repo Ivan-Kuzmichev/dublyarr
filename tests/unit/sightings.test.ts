@@ -77,3 +77,10 @@ test('прошлые раздачи — один раз', () => {
   expect(rows()).toEqual([]);
   void DAY;
 });
+
+test('пак без диапазона — только серии, вышедшие к моменту наблюдения', () => {
+  const { db, t, rel, rows } = setup();
+  db.insert(episodes).values({ titleId: t.id, season: 1, number: 4, name: 'E4', airDate: '2026-12-01' }).run();
+  recordSightings(db, t.id, [rel({ pack: true })]);
+  expect(rows().map((r) => r[0])).toEqual([1, 2]);
+});

@@ -4,7 +4,7 @@ import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { testDb } from './helpers';
-import { confirmOldCopies, oldCopiesSummary, OLD_DIR } from '@/lib/old-copies';
+import { confirmOldCopies, oldCopiesSummary, OLD_DIR, stashOldCopy } from '@/lib/old-copies';
 import { oldCopies, titles } from '@/lib/db/schema';
 import { getSetting } from '@/lib/settings';
 
@@ -44,4 +44,15 @@ test('путь вне скрытой папки — отказ, файл и за
   expect(await confirmOldCopies(db, media, [bad.id, outside.id])).toEqual({ deleted: 0, freed: 0, refused: 2 });
   expect(existsSync(path.join(media, 'A/keep.mkv'))).toBe(true);
   expect(oldCopiesSummary(db).count).toBe(2);
+});
+
+test('спрятать можно только файл внутри медиатеки (не абсолютный путь, не «..», не из скрытой папки)', async () => {
+  const { media, put } = setup();
+  const outside = mkdtempSync(path.join(tmpdir(), 'dy-outside-'));
+  writeFileSync(path.join(outside, 'x.mkv'), 'чужое');
+  await expect(stashOldCopy(media, path.join(outside, 'x.mkv'))).rejects.toThrow('вне медиатеки');
+  await expect(stashOldCopy(media, '../x.mkv')).rejects.toThrow('вне медиатеки');
+  put(`${OLD_DIR}/y.mkv`);
+  await expect(stashOldCopy(media, `${OLD_DIR}/y.mkv`)).rejects.toThrow('вне медиатеки');
+  expect(existsSync(path.join(outside, 'x.mkv'))).toBe(true);
 });

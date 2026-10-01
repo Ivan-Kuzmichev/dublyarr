@@ -3,7 +3,7 @@ import { randomBytes } from 'node:crypto';
 import { testDb } from './helpers';
 import { extendSeasons } from '@/lib/seasons-watch';
 import { recentNotices } from '@/lib/notices';
-import { subscribe, wantedEpisodes } from '@/lib/subscriptions';
+import { subscribe, updateSubscription, wantedEpisodes } from '@/lib/subscriptions';
 import { notices, seasons, subscriptions, titles } from '@/lib/db/schema';
 import type { Profile } from '@/lib/profile-core';
 
@@ -79,4 +79,11 @@ test('синхронизация из TMDB сама расширяет подп�
   details.seasons.push({ ...details.seasons.at(-1), id: 999, season_number: before + 1, name: 'Новый' });
   await syncTitle(db, tmdb, 1399, { now: 2 });
   expect(db.select().from(subscriptions).get()!.maxSeason).toBe(before + 1);
+});
+
+test('правка подписки включает все известные сезоны', () => {
+  const { db, t, addSeason } = setup(false);
+  addSeason(3);
+  updateSubscription(db, t.id, profile(false), 5);
+  expect(db.select().from(subscriptions).get()!.maxSeason).toBe(3);
 });

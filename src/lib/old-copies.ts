@@ -30,8 +30,13 @@ const exists = (p: string) =>
 
 /** Убрать файл серии из медиатеки в скрытую папку; вернуть относительный путь там. */
 export async function stashOldCopy(media: string, rel: string): Promise<string> {
-  let dest = path.join(OLD_DIR, rel);
-  for (let i = 2; await exists(path.resolve(media, dest)); i++) dest = path.join(OLD_DIR, `${rel}.${i}`);
+  // только файл внутри медиатеки и не из самой скрытой папки — иначе испорченная запись могла бы утащить чужой файл
+  const root = path.resolve(media);
+  const r = path.relative(root, path.resolve(root, rel));
+  if (path.isAbsolute(rel) || !r || r.startsWith('..') || path.isAbsolute(r) || r.split(path.sep)[0] === OLD_DIR) throw new Error('Путь старой копии вне медиатеки');
+  let dest = path.join(OLD_DIR, r);
+  for (let i = 2; await exists(path.resolve(media, dest)); i++) dest = path.join(OLD_DIR, `${r}.${i}`);
+  if (!insideOld(media, dest)) throw new Error('Путь старой копии вне медиатеки');
   await mkdir(path.dirname(path.resolve(media, dest)), { recursive: true });
   await rename(path.resolve(media, rel), path.resolve(media, dest));
   return dest;

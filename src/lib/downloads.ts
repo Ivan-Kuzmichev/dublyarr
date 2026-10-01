@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { Db } from './db/client';
 import path from 'node:path';
-import { downloads, episodeFiles, releases, titles, wantedState, type Download, type DownloadFile, type EpisodeRef, type Release } from './db/schema';
+import { downloads, episodeFiles, oldCopies, releases, titles, wantedState, type Download, type DownloadFile, type EpisodeRef, type Release } from './db/schema';
 import { DEFAULT_TEMPLATE, PathError, renderTemplate, toLocalPath } from './library-path';
 import { importFile } from './importer';
 import { access } from 'node:fs/promises';
@@ -82,12 +82,16 @@ export async function startRelease(
   if (!meta.infohash) throw new DownloadError('Не удалось получить торрент');
 
   const existing = db.select().from(downloads).where(eq(downloads.hash, meta.infohash)).get();
+  const tag = { ...(opts.dubPosition !== undefined ? { dubPosition: opts.dubPosition } : {}), ...(opts.note ? { note: opts.note } : {}) };
   if (existing && (ACTIVE as readonly string[]).includes(existing.state)) {
     await enableFiles(db, deps, existing.id, want);
-    return db.select().from(downloads).where(eq(downloads.id, existing.id)).get()!;
+    return Object.keys(tag).length ? update(db, existing.id, tag) : db.select().from(downloads).where(eq(downloads.id, existing.id)).get()!;
   }
   // уже скачанная (или убранная только у нас) раздача всё ещё в клиенте — повторный add qBittorrent отвергнет
-  if (existing && (await deps.qbit.list(CATEGORY)).some((t) => t.hash === existing.hash)) return resume(db, deps, existing, want);
+  if (existing && (await deps.qbit.list(CATEGORY)).some((t) => t.hash === existing.hash)) {
+    const d = await resume(db, deps, existing, want);
+    return Object.keys(tag).length ? update(db, d.id, tag) : d;
+  }
   // новая версия уже скачиваемого топика — не второй торрент рядом, а смена версии
   const prev = Buffer.isBuffer(torrent) && !existing ? topicDownload(db, release, want[0]?.season) : undefined;
   if (prev && Buffer.isBuffer(torrent) && want.every((w) => w.season === prev.season)) {
@@ -419,7 +423,10 @@ async function importEpisode(
     .from(episodeFiles)
     .where(and(eq(episodeFiles.titleId, d.titleId), eq(episodeFiles.season, ep.season), eq(episodeFiles.number, ep.number)))
     .get();
-  if (own?.downloadId === d.id && own.path === rel) return;
+  if (own?.downloadId === d.id && own.path === rel) {
+    if (own.dubPosition !== d.dubPosition) db.update(episodeFiles).set({ dubPosition: d.dubPosition }).where(eq(episodeFiles.id, own.id)).run();
+    return;
+  }
   // улучшение: у серии уже есть файл от другой загрузки — он станет старой копией (spec §8)
   const prev = own && own.downloadId !== d.id ? own : null;
   const stashed = prev && prev.path === rel && (await fileExists(path.resolve(paths.media, rel))) ? await stashOldCopy(paths.media, rel) : null;
@@ -427,7 +434,14 @@ async function importEpisode(
   try {
     r = await importFile(src, paths.media, rel, undefined, { replace: !prev && own?.path === rel });
   } catch (e) {
-    if (stashed) await restoreOldCopy(paths.media, stashed, rel);
+    if (stashed)
+      try {
+        await restoreOldCopy(paths.media, stashed, rel);
+      } catch (re) {
+        // вернуть не вышло — старая копия остаётся в скрытой папке, но видна в списке старых копий
+        log.warn({ download: d.id, err: re instanceof Error ? re.message : String(re) }, 'old copy restore failed');
+        db.insert(oldCopies).values({ titleId: d.titleId, season: ep.season, number: ep.number, path: stashed, size: own?.size ?? 0, reason: 'Не удалось вернуть на место', createdAt: now }).run();
+      }
     throw e;
   }
   if (prev) {

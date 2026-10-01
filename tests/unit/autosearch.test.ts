@@ -240,3 +240,20 @@ test('улучшения нескольких серий из одного па�
   await searchSubscription(db, t.id, deps);
   expect(db.select().from(downloads).all().map((d) => d.episodes)).toEqual([[{ season: 1, number: 1 }, { season: 1, number: 2 }]]);
 });
+
+test('лучшая раздача — та же, из которой файл: не перезапускаем', async () => {
+  const { db, t, fq, deps, profile } = await setup();
+  subscribe(db, t.id, profile(), 1);
+  await searchSubscription(db, t.id, deps);
+  const d = db.select().from(downloads).get()!;
+  // файл E1 из этой загрузки записан с устаревшей позицией (профиль поменяли)
+  setAir(db, t.id, 1, '2026-09-28');
+  setAir(db, t.id, 2, '2026-09-28');
+  setAir(db, t.id, 3, '2026-10-20');
+  for (const n of [1, 2]) db.insert(episodeFiles).values({ titleId: t.id, season: 1, number: n, path: `x/${n}.mkv`, size: 1, method: 'hardlink', importedAt: 1, studioLabel: 'LostFilm', resolution: 2160, dubPosition: 1, downloadId: d.id }).run();
+  db.update(downloads).set({ state: 'imported' }).run();
+  fq.calls.length = 0;
+  await searchSubscription(db, t.id, deps);
+  expect(fq.calls).not.toContain('start');
+  expect(db.select().from(downloads).get()!.state).toBe('imported');
+});

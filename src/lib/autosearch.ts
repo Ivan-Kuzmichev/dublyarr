@@ -191,7 +191,9 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   if (dl)
     for (const f of upgrades) {
       const ep = { season: f.season, number: f.number };
-      const verdicts = evaluateReleases(usableFor(ep), ctx, { season: f.season, episode: f.number });
+      // раздача, из которой этот файл и взят, улучшением не считается (позиция могла устареть после правки профиля)
+      const ownRelease = f.downloadId ? db.select({ r: downloads.releaseId }).from(downloads).where(eq(downloads.id, f.downloadId)).get()?.r : null;
+      const verdicts = evaluateReleases(usableFor(ep), ctx, { season: f.season, episode: f.number }).filter((x) => x.releaseId !== ownRelease);
       const v = betterVerdict(f, verdicts, byId, profile.quality.target);
       if (!v) continue;
       const r = byId.get(v.releaseId)!;
