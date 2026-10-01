@@ -151,6 +151,16 @@ Self-hosted сервис для одного пользователя: подп�
   Только привязанный чат; удаление из Telegram не выполняется (только ссылки на страницы подтверждения).
 - e2e: заглушка Telegram `tests/e2e/telegram-stub.mjs` (порт 3196; `POST /__push`, `GET /__sent`).
 
+## Решения (фаза 3a — пересборка файлов)
+
+- `src/lib/media/*`: разбор ffprobe (`probe.ts`), выбор дорожек (`tracks.ts`: `classifyAudio` по словарю студий целыми словами, `planTracks`, `findExternal`),
+  аргументы mkvmerge (`mkvmerge.ts`), «та ли серия» по длительности (`checks.ts`), запуск программ (`runner.ts`, подменяется в тестах), обработка (`process.ts`).
+- Пересборка — внутри импорта (`importEpisode`): только если есть что менять, иначе жёсткая ссылка; нужная озвучка не опознана — звук не трогается;
+  результат — полная копия `.mkv` в медиатеке, источник в загрузках не меняется. Нет ffprobe/mkvmerge — импорт как раньше.
+- Не та серия (длительность вне 0,5–2× от runtime TMDB) — не импортируется, загрузка `error` для этих серий, торрент убран из клиента, поиск заново.
+- В имени файла и `episode_files.resolution` — реальное разрешение по ffprobe; `episode_files.processed/hdr/duration/tracks`.
+- Настоящая пересборка проверяется в образе: `docker run --rm --entrypoint sh dublyarr:dev scripts/remux-smoke.sh` → «remux smoke: OK».
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know

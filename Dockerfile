@@ -28,6 +28,7 @@ COPY --from=build /app/public ./public
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/drizzle ./drizzle
 COPY --from=build /app/laya ./laya
+COPY --from=build /app/scripts ./scripts
 COPY bin/dublyarr /usr/local/bin/dublyarr
 RUN chmod +x /usr/local/bin/dublyarr && mkdir -p /data
 VOLUME /data
