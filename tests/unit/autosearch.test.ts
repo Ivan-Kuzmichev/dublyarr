@@ -290,3 +290,17 @@ describe('поиск по расписанию', () => {
     expect(dueTitles(db, NOW, { ...DEFAULT_SCHEDULE, eager: false })).toEqual([]);
   });
 });
+
+test('«только ночью»: окно закончилось посреди прохода — остальные сериалы ждут', async () => {
+  const { db, t, deps, profile } = await setup();
+  subscribe(db, t.id, profile(), 1);
+  const t2 = db.insert(titles).values({ tmdbId: 2, kind: 'series', nameRu: 'B', nameOriginal: 'B', originalLanguage: 'en', status: 'returning', createdAt: 1, refreshedAt: 1 }).returning().get();
+  subscribe(db, t2.id, profile(), 1);
+  const { setSetting } = await import('@/lib/settings');
+  setSetting(db, 'schedule', { ...DEFAULT_SCHEDULE, every: 'night' });
+  const inWindow = new Date(2026, 8, 30, 6, 58);
+  let calls = 0;
+  const clock = () => (calls++ === 0 ? inWindow : new Date(2026, 8, 30, 7, 5));
+  const r = await searchDueTitles(db, { ...deps, now: inWindow.getTime() }, inWindow, clock);
+  expect(r.titles).toBe(1);
+});

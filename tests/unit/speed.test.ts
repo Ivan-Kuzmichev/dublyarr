@@ -59,3 +59,28 @@ test('пауза по расписанию: останавливает свои 
   expect(fq.torrents.get(mine.hash)!.paused).toBe(true);
   expect(db.select().from(downloads).where(eq(downloads.id, mine.id)).get()!.state).toBe('paused');
 });
+
+test('после паузы по расписанию загрузка не считается застрявшей; «без лимита» = -1 не дёргает клиент', async () => {
+  const { db, fq, add } = await setup();
+  const a = await add('a'.repeat(40), 'downloading');
+  setSetting(db, 'speed', { limitMb: 10, grid: all('pause') });
+  await applySpeed(db, fq.qbit, now);
+  setSetting(db, 'speed', { limitMb: 10, grid: all('full') });
+  const later = new Date(now.getTime() + 3 * 86_400_000);
+  await applySpeed(db, fq.qbit, later);
+  expect(db.select().from(downloads).where(eq(downloads.id, a.id)).get()!.lastSeededAt).toBe(later.getTime());
+  fq.torrents.get(a.hash)!.dl_limit = -1;
+  fq.calls.length = 0;
+  await applySpeed(db, fq.qbit, later);
+  expect(fq.calls).toEqual([]);
+});
+
+test('ручное «Продолжить» снимает отметку паузы по расписанию', async () => {
+  const { db, fq, add } = await setup();
+  const a = await add('a'.repeat(40), 'downloading');
+  setSetting(db, 'speed', { limitMb: 10, grid: all('pause') });
+  await applySpeed(db, fq.qbit, now);
+  const { controlDownload } = await import('@/lib/activity');
+  await controlDownload(db, fq.qbit, a.id, 'resume');
+  expect(db.select().from(downloads).where(eq(downloads.id, a.id)).get()).toMatchObject({ state: 'downloading', pausedBySchedule: false });
+});

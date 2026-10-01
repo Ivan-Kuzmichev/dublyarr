@@ -31,14 +31,16 @@ export async function applySpeed(db: Db, qbit: Qbit, now: Date): Promise<SpeedSt
   if (ours.length) {
     await qbit.start(ours.map((d) => d.hash));
     db.update(downloads)
-      .set({ state: 'downloading', pausedBySchedule: false })
+      // время паузы не считается «без сидов» — иначе после долгого окна загрузку сочли бы застрявшей
+      .set({ state: 'downloading', pausedBySchedule: false, lastSeededAt: now.getTime() })
       .where(inArray(downloads.id, ours.map((d) => d.id)))
       .run();
   }
 
   const running = [...active, ...ours];
   const want = state === 'limit' && running.length ? Math.floor((s.limitMb * MB) / running.length) : 0;
-  const current = new Map((await qbit.list(CATEGORY)).map((t) => [t.hash, t.dl_limit ?? 0]));
+  // qBittorrent отдаёт «без лимита» как -1 (или 0)
+  const current = new Map((await qbit.list(CATEGORY)).map((t) => [t.hash, Math.max(0, t.dl_limit ?? 0)]));
   const change = running.filter((d) => current.has(d.hash) && current.get(d.hash) !== want).map((d) => d.hash);
   // в «полной скорости» снять лимит и с остальных своих торрентов, если он остался
   if (state === 'full') for (const [h, l] of current) if (l > 0 && !change.includes(h)) change.push(h);

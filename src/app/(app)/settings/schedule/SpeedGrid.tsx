@@ -57,7 +57,7 @@ export function SpeedGrid({ value, summary }: { value: SpeedSettings; summary: s
           ))}
         </div>
         <div className="max-w-full overflow-x-auto pb-1">
-          <div className="grid min-w-[620px] touch-none grid-cols-[28px_repeat(24,minmax(0,1fr))] gap-[3px] select-none" onPointerLeave={() => (painting.current = false)}>
+          <div className="grid min-w-[620px] grid-cols-[28px_repeat(24,minmax(0,1fr))] gap-[3px] select-none" onPointerLeave={() => (painting.current = false)}>
             <span />
             {Array.from({ length: 24 }, (_, h) => (
               <span key={h} className="text-center font-mono text-[10px] text-faint">
@@ -75,9 +75,12 @@ export function SpeedGrid({ value, summary }: { value: SpeedSettings; summary: s
                   aria-label={`${DAYS[d]} ${h}:00 — ${BRUSH.find((b) => b.value === c)!.label}`}
                   className={`h-6 cursor-pointer rounded-[3px] ${cellCls(c)}`}
                   onPointerDown={(e) => {
-                    e.preventDefault();
-                    painting.current = true;
                     paint(d, h);
+                    // мышью — проводим по ячейкам; пальцем — нажатие по ячейке, а движение прокручивает сетку
+                    if (e.pointerType === 'mouse') {
+                      e.preventDefault();
+                      painting.current = true;
+                    }
                   }}
                   onPointerEnter={() => painting.current && paint(d, h)}
                   onKeyDown={(e) => (e.key === 'Enter' || e.key === ' ') && paint(d, h)}
@@ -86,7 +89,7 @@ export function SpeedGrid({ value, summary }: { value: SpeedSettings; summary: s
             ])}
           </div>
         </div>
-        <span className="text-xs text-faint">Выберите состояние и проведите по ячейкам, чтобы поменять</span>
+        <span className="text-xs text-faint">Выберите состояние и проведите мышью по ячейкам (на телефоне — нажимайте по ячейкам)</span>
         {state.error && (
           <p role="alert" className="m-0 text-sm text-danger">
             {state.error}

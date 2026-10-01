@@ -20,7 +20,7 @@ export function fakeQbit() {
         paused: o.paused || !!o.stopOnMetadata,
       });
     },
-    list: async (category) => [...torrents.values()].filter((t) => t.category === category),
+    list: async (category) => [...torrents.values()].filter((t) => category === undefined || t.category === category),
     files: async (hash) => torrents.get(hash)?.files ?? [],
     async setFilePriority(hash, idx, prio) {
       calls.push(`prio:${idx.join(',')}=${prio}`);

@@ -14,7 +14,7 @@ import type { Qbit } from './qbit';
 import { todayIso } from './dates';
 import { log } from './log';
 import { eagerTitles } from './forecast';
-import { getSchedule, searchDue, type ScheduleSettings } from './schedule';
+import { getSchedule, inNightWindow, searchDue, type ScheduleSettings } from './schedule';
 
 // Поиск и загрузка по подпискам (воркер, раз в час и по кнопке «Искать сейчас»).
 
@@ -238,9 +238,10 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   return res;
 }
 
-async function searchTitles(db: Db, deps: AutoDeps, ids: number[], now: number) {
+async function searchTitles(db: Db, deps: AutoDeps, ids: number[], now: number, keepGoing: (titleId: number) => boolean = () => true) {
   const res = { titles: 0, started: 0, errors: 0 };
   for (const titleId of ids) {
+    if (!keepGoing(titleId)) continue;
     res.titles++;
     try {
       res.started += (await searchSubscription(db, titleId, deps)).started;
@@ -273,6 +274,11 @@ export function dueTitles(db: Db, now: Date, settings: ScheduleSettings): number
 }
 
 /** Поиск по расписанию (задача воркера раз в 5 минут). */
-export async function searchDueTitles(db: Db, deps: AutoDeps, now = new Date()) {
-  return searchTitles(db, { ...deps, today: deps.today ?? now.toLocaleDateString('sv-SE') }, dueTitles(db, now, getSchedule(db)), now.getTime());
+export async function searchDueTitles(db: Db, deps: AutoDeps, now = new Date(), clock: () => Date = () => new Date()) {
+  const settings = getSchedule(db);
+  const ids = dueTitles(db, now, settings);
+  const eager = settings.eager ? eagerTitles(db, now.toLocaleDateString('sv-SE')) : new Set<number>();
+  // «только ночью»: окно могло закончиться посреди прохода — остальные ждут следующей ночи
+  const keepGoing = (id: number) => settings.every !== 'night' || eager.has(id) || inNightWindow(clock(), settings.nightFrom, settings.nightTo);
+  return searchTitles(db, { ...deps, today: deps.today ?? now.toLocaleDateString('sv-SE') }, ids, now.getTime(), keepGoing);
 }

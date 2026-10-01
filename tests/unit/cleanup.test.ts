@@ -8,7 +8,7 @@ import { fakeQbit } from './fake-qbit';
 import { bencode } from '@/lib/torrent-file';
 import { startRelease } from '@/lib/downloads';
 import { cleanupConfirmed, cleanupPlan, DEFAULT_CLEANUP, parseCleanupForm, runCleanup, type CleanupSettings } from '@/lib/cleanup';
-import { getSetting } from '@/lib/settings';
+import { getSetting, setSetting } from '@/lib/settings';
 import { eq } from 'drizzle-orm';
 import { downloads, releases, sources, titles, type Release } from '@/lib/db/schema';
 import type { ParsedRelease } from '@/lib/parse/types';
@@ -148,11 +148,11 @@ describe('выполнение уборки', () => {
     expect(existsSync(s.orphan)).toBe(true); // не отмечен
     expect(s.db.select().from(downloads).get()).toMatchObject({ state: 'removed', note: 'Убран после импорта' });
     expect(cleanupConfirmed(s.db)).toEqual({ files: true, orphans: false });
-    // дальше — сам; брошенные ждут своего подтверждения
+    // дальше — сам
     const d2 = await s.start(torrent('S.S01E02.mkv', null));
     const f2 = s.disk('S.S01E02.mkv');
     s.db.update(downloads).set({ state: 'imported' }).where(eq(downloads.id, d2.id)).run();
-    expect(await run(s)).toMatchObject({ removed: 1, deletedFiles: 1, pending: 1 });
+    expect(await run(s)).toMatchObject({ removed: 1, deletedFiles: 1, pending: 0 }); // неотмеченный брошенный — «не удалять», не ждёт
     expect(existsSync(f2)).toBe(false);
   });
 
@@ -170,5 +170,73 @@ describe('выполнение уборки', () => {
     expect(existsSync(s.orphan)).toBe(false);
     expect(existsSync(path.dirname(s.orphan))).toBe(false);
     expect(cleanupConfirmed(s.db)).toEqual({ files: false, orphans: true });
+  });
+});
+
+describe('исправления по ревью', () => {
+  const confirmAll = (db: ReturnType<typeof testDb>) => {
+    setSetting(db, 'cleanup.files.confirmed', true);
+    setSetting(db, 'cleanup.orphans.confirmed', true);
+  };
+  const runAuto = (s: ReturnType<typeof setup>, o: Partial<CleanupSettings> = {}, local = s.local) =>
+    runCleanup(s.db, s.fq.qbit, { qbitDownloads: '/downloads', downloads: local, media: '/m' }, { ...DEFAULT_CLEANUP, remove: 'never', ...o }, NOW);
+
+  test('сбой списка файлов торрента — уборка не удаляет ничего', async () => {
+    const s = setup();
+    confirmAll(s.db);
+    const d = await s.start(torrent('S.S01E01.mkv', null));
+    const live = s.disk('S.S01E01.mkv', 3);
+    const files = s.fq.qbit.files;
+    s.fq.qbit.files = async (h) => (h === d.hash ? Promise.reject(new Error('таймаут')) : files(h));
+    await expect(runAuto(s)).rejects.toThrow();
+    expect(existsSync(live)).toBe(true);
+  });
+
+  test('файлы торрента другой категории в нашей папке — не брошенные', async () => {
+    const s = setup();
+    confirmAll(s.db);
+    await s.fq.qbit.add(torrent('Other.mkv', null), { savePath: '/downloads/dublyarr', category: 'tv', paused: false });
+    const theirs = s.disk('Other.mkv', 3);
+    await runAuto(s);
+    expect(existsSync(theirs)).toBe(true);
+  });
+
+  test('служебные файлы qBittorrent (.parts, .!qB) — не брошенные', async () => {
+    const s = setup();
+    confirmAll(s.db);
+    await s.start(torrent('S', ['S.S01E01.mkv', 'S.S01E02.mkv']), 'pack');
+    const parts = s.disk('.abcdef.parts', 3);
+    const partial = s.disk('S/S.S01E02.mkv.!qB', 3);
+    await runAuto(s);
+    expect(existsSync(parts)).toBe(true);
+    expect(existsSync(partial)).toBe(true);
+  });
+
+  test('путь загрузок с «//» и «./» — живые файлы не считаются брошенными', async () => {
+    const s = setup();
+    confirmAll(s.db);
+    await s.start(torrent('S.S01E01.mkv', null));
+    const live = s.disk('S.S01E01.mkv', 3);
+    await runAuto(s, {}, s.local.replace(/\/dl$/, '//./dl'));
+    expect(existsSync(live)).toBe(true);
+  });
+
+  test('неотмеченное на странице не удаляется потом автоматически', async () => {
+    const s = setup();
+    const keep = s.disk('junk/keep.mkv', 2);
+    const drop = s.disk('junk/drop.mkv', 2);
+    await runCleanup(s.db, s.fq.qbit, { qbitDownloads: '/downloads', downloads: s.local, media: '/m' }, { ...DEFAULT_CLEANUP, remove: 'never' }, NOW, { confirmKeys: ['o:junk/drop.mkv'] });
+    expect(existsSync(drop)).toBe(false);
+    await runAuto(s);
+    expect(existsSync(keep)).toBe(true);
+  });
+
+  test('до подтверждения торрент не убирается, даже если удалять у него нечего', async () => {
+    const s = setup();
+    const d = await s.start(torrent('S.S01E01.mkv', null)); // файла на диске нет
+    s.db.update(downloads).set({ state: 'imported' }).run();
+    const r = await runAuto(s, { remove: 'import' });
+    expect(r.removed).toBe(0);
+    expect(s.fq.torrents.has(d.hash)).toBe(true);
   });
 });

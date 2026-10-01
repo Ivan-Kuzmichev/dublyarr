@@ -36,19 +36,26 @@ const comma = (n: number) => String(Math.round(n * 10) / 10).replace('.', ',');
 
 /** Абсолютный путь внутри {downloads}/dublyarr, иначе null. */
 function insideOurs(paths: Paths, p: string): string | null {
-  const root = path.resolve(paths.downloads, CATEGORY);
-  const abs = path.resolve(p);
+  const root = norm(path.join(paths.downloads, CATEGORY));
+  const abs = norm(p);
   const r = path.relative(root, abs);
   return r && !r.startsWith('..') && !path.isAbsolute(r) ? abs : null;
 }
 
+/** Один вид пути для сравнений: абсолютный, без «//» и «./», в NFC. */
+const norm = (p: string) => path.resolve(p).normalize('NFC');
+
 const localOf = (paths: Paths, savePath: string, name: string) => {
   try {
-    return toLocalPath(`${savePath.replace(/\/+$/, '')}/${name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
+    return norm(toLocalPath(`${savePath.replace(/\/+$/, '')}/${name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads));
   } catch {
     return null;
   }
 };
+
+/** Служебные файлы qBittorrent: «.<hash>.parts» и прочие скрытые; недокачанное «x.!qB» относится к «x». */
+const isSidecar = (p: string) => path.basename(p).startsWith('.');
+const realName = (p: string) => p.replace(/\.!qB$/, '');
 
 const sizeOf = (p: string) =>
   stat(p).then(
@@ -61,7 +68,7 @@ async function walk(dir: string): Promise<string[]> {
   for (const e of await readdir(dir, { withFileTypes: true }).catch(() => [])) {
     const p = path.join(dir, e.name);
     if (e.isDirectory()) out.push(...(await walk(p)));
-    else if (e.isFile()) out.push(p);
+    else if (e.isFile()) out.push(norm(p));
   }
   return out;
 }
@@ -77,7 +84,8 @@ function seedReason(t: QbitTorrent, s: CleanupSettings, now: number): string | n
 
 /** Что уберётся сейчас (без выполнения). */
 export async function cleanupPlan(db: Db, qbit: Qbit, paths: Paths, s: CleanupSettings, now: number): Promise<CleanupItem[]> {
-  const inClient = new Map((await qbit.list(CATEGORY)).map((t) => [t.hash, t]));
+  const allTorrents = await qbit.list();
+  const inClient = new Map(allTorrents.filter((t) => t.category === CATEGORY).map((t) => [t.hash, t]));
   const rows = db
     .select({ d: downloads, title: titles.nameRu })
     .from(downloads)
@@ -86,10 +94,16 @@ export async function cleanupPlan(db: Db, qbit: Qbit, paths: Paths, s: CleanupSe
     .all();
   const savePath = `${(paths.qbitDownloads ?? paths.downloads).replace(/\/+$/, '')}/${CATEGORY}`;
 
-  // файлы торрентов, которые останутся в клиенте
+  // файлы торрентов, которые останутся в клиенте (любой категории, если они лежат в нашей папке).
+  // Список файлов не получен — уборка не идёт вовсе: иначе файлы живого торрента сочлись бы брошенными.
   const filesOf = new Map<string, string[]>();
-  for (const t of inClient.values()) {
-    const fs = await qbit.files(t.hash).catch(() => []);
+  const ours = norm(path.join(paths.downloads, CATEGORY));
+  for (const t of allTorrents) {
+    const save = localOf(paths, t.save_path, '.');
+    if (t.category !== CATEGORY && !(save && (save === ours || save.startsWith(`${ours}/`)))) continue;
+    const fs = await qbit.files(t.hash).catch((e: unknown) => {
+      throw new Error(`qBittorrent не отдал список файлов: ${e instanceof Error ? e.message : String(e)}`);
+    });
     filesOf.set(
       t.hash,
       fs.map((f) => localOf(paths, t.save_path, f.name)).filter((x): x is string => !!x),
@@ -107,7 +121,7 @@ export async function cleanupPlan(db: Db, qbit: Qbit, paths: Paths, s: CleanupSe
       if (reason) candidates.push({ d, title, reason, files: filesOf.get(d.hash) ?? [], inClient: true });
     } else if (d.state === 'replaced') {
       const files = (d.files ?? []).map((f) => localOf(paths, savePath, f.name)).filter((x): x is string => !!x);
-      for (const f of files) known.add(path.resolve(f));
+      for (const f of files) known.add(f);
       if (s.replaced) candidates.push({ d, title, reason: 'Заменённая раздача', files, inClient: !!t });
     }
   }
@@ -134,9 +148,9 @@ export async function cleanupPlan(db: Db, qbit: Qbit, paths: Paths, s: CleanupSe
 
   if (s.orphans && s.deleteFiles) {
     const all = new Set([...filesOf.values()].flat());
-    const root = path.resolve(paths.downloads, CATEGORY);
+    const root = norm(path.join(paths.downloads, CATEGORY));
     for (const f of await walk(root)) {
-      if (all.has(f) || planned.has(f) || known.has(f)) continue;
+      if (isSidecar(f) || all.has(realName(f)) || all.has(f) || planned.has(f) || known.has(f)) continue;
       const st = await sizeOf(f);
       if (!st || now - st.mtime < DAY) continue;
       items.push({ kind: 'orphan', key: `o:${path.relative(root, f)}`, path: f, size: st.size });
@@ -166,12 +180,15 @@ async function removeFile(paths: Paths, abs: string): Promise<boolean> {
   return true;
 }
 
-const needsConfirm = (i: CleanupItem, c: { files: boolean; orphans: boolean }) => (i.kind === 'orphan' ? !c.orphans : i.files.length > 0 && !c.files);
+/** До подтверждения правила: брошенные — всегда ждут; торрент — ждёт, если включено удаление файлов (даже когда удалять у него сейчас нечего). */
+const needsConfirm = (i: CleanupItem, c: { files: boolean; orphans: boolean }, s: CleanupSettings) => (i.kind === 'orphan' ? !c.orphans : s.deleteFiles && !c.files);
+const DECLINED = 'cleanup.declined';
 
 /** Что ждёт подтверждения первого срабатывания (для страницы /cleanup). */
 export async function pendingCleanup(db: Db, qbit: Qbit, paths: Paths, now: number): Promise<CleanupItem[]> {
   const c = cleanupConfirmed(db);
-  return (await cleanupPlan(db, qbit, paths, getCleanup(db), now)).filter((i) => needsConfirm(i, c));
+  const s = getCleanup(db);
+  return (await cleanupPlan(db, qbit, paths, s, now)).filter((i) => needsConfirm(i, c, s));
 }
 
 /**
@@ -183,9 +200,17 @@ export async function runCleanup(db: Db, qbit: Qbit, paths: Paths, s: CleanupSet
   const plan = await cleanupPlan(db, qbit, paths, s, now);
   const confirmed = cleanupConfirmed(db);
   const keys = opts.confirmKeys ? new Set(opts.confirmKeys) : null;
+  // снятые на странице галочки — «не удалять»: автоматическая уборка их потом не трогает
+  const declined = new Set(getSetting<string[]>(db, DECLINED) ?? []);
+  if (keys) {
+    for (const i of plan) if (needsConfirm(i, confirmed, s) && !keys.has(i.key)) declined.add(i.key);
+    for (const k of keys) declined.delete(k);
+    setSetting(db, DECLINED, [...declined]);
+  }
   let pendingSize = 0;
   for (const i of plan) {
-    if (keys ? !keys.has(i.key) : needsConfirm(i, confirmed)) {
+    if (!keys && declined.has(i.key)) continue;
+    if (keys ? !keys.has(i.key) : needsConfirm(i, confirmed, s)) {
       if (!keys) {
         res.pending++;
         pendingSize += i.size;
@@ -196,7 +221,7 @@ export async function runCleanup(db: Db, qbit: Qbit, paths: Paths, s: CleanupSet
       if (i.inClient) await qbit.remove([db.select().from(downloads).where(eq(downloads.id, i.downloadId)).get()!.hash]);
       db.update(downloads).set({ state: 'removed', note: i.reason }).where(eq(downloads.id, i.downloadId)).run();
       res.removed++;
-      if (keys && i.files.length) setSetting(db, FILES, true);
+      if (keys && s.deleteFiles) setSetting(db, FILES, true);
     } else if (keys) setSetting(db, ORPHANS, true);
     for (const f of i.kind === 'torrent' ? i.files : [i.path]) {
       const st = await stat(f).catch(() => null);

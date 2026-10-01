@@ -34,7 +34,8 @@ export class QbitError extends Error {
 export type Qbit = {
   version(): Promise<string>;
   add(torrent: Buffer | { magnet: string }, opts: { savePath: string; category: string; paused: boolean; stopOnMetadata?: boolean }): Promise<void>;
-  list(category: string): Promise<QbitTorrent[]>;
+  /** Без категории — все торренты клиента. */
+  list(category?: string): Promise<QbitTorrent[]>;
   files(hash: string): Promise<QbitFile[]>;
   setFilePriority(hash: string, indexes: number[], priority: 0 | 1 | 6 | 7): Promise<void>;
   start(hashes: string[]): Promise<void>;
@@ -127,7 +128,8 @@ export function createQbit(cfg: QbitConfig, opts: { fetchImpl?: typeof fetch } =
       if (text && text !== 'Ok.') throw new QbitError(`qBittorrent не принял торрент: ${text}`, 'http');
     },
     async list(category) {
-      return (await (await ok(`/api/v2/torrents/info?${new URLSearchParams({ category })}`)).json()) as QbitTorrent[];
+      const q = category === undefined ? '' : `?${new URLSearchParams({ category })}`;
+      return (await (await ok(`/api/v2/torrents/info${q}`)).json()) as QbitTorrent[];
     },
     async files(hash) {
       const list = (await (await ok(`/api/v2/torrents/files?${new URLSearchParams({ hash })}`)).json()) as Partial<QbitFile>[];

@@ -361,7 +361,16 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
     const paused = /^(stopped|paused)/i.test(t.state);
     const stalled = !done && t.num_seeds === 0 && now - (lastSeededAt ?? d.addedAt) > DAY;
     const state = done ? 'completed' : paused ? 'paused' : stalled ? 'stalled' : 'downloading';
-    update(db, d.id, { progress, dlSpeed: t.dlspeed, eta: t.eta, contentPath: t.content_path, lastSeededAt, state, ...(done && !d.completedAt ? { completedAt: now } : {}) });
+    update(db, d.id, {
+      progress,
+      dlSpeed: t.dlspeed,
+      eta: t.eta,
+      contentPath: t.content_path,
+      lastSeededAt,
+      state,
+      ...(state !== 'paused' ? { pausedBySchedule: false } : {}),
+      ...(done && !d.completedAt ? { completedAt: now } : {}),
+    });
     res.updated++;
     if (!done) continue;
     try {

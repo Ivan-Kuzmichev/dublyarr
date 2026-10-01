@@ -138,6 +138,7 @@ export async function controlDownload(db: Db, qbit: Qbit | null, id: number, act
     return { error: e instanceof Error ? e.message : String(e) };
   }
   const state = { pause: 'paused', resume: 'downloading', remove: 'removed' }[action] as Download['state'];
-  db.update(downloads).set({ state }).where(eq(downloads.id, d.id)).run();
+  // ручное действие снимает отметку «пауза по расписанию»
+  db.update(downloads).set({ state, pausedBySchedule: false }).where(eq(downloads.id, d.id)).run();
   return { ok: true };
 }
