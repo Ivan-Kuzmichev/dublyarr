@@ -47,6 +47,7 @@ async function loop() {
     scheduleDaily(db, 'tmdb.refresh-all');
     scheduleEvery(db, 'downloads.sync', 60_000);
     scheduleEvery(db, 'subscriptions.tick', TICK_EVERY);
+    scheduleEvery(db, 'cleanup.run', 60 * 60_000);
     if (getSchedule(db).packChecks) scheduleEvery(db, 'packs.check', PACK_CHECK_EVERY);
     pruneJobs(db);
     while (!stopping && (await runOnce(db, handlers))) {

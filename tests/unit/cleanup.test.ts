@@ -1,13 +1,15 @@
 import { describe, expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
-import { mkdtempSync, mkdirSync, writeFileSync, utimesSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, utimesSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { testDb } from './helpers';
 import { fakeQbit } from './fake-qbit';
 import { bencode } from '@/lib/torrent-file';
 import { startRelease } from '@/lib/downloads';
-import { cleanupPlan, DEFAULT_CLEANUP, parseCleanupForm, type CleanupSettings } from '@/lib/cleanup';
+import { cleanupConfirmed, cleanupPlan, DEFAULT_CLEANUP, parseCleanupForm, runCleanup, type CleanupSettings } from '@/lib/cleanup';
+import { getSetting } from '@/lib/settings';
+import { eq } from 'drizzle-orm';
 import { downloads, releases, sources, titles, type Release } from '@/lib/db/schema';
 import type { ParsedRelease } from '@/lib/parse/types';
 
@@ -115,4 +117,58 @@ test('разбор формы уборки', () => {
   expect(parseCleanupForm(f({ remove: 'x', seedDays: '3', seedRatio: '1' }))).toEqual({ error: 'Неизвестный режим уборки' });
   expect(parseCleanupForm(f({ remove: 'seeded', seedDays: '-1', seedRatio: '1' }))).toEqual({ error: 'Дни раздачи — от 0 до 365' });
   expect(parseCleanupForm(f({ remove: 'seeded', seedDays: '3', seedRatio: '200' }))).toEqual({ error: 'Рейтинг — от 0 до 100' });
+});
+
+describe('выполнение уборки', () => {
+  const ready = async () => {
+    const s = setup();
+    const d = await s.start(torrent('S.S01E01.mkv', null));
+    const file = s.disk('S.S01E01.mkv');
+    s.db.update(downloads).set({ state: 'imported' }).run();
+    const orphan = s.disk('junk/old.mkv', 2);
+    return { ...s, d, file, orphan };
+  };
+  const run = (s: Awaited<ReturnType<typeof ready>>, o: Partial<CleanupSettings> = {}, keys?: string[]) =>
+    runCleanup(s.db, s.fq.qbit, { qbitDownloads: '/downloads', downloads: s.local, media: '/m' }, { ...DEFAULT_CLEANUP, remove: 'import', ...o }, NOW, keys ? { confirmKeys: keys } : undefined);
+
+  test('до подтверждения ничего не удаляется и торрент на месте', async () => {
+    const s = await ready();
+    expect(await run(s)).toEqual({ removed: 0, deletedFiles: 0, freed: 0, pending: 2 });
+    expect(existsSync(s.file)).toBe(true);
+    expect(existsSync(s.orphan)).toBe(true);
+    expect(s.fq.torrents.has(s.d.hash)).toBe(true);
+    expect(getSetting(s.db, 'cleanup.pending')).toEqual({ count: 2, size: 10 });
+  });
+
+  test('подтверждение отмеченного: торрент убран без файлов клиентом, файлы удалены нами, правило включено', async () => {
+    const s = await ready();
+    expect(await run(s, {}, [`t:${s.d.id}`])).toMatchObject({ removed: 1, deletedFiles: 1, freed: 5 });
+    expect(s.fq.torrents.has(s.d.hash)).toBe(false);
+    expect(existsSync(s.file)).toBe(false);
+    expect(existsSync(s.orphan)).toBe(true); // не отмечен
+    expect(s.db.select().from(downloads).get()).toMatchObject({ state: 'removed', note: 'Убран после импорта' });
+    expect(cleanupConfirmed(s.db)).toEqual({ files: true, orphans: false });
+    // дальше — сам; брошенные ждут своего подтверждения
+    const d2 = await s.start(torrent('S.S01E02.mkv', null));
+    const f2 = s.disk('S.S01E02.mkv');
+    s.db.update(downloads).set({ state: 'imported' }).where(eq(downloads.id, d2.id)).run();
+    expect(await run(s)).toMatchObject({ removed: 1, deletedFiles: 1, pending: 1 });
+    expect(existsSync(f2)).toBe(false);
+  });
+
+  test('удаление файлов выключено — торрент убирается сразу, файлы на месте', async () => {
+    const s = await ready();
+    expect(await run(s, { deleteFiles: false })).toMatchObject({ removed: 1, deletedFiles: 0, pending: 0 });
+    expect(s.fq.torrents.has(s.d.hash)).toBe(false);
+    expect(existsSync(s.file)).toBe(true);
+    expect(existsSync(s.orphan)).toBe(true);
+  });
+
+  test('брошенные — после своего подтверждения; пустые папки убираются', async () => {
+    const s = await ready();
+    await run(s, { remove: 'never' }, [`o:junk/old.mkv`]);
+    expect(existsSync(s.orphan)).toBe(false);
+    expect(existsSync(path.dirname(s.orphan))).toBe(false);
+    expect(cleanupConfirmed(s.db)).toEqual({ files: false, orphans: true });
+  });
 });

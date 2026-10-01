@@ -9,6 +9,7 @@ import { fetchTorrentFile, syncDownloads, type Paths } from '../lib/downloads';
 import { searchAll, searchDueTitles } from '../lib/autosearch';
 import { getSchedule } from '../lib/schedule';
 import { applySpeed } from '../lib/speed';
+import { getCleanup, runCleanup } from '../lib/cleanup';
 import { checkPacks } from '../lib/pack-watch';
 import { getSetting } from '../lib/settings';
 import { beat } from '../lib/heartbeat';
@@ -74,6 +75,13 @@ export const buildHandlers = (db: Db): Record<string, Handler> => ({
     if (r.titles && !getSchedule(db).packChecks) await packsJob(db);
   },
   'packs.check': () => packsJob(db),
+  'cleanup.run': async () => {
+    const qbit = getQbit(db);
+    const paths = getSetting<Paths>(db, 'paths');
+    if (!qbit || !paths) return;
+    const r = await runCleanup(db, qbit, paths, getCleanup(db), Date.now());
+    if (r.removed || r.pending) log.info(r, 'cleanup done');
+  },
   'tmdb.refresh-all': async () => {
     const r = await refreshAll(db, getTmdb(db));
     log.info(r, 'tmdb refresh done');

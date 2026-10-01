@@ -1,4 +1,4 @@
-import { readdir, stat } from 'node:fs/promises';
+import { readdir, rm, rmdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { eq, inArray } from 'drizzle-orm';
 import type { Db } from './db/client';
@@ -6,7 +6,7 @@ import { downloads, titles, type Download } from './db/schema';
 import type { Qbit, QbitTorrent } from './qbit';
 import { CATEGORY, type Paths } from './downloads';
 import { toLocalPath } from './library-path';
-import { getSetting } from './settings';
+import { getSetting, setSetting } from './settings';
 
 // Уборка в qBittorrent (spec §7): убрать торрент после импорта / после раздачи, заменённые раздачи, брошенные файлы.
 // Файлы удаляет сам Dublyarr и только внутри {downloads}/dublyarr; файлы живых торрентов не трогаются.
@@ -145,3 +145,68 @@ export async function cleanupPlan(db: Db, qbit: Qbit, paths: Paths, s: CleanupSe
   return items;
 }
 
+
+const FILES = 'cleanup.files.confirmed';
+const ORPHANS = 'cleanup.orphans.confirmed';
+export const cleanupConfirmed = (db: Db) => ({ files: getSetting<boolean>(db, FILES) === true, orphans: getSetting<boolean>(db, ORPHANS) === true });
+
+/** Удалить файл (только внутри {downloads}/dublyarr) и опустевшие папки до неё. */
+async function removeFile(paths: Paths, abs: string): Promise<boolean> {
+  if (!insideOurs(paths, abs)) return false;
+  try {
+    await rm(abs);
+  } catch {
+    return false; // уже удалён руками
+  }
+  const root = path.resolve(paths.downloads, CATEGORY);
+  for (let dir = path.dirname(abs); dir !== root && insideOurs(paths, dir); dir = path.dirname(dir)) {
+    if ((await readdir(dir).catch(() => ['?'])).length) break;
+    await rmdir(dir).catch(() => undefined);
+  }
+  return true;
+}
+
+const needsConfirm = (i: CleanupItem, c: { files: boolean; orphans: boolean }) => (i.kind === 'orphan' ? !c.orphans : i.files.length > 0 && !c.files);
+
+/** Что ждёт подтверждения первого срабатывания (для страницы /cleanup). */
+export async function pendingCleanup(db: Db, qbit: Qbit, paths: Paths, now: number): Promise<CleanupItem[]> {
+  const c = cleanupConfirmed(db);
+  return (await cleanupPlan(db, qbit, paths, getCleanup(db), now)).filter((i) => needsConfirm(i, c));
+}
+
+/**
+ * Уборка. Без confirmKeys — по подтверждённым правилам (неподтверждённое ждёт и попадает в сводку «Требует внимания»).
+ * С confirmKeys — выполнить отмеченное на странице и включить затронутые правила.
+ */
+export async function runCleanup(db: Db, qbit: Qbit, paths: Paths, s: CleanupSettings, now: number, opts: { confirmKeys?: string[] } = {}) {
+  const res = { removed: 0, deletedFiles: 0, freed: 0, pending: 0 };
+  const plan = await cleanupPlan(db, qbit, paths, s, now);
+  const confirmed = cleanupConfirmed(db);
+  const keys = opts.confirmKeys ? new Set(opts.confirmKeys) : null;
+  let pendingSize = 0;
+  for (const i of plan) {
+    if (keys ? !keys.has(i.key) : needsConfirm(i, confirmed)) {
+      if (!keys) {
+        res.pending++;
+        pendingSize += i.size;
+      }
+      continue;
+    }
+    if (i.kind === 'torrent') {
+      if (i.inClient) await qbit.remove([db.select().from(downloads).where(eq(downloads.id, i.downloadId)).get()!.hash]);
+      db.update(downloads).set({ state: 'removed', note: i.reason }).where(eq(downloads.id, i.downloadId)).run();
+      res.removed++;
+      if (keys && i.files.length) setSetting(db, FILES, true);
+    } else if (keys) setSetting(db, ORPHANS, true);
+    for (const f of i.kind === 'torrent' ? i.files : [i.path]) {
+      const st = await stat(f).catch(() => null);
+      if (await removeFile(paths, f)) {
+        res.deletedFiles++;
+        res.freed += st?.size ?? 0;
+      }
+    }
+  }
+  if (!keys) setSetting(db, 'cleanup.pending', { count: res.pending, size: pendingSize });
+  else setSetting(db, 'cleanup.pending', { count: 0, size: 0 });
+  return res;
+}
