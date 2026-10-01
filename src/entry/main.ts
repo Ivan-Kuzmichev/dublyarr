@@ -6,6 +6,7 @@ import { openDb, migrateDb } from '../lib/db/client';
 import { loadMasterKey } from '../lib/crypto/key';
 import { startSupervisor } from './supervisor';
 import { layaChild } from './laya-child';
+import { createLogSink } from './log-sink';
 
 const cfg = loadConfig();
 const keyFile = path.join(cfg.dataDir, 'secret.key');
@@ -20,7 +21,11 @@ migrateDb(db);
 const laya = layaChild(cfg, db);
 db.$client.close();
 
+const sink = createLogSink(path.join(cfg.dataDir, 'logs'));
+if (sink.error) console.warn(`[supervisor] ${sink.error}`);
+
 const sup = startSupervisor({
+  sink,
   children: [
     { name: 'web', command: process.execPath, args: ['node_modules/next/dist/bin/next', 'start', '-p', String(cfg.port), '-H', '0.0.0.0'] },
     { name: 'worker', command: process.execPath, args: ['dist/worker.cjs'] },
