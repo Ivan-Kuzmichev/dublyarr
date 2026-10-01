@@ -27,7 +27,7 @@ import { parseTorrent, magnetHash, TorrentFileError } from './torrent-file';
 import { filesForEpisodes, filesForEpisodesStrict, isVideo, otherSeasonInPath } from './episode-file';
 import { decrypt } from './crypto/secretbox';
 import type { ActiveDownload } from './plan';
-import { log, redactUrl } from './log';
+import { logger, redactUrl } from './log';
 
 // Добавление раздач в qBittorrent: серия целиком или пак с выбором нужных файлов (spec §4).
 
@@ -61,7 +61,7 @@ export async function fetchTorrentFile(r: Release, fetchImpl: typeof fetch = fet
         return buf;
       }
     } catch (e) {
-      if (!(e instanceof TorrentFileError)) log.warn({ url: redactUrl(url), err: e instanceof Error ? e.message : String(e) }, 'torrent fetch failed');
+      if (!(e instanceof TorrentFileError)) dlog.warn({ url: redactUrl(url), err: e instanceof Error ? e.message : String(e) }, 'torrent fetch failed');
     }
   }
   if (r.magnet) return { magnet: r.magnet };
@@ -77,7 +77,16 @@ export function activeDownloads(db: Db, titleId: number): ActiveDownload[] {
     .map((d) => ({ id: d.id, kind: d.kind, season: d.season, episodes: d.episodes, files: d.files, state: d.state }));
 }
 
-const update = (db: Db, id: number, set: Partial<Download>) => db.update(downloads).set(set).where(eq(downloads.id, id)).returning().get();
+const dlog = logger('downloads');
+
+/** Запись загрузки; смена состояния — в журнал (откуда, куда, ошибка/заметка). */
+function update(db: Db, id: number, set: Partial<Download>): Download {
+  const before = set.state ? db.select({ state: downloads.state }).from(downloads).where(eq(downloads.id, id)).get()?.state : undefined;
+  const row = db.update(downloads).set(set).where(eq(downloads.id, id)).returning().get();
+  if (set.state && before !== set.state)
+    dlog.info({ download: id, hash: row.hash, from: before, to: set.state, ...(row.lastError ? { lastError: row.lastError } : {}), ...(row.note ? { note: row.note } : {}) }, 'state');
+  return row;
+}
 
 /** Добавить раздачу (или дополнить уже качающуюся с тем же хэшем) для нужных серий. */
 export async function startRelease(
@@ -148,6 +157,7 @@ export async function startRelease(
   let d: Download;
   try {
     d = existing ? update(db, existing.id, row) : db.insert(downloads).values(row).returning().get();
+    if (!existing) dlog.info({ download: d.id, hash: d.hash, to: d.state, kind, episodes: want }, 'state');
   } catch (e) {
     // запись с этим хэшем успел создать другой вызов — дополняем её
     const other = e instanceof Error && /UNIQUE/.test(e.message) ? db.select().from(downloads).where(eq(downloads.hash, meta.infohash)).get() : undefined;
@@ -202,6 +212,7 @@ async function selectAndStart(db: Db, qbit: Qbit, d: Download, files: DownloadFi
     await qbit.setFilePriority(d.hash, off, 0);
     d = update(db, d.id, { episodes: found, files: files.map((f) => ({ ...f, priority: keep.has(f.index) ? 1 : 0 })) });
   }
+  dlog.info({ download: d.id, hash: d.hash, on: (d.files ?? []).filter((f) => f.priority > 0).map((f) => f.index) }, 'files selected');
   await qbit.start([d.hash]);
   return update(db, d.id, { state: 'downloading' });
 }
@@ -312,7 +323,7 @@ export async function switchTorrent(db: Db, deps: DownloadDeps, old: Download, t
   try {
     await deps.qbit.remove([old.hash]);
   } catch (e) {
-    log.warn({ download: old.id, err: e instanceof Error ? e.message : String(e) }, 'old torrent remove failed');
+    dlog.warn({ download: old.id, err: e instanceof Error ? e.message : String(e) }, 'old torrent remove failed');
   }
   const added = found.filter((e) => want.some((w) => w.season === e.season && w.number === e.number));
   update(db, old.id, { state: 'replaced', replacedById: fresh.id, note: addedNote(added.length ? added : found) });
@@ -332,7 +343,7 @@ export async function releaseStalled(db: Db, stalledId: number, moved: EpisodeRe
   try {
     await qbit.remove([d.hash]);
   } catch (e) {
-    log.warn({ download: d.id, err: e instanceof Error ? e.message : String(e) }, 'stalled remove failed');
+    dlog.warn({ download: d.id, err: e instanceof Error ? e.message : String(e) }, 'stalled remove failed');
   }
   update(db, d.id, { state: 'replaced', replacedById, note: 'Заменена: нет сидов' });
 }
@@ -388,7 +399,7 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
       }
     } catch (e) {
       // сбой у одной загрузки не мешает остальным
-      log.warn({ download: d.id, err: e instanceof Error ? e.message : String(e) }, 'qbit files failed');
+      dlog.warn({ download: d.id, err: e instanceof Error ? e.message : String(e) }, 'qbit files failed');
       res.errors++;
       continue;
     }
@@ -431,7 +442,7 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
         continue;
       }
       update(db, d.id, { lastError: e instanceof PathError ? msg : `Ошибка импорта: ${msg}`, processing: false });
-      log.warn({ download: d.id, err: msg }, 'import failed');
+      logger('import').warn({ download: d.id, err: msg }, 'import failed');
       res.errors++;
     }
   }
@@ -644,7 +655,7 @@ async function placeEpisode(
         await restoreOldCopy(paths.media, stashed, rel);
       } catch (re) {
         // вернуть не вышло — старая копия остаётся в скрытой папке, но видна в списке старых копий
-        log.warn({ download: d.id, err: re instanceof Error ? re.message : String(re) }, 'old copy restore failed');
+        dlog.warn({ download: d.id, err: re instanceof Error ? re.message : String(re) }, 'old copy restore failed');
         db.insert(oldCopies).values({ titleId: d.titleId, season: ep.season, number: ep.number, path: stashed, size: own?.size ?? 0, reason: 'Не удалось вернуть на место', createdAt: now }).run();
       }
     throw e;
@@ -655,7 +666,7 @@ async function placeEpisode(
       const old = stashed ?? (prev.path !== rel && (await fileExists(path.resolve(paths.media, prev.path))) ? await stashOldCopy(paths.media, prev.path) : null);
       if (old) await settleOldCopy(db, paths.media, old, { titleId: d.titleId, season: ep.season, number: ep.number }, reason, now);
     } catch (e) {
-      log.warn({ download: d.id, err: e instanceof Error ? e.message : String(e) }, 'old copy handling failed');
+      dlog.warn({ download: d.id, err: e instanceof Error ? e.message : String(e) }, 'old copy handling failed');
     }
   }
   const size = proc.kind === 'remux' ? ((await stat(path.resolve(paths.media, rel)).catch(() => null))?.size ?? file.size) : file.size;

@@ -1,6 +1,7 @@
 import type { Db } from './db/client';
 import { tryGetSecretSetting } from './settings';
 import type { QbitConfig } from './integrations/qbittorrent';
+import { logger } from './log';
 
 // Клиент qBittorrent WebAPI v2 (v4 и v5). Файлы с диска не удаляет никогда.
 
@@ -47,6 +48,24 @@ export type Qbit = {
 };
 
 const reason = (e: unknown) => (e instanceof Error ? e.message : String(e));
+const qlog = logger('qbit');
+
+/** Что важно для разбора проблем: какие торренты, файлы, приоритет (без логина и пароля — их здесь нет). */
+function callArgs(init?: RequestInit): Record<string, string> {
+  const b = init?.body;
+  const out: Record<string, string> = {};
+  const pick = (get: (k: string) => string | null) => {
+    for (const k of ['hashes', 'hash', 'id', 'priority', 'category', 'limit', 'stopped']) {
+      const v = get(k);
+      if (v !== null) out[k] = v;
+    }
+  };
+  if (typeof b === 'string') {
+    const p = new URLSearchParams(b);
+    pick((k) => p.get(k));
+  } else if (b instanceof FormData) pick((k) => (typeof b.get(k) === 'string' ? (b.get(k) as string) : null));
+  return out;
+}
 
 export function createQbit(cfg: QbitConfig, opts: { fetchImpl?: typeof fetch } = {}): Qbit {
   const base = cfg.url.trim().replace(/\/+$/, '');
@@ -95,8 +114,20 @@ export function createQbit(cfg: QbitConfig, opts: { fetchImpl?: typeof fetch } =
   });
 
   async function ok(path: string, init?: RequestInit, allow: number[] = []) {
-    const res = await call(path, init);
-    if (!res.ok && !allow.includes(res.status)) throw new QbitError(`qBittorrent ответил ошибкой ${res.status}`, 'http');
+    const started = Date.now();
+    let res: Response;
+    try {
+      res = await call(path, init);
+    } catch (e) {
+      qlog.warn({ path, ...callArgs(init), err: reason(e) }, 'qbit call failed');
+      throw e;
+    }
+    const entry = { path, ...callArgs(init), status: res.status, ms: Date.now() - started };
+    if (!res.ok && !allow.includes(res.status)) {
+      qlog.warn(entry, 'qbit call failed');
+      throw new QbitError(`qBittorrent ответил ошибкой ${res.status}`, 'http');
+    }
+    qlog.debug(entry, 'qbit call');
     return res;
   }
 

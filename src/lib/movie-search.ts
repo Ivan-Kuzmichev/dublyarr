@@ -8,11 +8,13 @@ import { digitalReleased, MOVIE_EP } from './movies';
 import { activeDownloads, releaseStalled, startRelease, type DownloadDeps } from './downloads';
 import { clearWanted, setWanted } from './wanted';
 import { formatShortDate, todayIso } from './dates';
-import { log } from './log';
+import { logger } from './log';
 import type { Verdict } from './evaluate';
 import { finalChecks } from './laya/final';
 import { FINAL_BUDGET } from './laya/decide';
 import type { AutoDeps } from './autosearch';
+
+const log = logger('downloads');
 
 // Поиск и загрузка фильма по подписке (spec §10): ожидание дубляжа после цифрового релиза, замена на дубляж и до BDRemux.
 

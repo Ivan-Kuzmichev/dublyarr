@@ -8,6 +8,8 @@ import { startRelease, enableFiles, activeDownloads, fetchTorrentFile, DownloadE
 import { downloads, releases, sources, titles, type Release } from '@/lib/db/schema';
 import { encrypt } from '@/lib/crypto/secretbox';
 import type { ParsedRelease } from '@/lib/parse/types';
+import { Writable } from 'node:stream';
+import { setLogDestination, applyLogSettings } from '@/lib/log';
 
 process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
 
@@ -162,4 +164,22 @@ test('гонка: запись с тем же хэшем появилась ме
   const d = await startRelease(db, { ...deps, qbit }, r, [{ season: 1, number: 2 }], 'pack', null);
   expect(db.select().from(downloads).all()).toHaveLength(1);
   expect(d.episodes).toEqual([{ season: 1, number: 1 }, { season: 1, number: 2 }]);
+});
+
+test('смена состояния загрузки пишется в журнал (downloads, info)', async () => {
+  const lines: Record<string, unknown>[] = [];
+  setLogDestination(
+    new Writable({
+      write(c, _e, cb) {
+        for (const l of String(c).trim().split('\n')) lines.push(JSON.parse(l));
+        cb();
+      },
+    }),
+  );
+  applyLogSettings({ level: 'info', areas: {} });
+  const { db, mk, files, deps } = setup();
+  const r = mk('A S01E03', { pack: false, episodes: { from: 3, to: 3 } });
+  files.set(r.id, torrent('A.S01E03.mkv', null));
+  await startRelease(db, deps, r, [{ season: 1, number: 3 }], 'episode', 'LostFilm');
+  expect(lines.find((l) => l.area === 'downloads' && l.msg === 'state' && l.to === 'downloading')).toMatchObject({ from: 'adding', to: 'downloading' });
 });

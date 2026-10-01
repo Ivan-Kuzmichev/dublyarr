@@ -25,8 +25,7 @@ const levelOf = (a: LogArea) => {
   return l === 'off' ? 'silent' : l;
 };
 
-/** Логгер области: поле `area` в каждой строке, уровень — из «Настройки → Диагностика». */
-export function logger(area: LogArea): pino.Logger {
+function real(area: LogArea): pino.Logger {
   let l = children.get(area);
   if (!l) {
     l = root.child({ area });
@@ -34,6 +33,28 @@ export function logger(area: LogArea): pino.Logger {
     children.set(area, l);
   }
   return l;
+}
+
+const handles = new Map<LogArea, pino.Logger>();
+
+/** Логгер области: поле `area` в каждой строке, уровень — из «Настройки → Диагностика».
+ *  Возвращает постоянную ручку (её можно держать в константе модуля): подмена потока в тестах до неё доходит. */
+export function logger(area: LogArea): pino.Logger {
+  let h = handles.get(area);
+  if (!h) {
+    h = new Proxy({} as pino.Logger, {
+      get(_t, k) {
+        const l = real(area);
+        const v = Reflect.get(l, k);
+        return typeof v === 'function' ? v.bind(l) : v;
+      },
+      set(_t, k, v) {
+        return Reflect.set(real(area), k, v);
+      },
+    });
+    handles.set(area, h);
+  }
+  return h;
 }
 
 export function applyLogSettings(s: LogSettings) {
@@ -47,14 +68,8 @@ export function setLogDestination(d: pino.DestinationStream) {
   children.clear();
 }
 
-/** Общий логгер (область `system`); через Proxy — чтобы подмена потока в тестах доходила до старых импортов. */
-export const log = new Proxy({} as pino.Logger, {
-  get(_t, k) {
-    const l = logger('system');
-    const v = Reflect.get(l, k);
-    return typeof v === 'function' ? v.bind(l) : v;
-  },
-});
+/** Общий логгер (область `system`). */
+export const log = logger('system');
 
 const SECRET_PARAMS = /^(apikey|api_key|jackett_apikey|token|passkey|password)$/i;
 

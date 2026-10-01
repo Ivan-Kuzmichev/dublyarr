@@ -1,7 +1,9 @@
 import { and, eq, lt } from 'drizzle-orm';
 import type { Db } from '../lib/db/client';
 import { jobs } from '../lib/db/schema';
-import { log } from '../lib/log';
+import { logger } from '../lib/log';
+
+const wlog = logger('worker');
 
 export type Job = typeof jobs.$inferSelect;
 export type Handler = (payload: unknown) => Promise<void>;
@@ -48,12 +50,17 @@ export async function runOnce(db: Db, handlers: Record<string, Handler>, now = D
       .run();
     return true;
   }
+  // частые задачи (раз в минуту и чаще) — только в подробном журнале
+  const quiet = job.type === 'downloads.sync' || job.type.startsWith('telegram.');
+  const started = Date.now();
+  wlog.debug({ job: job.id, type: job.type }, 'job start');
   try {
     await h(JSON.parse(job.payload));
     finish(db, job, undefined, now);
+    wlog[quiet ? 'debug' : 'info']({ job: job.id, type: job.type, ms: Date.now() - started }, 'job done');
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
-    log.error({ job: job.id, type: job.type, err: msg }, 'job failed');
+    wlog.warn({ job: job.id, type: job.type, ms: Date.now() - started, err: msg }, 'job failed');
     finish(db, job, msg, now);
   }
   return true;

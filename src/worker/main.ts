@@ -1,6 +1,6 @@
 import { getDb } from '../lib/db/client';
 import { getConfig } from '../lib/config';
-import { log } from '../lib/log';
+import { logger } from '../lib/log';
 import { beat } from '../lib/heartbeat';
 import { runOnce, requeueStale, pruneJobs } from './jobs';
 import { buildHandlers } from './handlers';
@@ -13,6 +13,8 @@ import { backfillSightings } from '../lib/sightings';
 import { cleanRemuxTmp } from '../lib/media/process';
 import { getSetting } from '../lib/settings';
 import { scheduleDaily, scheduleEvery } from './schedule';
+
+const log = logger('worker');
 
 const db = getDb();
 const handlers = buildHandlers(db);

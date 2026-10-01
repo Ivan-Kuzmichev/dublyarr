@@ -1,4 +1,5 @@
 import { execFile } from 'node:child_process';
+import { logger } from '../log';
 
 // Запуск ffprobe и mkvmerge. В тестах подменяется.
 
@@ -8,10 +9,15 @@ export type Runner = {
   mkvmerge(args: string[]): Promise<{ code: number; output: string }>;
 };
 
+const ilog = logger('import');
+
 const run = (cmd: string, args: string[], timeout: number) =>
   new Promise<{ code: number; stdout: string; stderr: string }>((resolve) => {
+    const started = Date.now();
     execFile(cmd, args, { timeout, maxBuffer: 32 * 1024 * 1024 }, (err, stdout, stderr) => {
       const code = err ? (typeof (err as NodeJS.ErrnoException & { code?: unknown }).code === 'number' ? Number((err as { code: number }).code) : -1) : 0;
+      // проверки «-version» — только в подробном журнале
+      ilog[cmd === 'mkvmerge' && args[0] !== '--version' ? 'info' : 'debug']({ cmd, args, code, ms: Date.now() - started, ...(code > 1 || code < 0 ? { stderr: String(stderr).slice(0, 500) } : {}) }, 'run');
       resolve({ code, stdout: String(stdout), stderr: String(stderr) });
     });
   });

@@ -2,6 +2,9 @@ import { and, eq } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { wantedState, type EpisodeRef } from './db/schema';
 import { notifyWanted } from './notify-events';
+import { logger } from './log';
+
+const log = logger('downloads');
 
 // Почему нужная серия (или фильм) ещё не качается: ждём до даты / нет раздач / нужен ответ.
 
@@ -12,6 +15,8 @@ export function setWanted(db: Db, titleId: number, ep: EpisodeRef, state: 'waiti
     .where(and(eq(wantedState.titleId, titleId), eq(wantedState.season, ep.season), eq(wantedState.number, ep.number)))
     .get();
   const row = { titleId, season: ep.season, number: ep.number, state, reason, until, releaseId, checkedAt: now };
+  // почему серия ещё не качается — главное для разбора «почему не скачалось»
+  log.debug({ titleId, ep: `S${ep.season}E${ep.number}`, state, reason, until, releaseId }, 'wanted');
   db.insert(wantedState)
     .values(row)
     .onConflictDoUpdate({ target: [wantedState.titleId, wantedState.season, wantedState.number], set: row })

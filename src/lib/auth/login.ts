@@ -4,6 +4,9 @@ import { hashPassword, verifyPassword } from './password';
 import { verifyTotp } from './totp';
 import { SecretDecryptError } from '../crypto/secretbox';
 import { isBlocked, recordFailure, clearFailures } from './ratelimit';
+import { logger } from '../log';
+
+const alog = logger('auth');
 import {
   createSession,
   createPendingLogin,
@@ -41,12 +44,16 @@ export async function passwordStep(
   recordFailure(db, keys, now);
   const user = findUserByName(db, username);
   const ok = await verifyPassword(user?.passwordHash ?? (await getDummyHash()), i.password);
-  if (!user || !ok) return { kind: 'error', message: 'Неверный логин или пароль' };
+  if (!user || !ok) {
+    alog.info({ username, ip: ctx.ip }, 'login failed');
+    return { kind: 'error', message: 'Неверный логин или пароль' };
+  }
   if (user.totpEnabled && !(ctx.trustToken && isTrustedDevice(db, ctx.trustToken, user.id, now))) {
     return { kind: 'need-code', pendingToken: createPendingLogin(db, user.id, i.remember, now) };
   }
   clearFailures(db, keys);
   const s = createSession(db, { userId: user.id, persistent: i.remember, userAgent: ctx.userAgent, ip: ctx.ip }, now);
+  alog.info({ username, ip: ctx.ip }, 'login');
   return { kind: 'session', ...s, persistent: i.remember };
 }
 
@@ -71,6 +78,7 @@ export function codeStep(db: Db, i: { pendingToken: string; code: string; trustD
   const v = secret ? verifyTotp(secret, i.code, now, user.totpLastStep) : ({ ok: false } as const);
   if (!v.ok) {
     recordFailure(db, keys, now);
+    alog.info({ username: user.username, ip: ctx.ip }, 'login code failed');
     return { kind: 'error', message: 'Неверный код' };
   }
   markTotpStep(db, user.id, v.step);
@@ -78,5 +86,6 @@ export function codeStep(db: Db, i: { pendingToken: string; code: string; trustD
   clearFailures(db, keys);
   const s = createSession(db, { userId: user.id, persistent: p.remember, userAgent: ctx.userAgent, ip: ctx.ip }, now);
   const trust = i.trustDevice ? createTrustedDevice(db, user.id, ctx.userAgent, now) : undefined;
+  alog.info({ username: user.username, ip: ctx.ip }, 'login');
   return { kind: 'session', ...s, persistent: p.remember, trust };
 }

@@ -1,4 +1,7 @@
 import type { TmdbPage, TmdbSeason, TmdbTvDetails, TmdbTvListItem, TmdbListItem, TmdbMovieDetails } from './types';
+import { logger } from '../log';
+
+const tlog = logger('tmdb');
 
 export type TmdbConfig = { apiKey: string; proxy?: string };
 export type TmdbErrorCode = 'auth' | 'rate' | 'network' | 'not_found' | 'http';
@@ -50,8 +53,10 @@ export function createTmdb(cfg: TmdbConfig, opts: TmdbOptions = {}): Tmdb {
       try {
         res = await doFetch(url, { headers, signal: AbortSignal.timeout(10_000) });
       } catch (e) {
+        tlog.warn({ path, err: reason(e) }, 'tmdb call failed');
         throw new TmdbError(`TMDB не отвечает: ${reason(e)}`, 'network');
       }
+      tlog.debug({ path, status: res.status, attempt }, 'tmdb call');
       if (res.ok) return (await res.json()) as T;
       if (res.status === 429 && attempt === 0) {
         const retry = Number(res.headers.get('retry-after')) || 1;

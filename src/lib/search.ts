@@ -14,10 +14,12 @@ import { ruleFor } from './release-rules';
 import { encrypt } from './crypto/secretbox';
 import { recordSightings } from './sightings';
 import { checkSourcesDown } from './notify-events';
-import { log } from './log';
+import { logger } from './log';
 import { animeKey, applyAnimeDecision, applyMatchDecision, matchKey, reviewAnime, reviewMatches, reviewStudios } from './laya/review';
 import { cachedDecision, SEARCH_BUDGET } from './laya/decide';
 import type { LayaClient } from './laya/client';
+
+const log = logger('search');
 
 export type SourceStatus = { sourceId: number; name: string; ok: boolean; found: number; ms: number; error?: string };
 export type SearchOptions = { fetchImpl?: typeof fetch; now?: number; layaClient?: LayaClient; layaBudget?: number };
@@ -58,6 +60,7 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
         const lists = await Promise.all(queries.map((q) => torznabSearch(src, q, title.kind === 'movie' ? MOVIE_CATEGORIES : CATEGORIES, opts.fetchImpl)));
         const items = lists.flat();
         const distinct = new Set(items.map((i) => i.infohash ?? `${i.indexerId}|${i.title}|${i.size}`)).size;
+        log.debug({ source: src.name, queries, found: distinct, ms: Date.now() - started }, 'source search');
         return { status: { sourceId: src.id, name: src.name, ok: true, found: distinct, ms: Date.now() - started } as SourceStatus, items };
       } catch (e) {
         const error = e instanceof TorznabError ? e.message : e instanceof Error ? e.message : String(e);
@@ -134,6 +137,8 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
   const matched = await reviewMatches(db, title, saved, { budget, client: opts.layaClient });
   const named = await reviewStudios(db, title, matched, { budget, client: opts.layaClient });
   const reviewed = await reviewAnime(db, title, named, { budget, client: opts.layaClient });
+  const level = (l: string) => reviewed.filter((r) => r.match.level === l).length;
+  logger('parse').debug({ titleId, title: title.nameRu, releases: reviewed.length, match: level('match'), doubt: level('doubt'), reject: level('reject') }, 'parsed');
   if (title.kind === 'movie') noteDigital(db, title, reviewed, now);
   else recordSightings(db, titleId, reviewed);
   return { releases: reviewed, sources: statuses };

@@ -3,7 +3,7 @@ import type { Tmdb } from '../lib/tmdb/client';
 import { getTmdb } from '../lib/tmdb';
 import { syncTitle, titlesDueForRefresh } from '../lib/catalog';
 import { syncMovie } from '../lib/movies';
-import { log } from '../lib/log';
+import { logger } from '../lib/log';
 import type { Handler } from './jobs';
 import { getQbit } from '../lib/qbit';
 import { fetchTorrentFile, syncDownloads, type Paths } from '../lib/downloads';
@@ -25,6 +25,8 @@ import { eq } from 'drizzle-orm';
 import path from 'node:path';
 import { getConfig } from '../lib/config';
 import { trainVersion, trainingDue } from '../lib/laya/versions';
+
+const log = logger('worker');
 
 /** Обновляет сериалы по одному; ошибка одного не мешает остальным. */
 export async function refreshAll(db: Db, tmdb: Tmdb | null, now = Date.now()) {
