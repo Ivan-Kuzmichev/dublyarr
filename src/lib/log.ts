@@ -10,7 +10,51 @@ export function createLogger(opts: { level?: string; destination?: pino.Destinat
   );
 }
 
-export const log = createLogger({ name: process.env.DUBLYARR_PROCESS ?? 'web' });
+export const LOG_AREAS = ['qbit', 'search', 'parse', 'downloads', 'import', 'tmdb', 'storage', 'laya', 'telegram', 'worker', 'auth', 'api', 'system'] as const;
+export type LogArea = (typeof LOG_AREAS)[number];
+export type AreaLevel = 'debug' | 'info' | 'warn' | 'off';
+export type LogSettings = { level: 'debug' | 'info' | 'warn'; areas: Partial<Record<LogArea, AreaLevel>> };
+
+const ENV_LEVELS = ['debug', 'info', 'warn'];
+let settings: LogSettings = { level: ENV_LEVELS.includes(process.env.LOG_LEVEL ?? '') ? (process.env.LOG_LEVEL as LogSettings['level']) : 'info', areas: {} };
+// корневой логгер пишет всё, фильтруют логгеры областей (их уровень меняется из настроек на лету)
+let root = createLogger({ level: 'debug', name: process.env.DUBLYARR_PROCESS ?? 'web' });
+const children = new Map<LogArea, pino.Logger>();
+const levelOf = (a: LogArea) => {
+  const l = settings.areas[a] ?? settings.level;
+  return l === 'off' ? 'silent' : l;
+};
+
+/** Логгер области: поле `area` в каждой строке, уровень — из «Настройки → Диагностика». */
+export function logger(area: LogArea): pino.Logger {
+  let l = children.get(area);
+  if (!l) {
+    l = root.child({ area });
+    l.level = levelOf(area);
+    children.set(area, l);
+  }
+  return l;
+}
+
+export function applyLogSettings(s: LogSettings) {
+  settings = s;
+  for (const [a, l] of children) l.level = levelOf(a);
+}
+
+/** Тесты: писать в свой поток (логгеры областей пересоздаются). */
+export function setLogDestination(d: pino.DestinationStream) {
+  root = createLogger({ level: 'debug', destination: d, name: 'test' });
+  children.clear();
+}
+
+/** Общий логгер (область `system`); через Proxy — чтобы подмена потока в тестах доходила до старых импортов. */
+export const log = new Proxy({} as pino.Logger, {
+  get(_t, k) {
+    const l = logger('system');
+    const v = Reflect.get(l, k);
+    return typeof v === 'function' ? v.bind(l) : v;
+  },
+});
 
 const SECRET_PARAMS = /^(apikey|api_key|jackett_apikey|token|passkey|password)$/i;
 

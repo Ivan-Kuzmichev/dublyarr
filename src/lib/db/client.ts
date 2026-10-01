@@ -6,6 +6,7 @@ import path from 'node:path';
 import * as schema from './schema';
 import { getConfig } from '../config';
 import { seedStudios } from '../studios';
+import { watchLogSettings } from '../log-settings';
 
 export type Db = BetterSQLite3Database<typeof schema> & { $client: Database.Database };
 
@@ -31,6 +32,7 @@ export function getDb(): Db {
     const db = openDb(getConfig().dbPath);
     migrateDb(db);
     seedStudios(db);
+    watchLogSettings(db);
     g.__dublyarrDb = db;
   }
   return g.__dublyarrDb;
