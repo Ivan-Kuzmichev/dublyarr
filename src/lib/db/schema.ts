@@ -1,7 +1,7 @@
 import type { ParsedRelease } from '../parse/types';
 import type { MatchResult } from '../match-types';
 import type { Profile } from '../profile';
-import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, real, index, uniqueIndex } from 'drizzle-orm/sqlite-core';
 
 /** Время — миллисекунды unix. */
 const ts = (name: string) => integer(name, { mode: 'number' });
@@ -264,3 +264,78 @@ export const releaseRules = sqliteTable(
 export type Tracker = typeof trackers.$inferSelect;
 export type Release = typeof releases.$inferSelect;
 export type ReleaseRule = typeof releaseRules.$inferSelect;
+
+// Загрузки (фаза 1d)
+
+export type EpisodeRef = { season: number; number: number };
+
+export const downloads = sqliteTable(
+  'downloads',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    hash: text('hash').notNull().unique(),
+    titleId: integer('title_id')
+      .notNull()
+      .references(() => titles.id, { onDelete: 'cascade' }),
+    releaseId: integer('release_id').references(() => releases.id, { onDelete: 'set null' }),
+    season: integer('season').notNull(),
+    kind: text('kind', { enum: ['episode', 'pack', 'season'] }).notNull(),
+    episodes: json<EpisodeRef[]>('episodes').notNull().default([]), // что из этой раздачи нужно
+    state: text('state', { enum: ['adding', 'downloading', 'paused', 'stalled', 'completed', 'imported', 'error', 'removed'] }).notNull(),
+    progress: real('progress').notNull().default(0),
+    dlSpeed: integer('dl_speed').notNull().default(0),
+    eta: integer('eta'),
+    size: integer('size').notNull(),
+    name: text('name').notNull(),
+    contentPath: text('content_path'),
+    studioLabel: text('studio_label'),
+    resolution: integer('resolution'),
+    addedAt: ts('added_at').notNull(),
+    completedAt: ts('completed_at'),
+    importedAt: ts('imported_at'),
+    lastSeededAt: ts('last_seeded_at'),
+    lastError: text('last_error'),
+  },
+  (t) => [index('downloads_title_state').on(t.titleId, t.state)],
+);
+
+export const episodeFiles = sqliteTable(
+  'episode_files',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    titleId: integer('title_id')
+      .notNull()
+      .references(() => titles.id, { onDelete: 'cascade' }),
+    season: integer('season').notNull(),
+    number: integer('number').notNull(),
+    path: text('path').notNull(), // относительно медиатеки
+    size: integer('size').notNull(),
+    downloadId: integer('download_id').references(() => downloads.id, { onDelete: 'set null' }),
+    studioLabel: text('studio_label'),
+    resolution: integer('resolution'),
+    method: text('method', { enum: ['hardlink', 'copy'] }).notNull(),
+    importedAt: ts('imported_at').notNull(),
+  },
+  (t) => [uniqueIndex('episode_files_title_season_number').on(t.titleId, t.season, t.number)],
+);
+
+export const wantedState = sqliteTable(
+  'wanted_state',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    titleId: integer('title_id')
+      .notNull()
+      .references(() => titles.id, { onDelete: 'cascade' }),
+    season: integer('season').notNull(),
+    number: integer('number').notNull(),
+    state: text('state', { enum: ['waiting', 'missing', 'ask'] }).notNull(),
+    reason: text('reason').notNull(),
+    until: text('until'), // дата открытия ближайшей позиции (для waiting)
+    checkedAt: ts('checked_at').notNull(),
+  },
+  (t) => [uniqueIndex('wanted_state_title_season_number').on(t.titleId, t.season, t.number)],
+);
+
+export type Download = typeof downloads.$inferSelect;
+export type EpisodeFile = typeof episodeFiles.$inferSelect;
+export type WantedState = typeof wantedState.$inferSelect;
