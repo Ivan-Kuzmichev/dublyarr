@@ -20,7 +20,7 @@ import { cachedDecision, SEARCH_BUDGET } from './laya/decide';
 import type { LayaClient } from './laya/client';
 
 export type SourceStatus = { sourceId: number; name: string; ok: boolean; found: number; ms: number; error?: string };
-export type SearchOptions = { fetchImpl?: typeof fetch; now?: number; layaClient?: LayaClient };
+export type SearchOptions = { fetchImpl?: typeof fetch; now?: number; layaClient?: LayaClient; layaBudget?: number };
 
 const CATEGORIES = [5000, 5070];
 const MOVIE_CATEGORIES = [2000, 2040, 2045, 2050, 2060];
@@ -130,7 +130,7 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
     saved.push(upsertRelease(db, title.id, fields, now));
   }
   // Laya: сомнительные совпадения (бюджет вопросов на поиск — CPU NAS)
-  const budget = { left: SEARCH_BUDGET };
+  const budget = { left: opts.layaBudget ?? SEARCH_BUDGET };
   const matched = await reviewMatches(db, title, saved, { budget, client: opts.layaClient });
   const named = await reviewStudios(db, title, matched, { budget, client: opts.layaClient });
   const reviewed = await reviewAnime(db, title, named, { budget, client: opts.layaClient });

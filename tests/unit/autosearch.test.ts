@@ -350,3 +350,13 @@ test('финальная проверка Laya: все лучшие — «нет
   expect(db.select().from(downloads).all()).toEqual([]);
   expect(db.select().from(wantedState).all().map((w) => [w.state, w.reason.split(',')[0]])).toContainEqual(['ask', 'Laya не уверена']);
 });
+
+test('«сезон целиком»: Laya отклонила все паки — вопрос пользователю (не «нет пака»)', async () => {
+  const { db, t, deps, profile } = await setup();
+  subscribe(db, t.id, profile({ wholeSeasonAfterFinale: true }), 1);
+  const layaClient = { ask: async () => ({ answers: { q: { noul: 0.02 } }, ms: 1 }), health: async () => null, last: () => 1 } as never;
+  await searchSubscription(db, t.id, { ...deps, layaClient });
+  expect(db.select().from(downloads).all()).toEqual([]);
+  expect(db.select().from(wantedState).all().map((w) => w.state)).toContain('ask');
+  expect(db.select().from(wantedState).all().every((w) => w.reason !== 'Нет полного пака сезона')).toBe(true);
+});

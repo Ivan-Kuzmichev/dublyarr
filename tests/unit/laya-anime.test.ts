@@ -64,3 +64,17 @@ describe('«Нумерация аниме»', () => {
     expect((await reviewAnime(s.db, s.t, s.rows, { client: client(null).client, budget: { left: 20 } }))[0].parsed).toEqual(before);
   });
 });
+
+describe('исправление нумерации вручную', () => {
+  test('пользователь выбрал вариант — пример и раздача разобрана по нему (Laya не спрашивается)', async () => {
+    const { correctAnime, animeChoices } = await import('@/lib/laya/review');
+    const { layaExamples } = await import('@/lib/db/schema');
+    const s = setup();
+    const c = client('S01E01–E03');
+    await reviewAnime(s.db, s.t, s.rows, { client: c.client, budget: { left: 20 } });
+    expect(animeChoices(s.db, s.t, s.rows[0])).toMatchObject({ current: 'S01E01–E03', options: ['S01E01–E03', 'S02E01–E03'] });
+    correctAnime(s.db, s.t.id, s.rows[0].id, 'S02E01–E03');
+    expect(s.db.select().from(layaExamples).get()).toMatchObject({ task: 'anime', label: 'S02E01–E03', source: 'correction', laya: expect.objectContaining({ answer: 'S01E01–E03' }) });
+    expect(s.db.select().from(releases).get()!.parsed).toMatchObject({ seasons: [2], episodes: { from: 1, to: 3 } });
+  });
+});

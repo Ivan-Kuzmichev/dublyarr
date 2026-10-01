@@ -14,7 +14,8 @@ import { formatSize, qualityLabel } from '@/lib/format';
 import type { Verdict } from '@/lib/evaluate';
 import { AssignStudio } from './AssignStudio';
 import { DownloadButton } from './DownloadButton';
-import { answerMatchAction } from './actions';
+import { answerMatchAction, correctAnimeAction } from './actions';
+import { animeChoices } from '@/lib/laya/review';
 
 export const metadata = { title: 'Ручной поиск · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -26,7 +27,7 @@ const GENERIC = /^(?:DUB|MVO|DVO|VO|AVO)$/;
 // Как распознана озвучка раздачи: по самому надёжному из способов.
 const recognizedBy = (dubs: ManualRow['dubs']) => (['tracker', 'title', 'tag'] as const).find((b) => dubs.some((d) => d.by === b && (d.studioName || b === 'tag'))) ?? 'none';
 
-function Row({ row, tmdbId, studios, season, episode, movie = false }: { row: ManualRow; tmdbId: number; studios: { id: number; name: string }[]; season: number; episode?: number; movie?: boolean }) {
+function Row({ row, tmdbId, studios, season, episode, movie = false, numbering }: { row: ManualRow; tmdbId: number; studios: { id: number; name: string }[]; season: number; episode?: number; movie?: boolean; numbering?: { current: string; options: string[] } | null }) {
   const { release: r, verdict: v, dubs } = row;
   const unknown = dubs.find((d) => !d.studioName && d.by !== 'tag' && !GENERIC.test(d.label));
   const dim = v.tone === 'reject' ? 'opacity-60' : '';
@@ -39,6 +40,25 @@ function Row({ row, tmdbId, studios, season, episode, movie = false }: { row: Ma
       <div className={`flex min-w-0 flex-col gap-1 ${dim}`}>
         <span className="font-mono text-xs leading-snug break-words text-text">{r.title}</span>
         <span className="text-xs text-faint">{r.trackerName}</span>
+        {numbering && (
+          <form action={correctAnimeAction} className="flex flex-wrap items-center gap-2">
+            <input type="hidden" name="tmdbId" value={tmdbId} />
+            <input type="hidden" name="releaseId" value={r.id} />
+            <label className="text-xs text-faint" htmlFor={`num-${r.id}`}>
+              Нумерация
+            </label>
+            <select id={`num-${r.id}`} name="label" defaultValue={numbering.current} className="h-11 rounded-[10px] border border-field-line bg-bg px-2 font-mono text-xs text-text">
+              {numbering.options.map((o) => (
+                <option key={o} value={o}>
+                  {o}
+                </option>
+              ))}
+            </select>
+            <button type="submit" className="h-11 cursor-pointer rounded-[10px] border border-line-strong px-3 text-xs text-text-2 hover:text-text">
+              Исправить
+            </button>
+          </form>
+        )}
       </div>
       <div className={`flex flex-col gap-0.5 ${dim}`}>
         <span className={unknown ? 'text-accent' : ''}>
@@ -128,12 +148,12 @@ export default async function ManualSearchPage({ params, searchParams }: { param
           ))}
         </nav>
       )}
-      <Results result={result} tmdbId={tmdbId} studios={studios} season={season} episode={episode} />
+      <Results result={result} tmdbId={tmdbId} studios={studios} season={season} episode={episode} numberingOf={(r) => animeChoices(db, title, r)} />
     </div>
   );
 }
 
-function Results({ result, tmdbId, studios, season, episode, movie = false }: { result: ManualResult; tmdbId: number; studios: { id: number; name: string }[]; season: number; episode?: number; movie?: boolean }) {
+function Results({ result, tmdbId, studios, season, episode, movie = false, numberingOf }: { result: ManualResult; tmdbId: number; studios: { id: number; name: string }[]; season: number; episode?: number; movie?: boolean; numberingOf?: (r: ManualRow['release']) => { current: string; options: string[] } | null }) {
   return (
     <>
       {result.sources.length === 0 ? (
@@ -167,7 +187,7 @@ function Results({ result, tmdbId, studios, season, episode, movie = false }: { 
                 <span />
               </div>
               {result.rows.map((row) => (
-                <Row key={row.release.id} row={row} tmdbId={tmdbId} studios={studios} season={season} episode={episode} movie={movie} />
+                <Row key={row.release.id} row={row} tmdbId={tmdbId} studios={studios} season={season} episode={episode} movie={movie} numbering={numberingOf?.(row.release)} />
               ))}
             </div>
           )}

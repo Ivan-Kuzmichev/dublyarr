@@ -467,21 +467,22 @@ export const deletions = sqliteTable('deletions', {
 
 // Laya (фаза 4)
 
-/** Ответы Laya (после адаптера) — кэш: повторный поиск не спрашивает заново. version — версия адаптеров (0 — базовая). */
+/** Ответы самой Laya (до адаптера) — кэш: повторный поиск и новая версия адаптеров не спрашивают заново. */
 export const layaAnswers = sqliteTable(
   'laya_answers',
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     task: text('task').notNull(),
     key: text('key').notNull(),
-    version: integer('version').notNull(),
+    version: integer('version').notNull(), // не используется (кэш — по модели); оставлено для совместимости
+    model: text('model').notNull().default(''), // ревизия модели: ответ другой модели не годится
     answer: json<string | boolean>('answer').notNull(),
     p: real('p').notNull(), // после адаптера: P(true) для «да/нет», уверенность выбора для «выбора»
     raw: real('raw').notNull(), // как ответила сама Laya
     input: json<{ state: unknown; question: unknown; features: number[] }>('input'), // что спросили — для примера, если пользователь потом поправит
     at: ts('at').notNull(),
   },
-  (t) => [uniqueIndex('laya_answers_key').on(t.task, t.key, t.version)],
+  (t) => [uniqueIndex('laya_answers_model_key').on(t.task, t.key, t.model)],
 );
 
 /** Размеченные примеры: ответы пользователя на те же вопросы, что видела бы Laya. Один пример на (задача, ключ). */
@@ -493,7 +494,7 @@ export const layaExamples = sqliteTable(
     key: text('key').notNull(),
     input: json<{ state: unknown; question: unknown; features: number[] }>('input').notNull(),
     label: json<string | boolean>('label').notNull(),
-    laya: json<{ answer: string | boolean; p: number; raw: number } | null>('laya'),
+    laya: json<{ answer: string | boolean; p: number; raw: number; model?: string } | null>('laya'), // model — какая модель отвечала
     source: text('source').notNull(),
     title: text('title').notNull().default(''), // для экрана: раздача
     createdAt: ts('created_at').notNull(),

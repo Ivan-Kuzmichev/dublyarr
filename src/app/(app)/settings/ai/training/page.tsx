@@ -63,10 +63,10 @@ export default async function TrainingPage({ searchParams }: { searchParams: Pro
                 Ваши ответы <span className="text-sm font-normal text-faint">· {d.newCount} новых</span>
               </h3>
               <div className="flex gap-1 rounded-[10px] bg-surface-2 p-1 text-[13px]">
-                <Link href="/settings/ai/training" className={`flex h-9 items-center rounded-[7px] px-3 no-underline ${!wrong ? 'bg-text font-semibold text-bg hover:text-bg' : 'text-muted'}`}>
+                <Link href="/settings/ai/training" className={`flex h-11 items-center rounded-[7px] px-3 no-underline ${!wrong ? 'bg-text font-semibold text-bg hover:text-bg' : 'text-muted'}`}>
                   Все
                 </Link>
-                <Link href="/settings/ai/training?wrong=1" className={`flex h-9 items-center rounded-[7px] px-3 no-underline ${wrong ? 'bg-text font-semibold text-bg hover:text-bg' : 'text-muted'}`}>
+                <Link href="/settings/ai/training?wrong=1" className={`flex h-11 items-center rounded-[7px] px-3 no-underline ${wrong ? 'bg-text font-semibold text-bg hover:text-bg' : 'text-muted'}`}>
                   Где ошиблась · {wrongCount}
                 </Link>
               </div>

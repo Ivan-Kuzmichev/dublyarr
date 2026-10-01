@@ -80,3 +80,26 @@ describe('«Какая студия»', () => {
     expect(i.question).toMatchObject({ type: 'choice', instructions: 'Какая студия озвучки скрывается за подписью «Paravozik»?' });
   });
 });
+
+describe('исправления по ревью', () => {
+  test('«Нет» держится: следующий поиск не добавляет вариант снова', async () => {
+    const s = setup();
+    const c = client('Paravozik Studio');
+    await reviewStudios(s.db, s.t, s.rows, { client: c.client, budget: { left: 20 } });
+    confirmLayaAlias(s.db, findStudioByAlias(s.db, 'Paravozik')!.id, 'Paravozik', false);
+    const fresh = s.db.select().from(releases).all() as Release[];
+    await reviewStudios(s.db, s.t, fresh, { client: c.client, budget: { left: 20 } });
+    expect(findStudioByAlias(s.db, 'Paravozik')).toBeUndefined();
+  });
+  test('короткие подписи (меньше 3 букв) Laya в словарь не добавляет; не больше 3 новых вариантов за проход', async () => {
+    const short = setup('Криминальное прошлое S02E03 [WEB-DL 1080p] MVO Px');
+    await reviewStudios(short.db, short.t, short.rows, { client: client('Paravozik Studio').client, budget: { left: 20 } });
+    expect(findStudioByAlias(short.db, 'Px')).toBeUndefined();
+  });
+  test('«Назначить студию» новой студией — метка «новая» (Laya, выбравшая «новая», права)', async () => {
+    const { assignStudio } = await import('@/lib/manual-search');
+    const s = setup('Криминальное прошлое S02E03 [WEB-DL 1080p] MVO (Zzzz Voice)');
+    assignStudio(s.db, s.t.id, { label: 'Zzzz Voice', newName: 'Zzzz Voice' });
+    expect(s.db.select().from(layaExamples).get()).toMatchObject({ task: 'studio', label: 'новая' });
+  });
+});

@@ -20,13 +20,16 @@ import type { DubBy } from './parse/types';
 export type ManualRow = { release: Release; verdict: Verdict; dubs: { label: string; studioName?: string; by: DubBy }[] };
 export type ManualResult = { rows: ManualRow[]; sources: SourceStatus[]; profileSource: 'subscription' | 'default' };
 
+// ручной поиск — страница ждёт ответа: не больше 3 вопросов к Laya (остальное — из кэша или правила)
+const MANUAL_LAYA_BUDGET = 3;
+
 const TONE_ORDER: Verdict['tone'][] = ['best', 'ok', 'wait', 'ask', 'reject'];
 
 /** Ручной поиск: опросить источники и оценить раздачи для серии или сезона по профилю подписки (или профилю по умолчанию). */
 export async function runManualSearch(db: Db, tmdbId: number, target: Target, opts: SearchOptions & { today?: string } = {}): Promise<ManualResult> {
   const title = getTitleByTmdbId(db, tmdbId);
   if (!title) throw new Error('Сериал не найден');
-  const { releases: found, sources } = await searchTitle(db, title.id, opts);
+  const { releases: found, sources } = await searchTitle(db, title.id, { ...opts, layaBudget: opts.layaBudget ?? MANUAL_LAYA_BUDGET });
   const sub = getSubscription(db, title.id);
   const profile = sub && !isMovieProfile(sub.profile) ? sub.profile : getDefaultProfile(db, title.kind);
   const names = new Map(listStudios(db).map((s) => [s.id, s.name]));
@@ -47,7 +50,7 @@ export async function runManualSearch(db: Db, tmdbId: number, target: Target, op
 export async function runManualMovieSearch(db: Db, tmdbId: number, opts: SearchOptions & { today?: string } = {}): Promise<ManualResult> {
   const title = getTitleByTmdbId(db, tmdbId, 'movie');
   if (!title) throw new Error('Фильм не найден');
-  const { releases: found, sources } = await searchTitle(db, title.id, opts);
+  const { releases: found, sources } = await searchTitle(db, title.id, { ...opts, layaBudget: opts.layaBudget ?? MANUAL_LAYA_BUDGET });
   const fresh = db.select().from(titles).where(eq(titles.id, title.id)).get()!; // поиск мог отметить цифровой релиз
   const sub = getSubscription(db, title.id);
   const profile = sub && isMovieProfile(sub.profile) ? sub.profile : getMovieDefault(db);
@@ -80,7 +83,9 @@ export function assignStudio(db: Db, titleId: number, a: { label: string; studio
     createStudio(db, { name: a.newName, aliases: normalizeStudio(a.newName) === normalizeStudio(a.label) ? [] : [a.label], kind: 'both', trackers: [] });
   }
   if (input) {
-    const label = 'studioId' in a ? listStudios(db).find((x) => x.id === a.studioId)!.name : a.newName;
+    // выбор Laya — из студий вопроса или «новая»: студия не из вопроса (в т. ч. только что созданная) — правильный ответ «новая»
+    const chosen = 'studioId' in a ? listStudios(db).find((x) => x.id === a.studioId)!.name : a.newName;
+    const label = chosen in (input.question as { criteria: Record<string, string> }).criteria ? chosen : 'новая';
     const { key, ...rest } = input;
     addExample(db, { task: 'studio', key, input: rest, label, laya: lastLayaAnswer(db, 'studio', key)?.laya, source: 'studio-assign', title: a.label });
   }
@@ -97,7 +102,8 @@ export function answerMatch(db: Db, titleId: number, releaseId: number, verdict:
   const prev = db.select().from(layaExamples).where(and(eq(layaExamples.task, 'match'), eq(layaExamples.key, fresh.key))).get();
   const input = prev?.input ?? { state: fresh.state, question: fresh.question, features: fresh.features };
   addExample(db, { task: 'match', key: fresh.key, input, label: verdict === 'match', laya: lastLayaAnswer(db, 'match', fresh.key)?.laya, source, title: r.title });
-  if (verdict === 'reject') markFinalAnswer(db, title, r, false);
+  // «Это он» / «Не тот» — ответ и на финальную проверку этой раздачи (иначе отказ Laya повторялся бы на каждом поиске)
+  markFinalAnswer(db, title, r, verdict === 'match');
   addRule(db, titleId, r.trackerName, r.title, verdict);
   reparseReleases(db, titleId);
 }

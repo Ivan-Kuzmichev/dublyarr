@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../db/client';
-import { layaAnswers, releases as releasesT, studios as studiosT, type Release, type Studio, type Title } from '../db/schema';
+import { layaAnswers, releases as releasesT, studios as studiosT, titles as titlesT, type Release, type Studio, type Title } from '../db/schema';
 import { listStudios, normalizeStudio, StudioError, updateStudio } from '../studios';
 import { absoluteCandidates, dice, toTitleInfo, type AbsoluteCandidate, type TitleInfo } from '../match';
 import { listSeasons } from '../catalog';
@@ -60,6 +60,8 @@ export async function reviewMatches(db: Db, t: Title, rows: Release[], o: { budg
 
 const GENERIC = /^(?:DUB|MVO|DVO|VO|AVO)$/;
 const MAX_STUDIOS = 19; // модель рекомендует < 20 вариантов в одном вопросе
+const MIN_LABEL = 3;
+const MAX_NEW_ALIASES = 3;
 
 /** Подписи озвучки, которые словарь не узнал (как «Неизвестная студия» в вердиктах). */
 export const unknownLabels = (r: Pick<Release, 'parsed'>) => [...new Set(r.parsed.dubs.filter((d) => d.studioId === null && d.by !== 'tag' && !GENERIC.test(d.label)).map((d) => d.label))];
@@ -86,11 +88,12 @@ export function studioInput(db: Db, t: Title, r: Pick<Release, 'title' | 'tracke
 
 /** Неизвестные подписи озвучки: уверенный выбор Laya — вариант написания студии («Laya, не подтверждено»), раздачи переразбираются. */
 export async function reviewStudios(db: Db, t: Title, rows: Release[], o: { budget: Budget; client?: LayaClient }): Promise<Release[]> {
-  let changed = false;
+  let changed = 0;
   const seen = new Set<string>();
   for (const r of rows)
     for (const label of unknownLabels(r)) {
-      if (seen.has(normalizeStudio(label))) continue;
+      // короткие подписи («Px», «HD») слишком двусмысленны; за проход — не больше 3 новых вариантов
+      if (seen.has(normalizeStudio(label)) || normalizeStudio(label).length < MIN_LABEL || changed >= MAX_NEW_ALIASES) continue;
       seen.add(normalizeStudio(label));
       const d = await decide<string>(db, 'studio', studioInput(db, t, r, label), o);
       if (d.by !== 'laya' || !d.sure || d.answer === 'новая') continue;
@@ -99,7 +102,7 @@ export async function reviewStudios(db: Db, t: Title, rows: Release[], o: { budg
       try {
         updateStudio(db, s.id, { name: s.name, aliases: [...s.aliases, label], kind: s.kind, trackers: s.trackers });
         db.update(studiosT).set({ layaAliases: [...s.layaAliases, label] }).where(eq(studiosT.id, s.id)).run();
-        changed = true;
+        changed++;
       } catch (e) {
         if (!(e instanceof StudioError)) throw e; // подпись уже у другой студии — не трогаем
       }
@@ -172,4 +175,28 @@ export async function reviewAnime(db: Db, t: Title, rows: Release[], o: { budget
     out.push({ ...r, parsed });
   }
   return out;
+}
+
+/** Варианты нумерации раздачи и текущий выбор (для исправления вручную); null — раскладка однозначна. */
+export function animeChoices(db: Db, t: Title, r: Release): { current: string; options: string[] } | null {
+  if (t.kind !== 'anime') return null;
+  const info = toTitleInfo(t, listSeasons(db, t.id));
+  const cands = absoluteCandidates(parseRelease(r.title, r.attrs, { id: r.trackerName.toLowerCase(), name: r.trackerName }, []), info);
+  if (cands.length < 2) return null;
+  const cur = cands.find((c) => c.parsed.seasons[0] === r.parsed.seasons[0] && c.parsed.episodes?.from === r.parsed.episodes?.from && c.parsed.episodes?.to === r.parsed.episodes?.to);
+  return { current: cur?.label ?? cands[0].label, options: cands.map((c) => c.label) };
+}
+
+/** Пользователь исправил нумерацию: пример (тот же вопрос, что у Laya) — окончательный ответ; раздачи переразбираются. */
+export function correctAnime(db: Db, titleId: number, releaseId: number, label: string, now = Date.now()) {
+  const t = db.select().from(titlesT).where(eq(titlesT.id, titleId)).get();
+  const r = db.select().from(releasesT).where(eq(releasesT.id, releaseId)).get();
+  if (!t || !r || r.titleId !== titleId) throw new Error('Раздача не найдена');
+  const info = toTitleInfo(t, listSeasons(db, t.id));
+  const cands = absoluteCandidates(parseRelease(r.title, r.attrs, { id: r.trackerName.toLowerCase(), name: r.trackerName }, []), info);
+  if (!cands.some((c) => c.label === label)) throw new Error('Нет такого варианта');
+  const { key, ...input } = animeInput(t, r, cands, info);
+  const asked = db.select().from(layaAnswers).where(and(eq(layaAnswers.task, 'anime'), eq(layaAnswers.key, key))).all().at(-1);
+  addExample(db, { task: 'anime', key, input, label, laya: asked ? { answer: asked.answer, p: asked.p, raw: asked.raw, model: asked.model || undefined } : null, source: 'correction', title: r.title, now });
+  reparseReleases(db, titleId);
 }

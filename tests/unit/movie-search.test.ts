@@ -197,3 +197,12 @@ test('финальная проверка фильма: «нет» — не ка
   expect((await searchSubscription(s.db, s.t.id, { ...s.deps, layaClient })).started).toBe(0);
   expect(s.wanted()).toMatchObject({ state: 'ask', reason: 'Laya не уверена, что это фильм в озвучке дубляж' });
 });
+
+test('ручной поиск: не больше 3 вопросов к Laya (страница не ждёт минуту)', async () => {
+  const { runManualMovieSearch } = await import('@/lib/manual-search');
+  const s = await setup({ items: Array.from({ length: 8 }, (_, i) => ({ title: `Матрица (вариант ${i}) [1999, WEB-DL 1080p] Dub`, hash: `Z${i}` })) });
+  let asked = 0;
+  const layaClient = { ask: async () => (asked++, { answers: { q: { noul: 0.5 } }, ms: 1 }), health: async () => null, last: () => 1 } as never;
+  await runManualMovieSearch(s.db, 603, { ...s.deps.searchOpts, now: s.deps.now, today: '2026-10-01', layaClient });
+  expect(asked).toBeLessThanOrEqual(3);
+});

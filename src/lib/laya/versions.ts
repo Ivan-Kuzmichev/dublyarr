@@ -19,8 +19,9 @@ const CHOICE: LayaTaskId[] = ['studio', 'anime'];
 type Example = typeof layaExamples.$inferSelect;
 
 /** Пример → строка обучения: «да/нет» — ответ пользователя; «выбор» — угадала ли Laya (калибруем её уверенность). */
-function toRow(task: LayaTaskId, e: Example): TrainRow | null {
-  if (!e.laya) return null;
+function toRow(task: LayaTaskId, e: Example, model: string): TrainRow | null {
+  // ответы другой модели для адаптера не годятся (старые примеры без отметки — считаем текущей)
+  if (!e.laya || (e.laya.model && e.laya.model !== model)) return null;
   const label = CHOICE.includes(task) ? e.laya.answer === e.label : e.label === true;
   return { id: e.id, pLaya: e.laya.raw, features: e.input.features ?? [], label };
 }
@@ -43,16 +44,21 @@ export function trainingDue(db: Db, now: Date): boolean {
   return needsRetrain(db) || exampleStats(db).sinceVersion >= NEW_EXAMPLES;
 }
 
-/** Примеры без ответа Laya (пользователь ответил раньше, чем она спросила) — спросить сейчас. */
-async function fillMissing(db: Db, client: LayaClient) {
+const ASK_PER_RUN = 50; // ~1 с на вопрос на NAS
+
+/** Примеры без ответа текущей модели (пользователь ответил раньше, чем Laya спросила; модель обновилась) — спросить сейчас. */
+async function fillMissing(db: Db, client: LayaClient, model: string, retrain: boolean) {
+  let asked = 0;
   for (const e of db.select().from(layaExamples).all()) {
-    if (e.laya) continue;
+    if (asked >= ASK_PER_RUN) break;
+    if (e.laya && !(retrain && e.laya.model !== model)) continue;
+    asked++;
     const r = await client.ask(e.input.state, { q: e.input.question as Question });
     const a = r?.answers.q;
     if (!a) continue;
     const answer = typeof a.noul === 'number' ? a.noul >= 0.5 : a.choice!;
     const raw = typeof a.noul === 'number' ? a.noul : (a.probabilities?.[a.choice!] ?? 0);
-    db.update(layaExamples).set({ laya: { answer, p: raw, raw } }).where(eq(layaExamples.id, e.id)).run();
+    db.update(layaExamples).set({ laya: { answer, p: raw, raw, model } }).where(eq(layaExamples.id, e.id)).run();
   }
 }
 
@@ -64,7 +70,7 @@ export async function trainVersion(db: Db, dataDir: string, o: { now?: number; f
   const cur = retrain ? undefined : currentRow(db);
   const since = exampleStats(db).sinceVersion;
   if (!o.force && !retrain && since < NEW_EXAMPLES) return { applied: false, reason: `Мало новых примеров: ${since} из ${NEW_EXAMPLES}` };
-  await fillMissing(db, o.client ?? layaClient());
+  await fillMissing(db, o.client ?? layaClient(), h.model, retrain);
 
   const threshold = getLayaSettings(db).threshold;
   const all = db.select().from(layaExamples).all();
@@ -74,7 +80,7 @@ export async function trainVersion(db: Db, dataDir: string, o: { now?: number; f
   let lossCur = 0;
   let trained = 0;
   for (const task of LAYA_TASKS) {
-    const rows = all.filter((e) => e.task === task).map((e) => toRow(task, e)).filter((r): r is TrainRow => !!r);
+    const rows = all.filter((e) => e.task === task).map((e) => toRow(task, e, h.model!)).filter((r): r is TrainRow => !!r);
     if (rows.length < MIN_PER_TASK) continue;
     const { train, test } = splitHoldout(rows);
     const next = trainAdapter(train);

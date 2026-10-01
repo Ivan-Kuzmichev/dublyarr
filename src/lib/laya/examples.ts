@@ -9,7 +9,7 @@ export type ExampleSource = 'match-answer' | 'studio-assign' | 'studio-confirm' 
 
 export function addExample(
   db: Db,
-  e: { task: LayaTask; key: string; input: { state: unknown; question: unknown; features: number[] }; label: string | boolean; laya?: { answer: string | boolean; p: number; raw: number } | null; source: ExampleSource; title?: string; now?: number },
+  e: { task: LayaTask; key: string; input: { state: unknown; question: unknown; features: number[] }; label: string | boolean; laya?: { answer: string | boolean; p: number; raw: number; model?: string } | null; source: ExampleSource; title?: string; now?: number },
 ) {
   const row = { task: e.task, key: e.key, input: e.input, label: e.label, laya: e.laya ?? null, source: e.source, title: e.title ?? '', createdAt: e.now ?? Date.now() };
   // один пример на вопрос: последний ответ пользователя побеждает
@@ -19,7 +19,7 @@ export function addExample(
 /** Последний ответ Laya на этот вопрос (любая версия адаптеров) — кладётся рядом с примером. */
 export function lastLayaAnswer(db: Db, task: LayaTask, key: string) {
   const a = db.select().from(layaAnswers).where(and(eq(layaAnswers.task, task), eq(layaAnswers.key, key))).orderBy(desc(layaAnswers.at), desc(layaAnswers.id)).get();
-  return a ? { row: a, laya: { answer: a.answer, p: a.p, raw: a.raw } } : null;
+  return a ? { row: a, laya: { answer: a.answer, p: a.p, raw: a.raw, model: a.model || undefined } } : null;
 }
 
 /**
@@ -30,7 +30,7 @@ export function markFinalAnswer(db: Db, t: Pick<Title, 'tmdbType' | 'tmdbId'>, r
   const prefix = `final|${t.tmdbType}:${t.tmdbId}|`;
   const suffix = `|${r.trackerName}|${r.title}|${r.size}`;
   const asked = db.select().from(layaAnswers).where(eq(layaAnswers.task, 'final')).all().filter((a) => a.key.startsWith(prefix) && a.key.endsWith(suffix) && a.input);
-  for (const a of asked) addExample(db, { task: 'final', key: a.key, input: a.input!, label: ok, laya: { answer: a.answer, p: a.p, raw: a.raw }, source: 'correction', title: r.title, now });
+  for (const a of asked) addExample(db, { task: 'final', key: a.key, input: a.input!, label: ok, laya: { answer: a.answer, p: a.p, raw: a.raw, model: a.model || undefined }, source: 'correction', title: r.title, now });
 }
 
 /** Сколько примеров: всего, по задачам и новых с текущей версии адаптеров. */

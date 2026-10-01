@@ -38,7 +38,7 @@ describe('примеры из ответов пользователя', () => {
     assignStudio(s.db, s.t.id, { label: 'Paravozik', newName: 'Paravozik Studio' });
     expect(findStudioByAlias(s.db, 'Paravozik')?.name).toBe('Paravozik Studio');
     const ex = s.db.select().from(layaExamples).get()!;
-    expect(ex).toMatchObject({ task: 'studio', label: 'Paravozik Studio', source: 'studio-assign', title: 'Paravozik' });
+    expect(ex).toMatchObject({ task: 'studio', label: 'новая', source: 'studio-assign', title: 'Paravozik' }); // новой студии не было среди вариантов вопроса
     expect((ex.input.question as { criteria: Record<string, string> }).criteria).toHaveProperty('новая');
   });
   test('финальная проверка: ручная загрузка после отказа Laya — пример «да», «Не тот сериал» — «нет»', () => {

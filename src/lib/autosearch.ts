@@ -17,7 +17,7 @@ import { log } from './log';
 import { eagerTitles } from './forecast';
 import { clearWanted, setWanted } from './wanted';
 import { finalChecks } from './laya/final';
-import { SEARCH_BUDGET } from './laya/decide';
+import { FINAL_BUDGET } from './laya/decide';
 import type { LayaClient } from './laya/client';
 import { searchMovie } from './movie-search';
 import { getSchedule, inNightWindow, searchDue, type ScheduleSettings } from './schedule';
@@ -100,8 +100,17 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   const { releases } = await searchTitle(db, titleId, { ...deps.searchOpts, layaClient: deps.layaClient });
   const title = db.select().from(titles).where(eq(titles.id, titleId)).get()!;
   // финальная проверка Laya перед загрузкой: свой бюджет вопросов на проход
-  const finalOpts = { budget: { left: SEARCH_BUDGET }, client: deps.layaClient };
-  const dubOf = (v: Verdict, r: Release) => studioFor(profile, v, r, new Map(listStudios(db).map((s) => [s.id, s.name]))) ?? 'любой';
+  const finalOpts = { budget: { left: FINAL_BUDGET }, client: deps.layaClient };
+  const studioNames = new Map(listStudios(db).map((s) => [s.id, s.name]));
+  const dubOf = (v: Verdict, r: Release) => studioFor(profile, v, r, studioNames) ?? 'любой';
+  // пак спрашивается один раз на раздачу и сезон, серия — по своему номеру
+  const finalTarget = (ep: EpisodeRef | null, season: number, what: string) => ({
+    title,
+    what,
+    dubOf,
+    today,
+    codeOf: (r: Release) => (ep && !r.parsed.pack ? `S${String(ep.season).padStart(2, '0')}E${String(ep.number).padStart(2, '0')}` : `S${String(season).padStart(2, '0')}`),
+  });
   // отвергнутые раздачи: убранная из клиента — целиком, с ошибкой «нет файла» — только для тех серий
   const rejected = new Map<number, Set<string> | 'all'>();
   for (const d of db.select().from(downloads).where(and(eq(downloads.titleId, titleId), inArray(downloads.state, ['error', 'removed', 'stalled']))).all()) {
@@ -140,14 +149,21 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
     const count = eps.filter((e) => e.season === s).length;
     const whole = evaluateReleases(usable, ctx, { season: s }).filter((v) => v.ok && coversWholeSeason(byId.get(v.releaseId)!.parsed, s, count));
     if (whole.length && !whole.some((v) => v.best)) whole[0] = { ...whole[0], best: true };
-    const verdicts = await finalChecks(db, whole, byId, { title, code: `S${String(s).padStart(2, '0')}`, what: `весь ${s} сезон`, dubOf }, finalOpts);
+    const verdicts = await finalChecks(db, whole, byId, finalTarget(null, s, `весь ${s} сезон`), finalOpts);
     const best = verdicts.find((v) => v.best);
     // серии сезона по подписке, без файла и не в другой загрузке; серии без даты закончившегося сезона — тоже
     const dated = eps.map((e) => (e.season === s && !e.airDate ? { ...e, airDate: today } : e));
     const seasonEps = wantedEpisodes(sub, dated, today).filter((e) => e.season === s && !have.has(key(e)) && !busy.has(key(e)));
     if (!seasonEps.length) continue;
     if (!best) {
-      for (const e of seasonEps) setWanted(db, titleId, e, 'missing', 'Нет полного пака сезона', null, now);
+      // Laya отклонила все паки — вопрос пользователю; кончились вопросы — проверим на следующем поиске
+      const ask = verdicts.find((v) => v.tone === 'ask');
+      const wait = verdicts.find((v) => v.tone === 'wait');
+      for (const e of seasonEps) {
+        if (ask) setWanted(db, titleId, e, 'ask', ask.reason, null, now, ask.releaseId);
+        else if (wait) setWanted(db, titleId, e, 'waiting', wait.reason, wait.until ?? null, now);
+        else setWanted(db, titleId, e, 'missing', 'Нет полного пака сезона', null, now);
+      }
       res.missing += seasonEps.length;
       continue;
     }
@@ -160,7 +176,7 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
     const raw = evaluateReleases(usableFor(ep), ctx, { season: ep.season, episode: ep.number });
     // уже качается или файл есть в живом паке — без проверки
     const pre = planEpisode(ep, raw, byId, active);
-    const verdicts = pre.action === 'add' || pre.action === 'add-pack' ? await finalChecks(db, raw, byId, { title, code: key(ep), what: `серия ${ep.number} сезона ${ep.season}`, dubOf }, finalOpts) : raw;
+    const verdicts = pre.action === 'add' || pre.action === 'add-pack' ? await finalChecks(db, raw, byId, finalTarget(ep, ep.season, `серия ${ep.number} сезона ${ep.season}`), finalOpts) : raw;
     const plan = planEpisode(ep, verdicts, byId, active);
     if (plan.action === 'have') continue;
     // замены нет — серия остаётся в застрявшей загрузке («качается»)
@@ -209,7 +225,7 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
       const better = betterVerdict(f, verdicts, byId, profile.quality.target);
       if (!better) continue;
       // улучшение — тоже через финальную проверку; не прошло — оставляем как есть
-      const checked = await finalChecks(db, [{ ...better, best: true }], byId, { title, code: key(ep), what: `серия ${ep.number} сезона ${ep.season}`, dubOf }, finalOpts);
+      const checked = await finalChecks(db, [{ ...better, best: true }], byId, finalTarget(ep, ep.season, `серия ${ep.number} сезона ${ep.season}`), finalOpts);
       const v = checked.find((x) => x.best);
       if (!v) continue;
       const r = byId.get(v.releaseId)!;

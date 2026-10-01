@@ -43,29 +43,57 @@ export function currentAdapters(db: Db): { version: number; adapters: LayaAdapte
 
 export type TrainRow = { id?: number; pLaya: number; features: number[]; label: boolean };
 
-/** Логистическая регрессия (градиентный спуск, слабая L2): x = [logit(p Laya), ...признаки]. Секунды даже на NAS. */
-export function trainAdapter(rows: TrainRow[], o: { iters?: number; lr?: number; l2?: number } = {}): Adapter {
+/** Решение линейной системы (Гаусс с выбором главного элемента); размерность — 2–4. */
+function solve(A: number[][], y: number[]): number[] {
+  const n = y.length;
+  const M = A.map((row, i) => [...row, y[i]]);
+  for (let c = 0; c < n; c++) {
+    let piv = c;
+    for (let r = c + 1; r < n; r++) if (Math.abs(M[r][c]) > Math.abs(M[piv][c])) piv = r;
+    [M[c], M[piv]] = [M[piv], M[c]];
+    if (Math.abs(M[c][c]) < 1e-12) continue;
+    for (let r = 0; r < n; r++) {
+      if (r === c) continue;
+      const f = M[r][c] / M[c][c];
+      for (let k = c; k <= n; k++) M[r][k] -= f * M[c][k];
+    }
+  }
+  return M.map((row, i) => (Math.abs(row[i]) < 1e-12 ? 0 : row[n] / row[i]));
+}
+
+/**
+ * Логистическая регрессия методом Ньютона (IRLS) со слабой L2: x = [logit(p Laya), ...признаки], смещение.
+ * Сходится за десятки шагов при любом масштабе logit (уверенная Laya даёт ±9) — градиентный спуск там расходился.
+ */
+export function trainAdapter(rows: TrainRow[], o: { iters?: number; l2?: number } = {}): Adapter {
   if (!rows.length) return null;
-  const xs = rows.map((r) => [logit(r.pLaya), ...r.features]);
+  const xs = rows.map((r) => [logit(r.pLaya), ...r.features, 1]);
   const ys = rows.map((r) => (r.label ? 1 : 0));
   const dim = xs[0].length;
-  const w = new Array<number>(dim).fill(0);
-  let b = 0;
-  const iters = o.iters ?? 800;
-  const lr = o.lr ?? 0.5;
-  const l2 = o.l2 ?? 0.001;
-  for (let it = 0; it < iters; it++) {
-    const gw = new Array<number>(dim).fill(0);
-    let gb = 0;
+  const l2 = o.l2 ?? 0.01;
+  let w = new Array<number>(dim).fill(0);
+  for (let it = 0; it < (o.iters ?? 50); it++) {
+    const g = new Array<number>(dim).fill(0);
+    const H = Array.from({ length: dim }, () => new Array<number>(dim).fill(0));
     for (let i = 0; i < xs.length; i++) {
-      const err = sigmoid(b + xs[i].reduce((n, v, j) => n + v * w[j], 0)) - ys[i];
-      for (let j = 0; j < dim; j++) gw[j] += err * xs[i][j];
-      gb += err;
+      const p = sigmoid(xs[i].reduce((n, v, j) => n + v * w[j], 0));
+      const s = Math.max(p * (1 - p), 1e-9);
+      for (let j = 0; j < dim; j++) {
+        g[j] += (p - ys[i]) * xs[i][j];
+        for (let k = 0; k < dim; k++) H[j][k] += s * xs[i][j] * xs[i][k];
+      }
     }
-    for (let j = 0; j < dim; j++) w[j] -= lr * (gw[j] / xs.length + l2 * w[j]);
-    b -= (lr * gb) / xs.length;
+    for (let j = 0; j < dim - 1; j++) {
+      g[j] += l2 * w[j];
+      H[j][j] += l2;
+    }
+    H[dim - 1][dim - 1] += 1e-9;
+    const step = solve(H, g);
+    w = w.map((v, j) => v - step[j]);
+    if (step.every((d) => Math.abs(d) < 1e-7)) break;
   }
-  return { w: w.map((v) => Math.round(v * 1e6) / 1e6), b: Math.round(b * 1e6) / 1e6 };
+  const r6 = (v: number) => Math.round(v * 1e6) / 1e6;
+  return { w: w.slice(0, -1).map(r6), b: r6(w[dim - 1]) };
 }
 
 /** Отложенные 20 % — по id (детерминированно, одни и те же при каждом обучении). */

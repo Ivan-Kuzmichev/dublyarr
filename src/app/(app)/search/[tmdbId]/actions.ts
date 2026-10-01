@@ -20,6 +20,7 @@ import { getMovieDefault } from '@/lib/profile';
 import { movieKinds } from '@/lib/movie-evaluate';
 import { MOVIE_EP } from '@/lib/movies';
 import { markFinalAnswer } from '@/lib/laya/examples';
+import { correctAnime } from '@/lib/laya/review';
 
 export type AssignState = { ok?: boolean; error?: string };
 
@@ -139,4 +140,15 @@ async function downloadMovie(title: Title, releaseId: number): Promise<DownloadS
   }
   revalidatePath('/activity');
   return { ok: 'Добавлено в загрузки' };
+}
+
+/** Исправить нумерацию аниме (варианты — как у Laya): ответ пользователя окончательный и идёт в дообучение. */
+export async function correctAnimeAction(form: FormData) {
+  await requireSession();
+  const t = titleOf(form);
+  const releaseId = positive(form.get('releaseId'));
+  const label = String(form.get('label') ?? '');
+  if (!t || !releaseId || !label) return;
+  correctAnime(getDb(), t.title.id, releaseId, label);
+  revalidatePath(`/search/${t.tmdbId}`);
 }

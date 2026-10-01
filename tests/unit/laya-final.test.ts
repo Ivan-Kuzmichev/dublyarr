@@ -27,7 +27,7 @@ const answers = (ps: (number | null)[]) => {
     } as unknown as LayaClient,
   };
 };
-const target = { title: t, code: 'S01E03', what: 'серия 3 сезона 1', dubOf: () => 'LostFilm' };
+const target = { title: t, codeOf: () => 'S01E03', what: 'серия 3 сезона 1', dubOf: () => 'LostFilm', today: '2026-10-01' };
 const run = (db: ReturnType<typeof testDb>, ps: (number | null)[]) => {
   const a = answers(ps);
   return finalChecks(db, verdicts(), byId, target, { budget: { left: 20 }, client: a.client }).then((r) => ({ r, asked: a.asked }));

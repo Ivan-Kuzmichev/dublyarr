@@ -101,3 +101,22 @@ describe('версии', () => {
     expect(db.select().from(layaExamples).all().every((e) => e.laya !== null)).toBe(true);
   });
 });
+
+describe('исправления по ревью', () => {
+  test('адаптер сходится, когда Laya уверена (большой logit): лучше, чем без адаптера', () => {
+    const rows = Array.from({ length: 40 }, (_, i) => ({ id: i + 1, pLaya: 0.99995, features: [0.8], label: i % 5 !== 0 }));
+    const a = trainAdapter(rows);
+    expect(metrics(a, rows, 0.85).logLoss).toBeLessThan(metrics(null, rows, 0.85).logLoss);
+    expect(metrics(a, rows, 0.85).logLoss).toBeLessThan(0.6);
+  });
+  test('после смены модели примеры переспрашиваются у новой модели (не больше 50 за раз)', async () => {
+    const { db, dir } = setup(60);
+    await trainVersion(db, dir, { now: 5000 });
+    beat(db, 'laya', true, JSON.stringify({ ...READY, model: 'm@2' }));
+    let asked = 0;
+    const client = { ask: async () => (asked++, { answers: { q: { noul: 0.5 } }, ms: 1 }), health: async () => null, last: () => 1 } as unknown as LayaClient;
+    await trainVersion(db, dir, { now: 9000, client });
+    expect(asked).toBe(50);
+    expect(db.select().from(layaExamples).all().filter((e) => e.laya?.model === 'm@2')).toHaveLength(50);
+  });
+});

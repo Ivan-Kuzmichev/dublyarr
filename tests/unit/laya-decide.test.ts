@@ -37,7 +37,7 @@ describe('решение Laya', () => {
     expect(f.calls).toEqual([]);
     expect(await decide(db, 'final', input(), { budget: budget(), client: fake(null).client })).toEqual({ by: 'rules' });
     const b = budget(0);
-    expect(await decide(db, 'final', input('z'), { budget: b, client: f.client })).toEqual({ by: 'rules' });
+    expect(await decide(db, 'final', input('z'), { budget: b, client: f.client })).toEqual({ by: 'budget' });
   });
   test('кэш: повторный вопрос без запроса и без траты бюджета; порог из настроек', async () => {
     const db = testDb();
@@ -68,7 +68,8 @@ describe('адаптер', () => {
     expect(r).toMatchObject({ raw: 0.5, sure: true, answer: true });
     beat(db, 'laya', true, JSON.stringify({ status: 'ready', laya: '0.4.0', model: 'm@1' }));
     expect(currentAdapters(db)).toEqual({ version: 0, adapters: {} }); // обновилась библиотека — базовая
-    await decide(db, 'match', input('v', noul, [1]), { budget: budget(), client: f.client });
-    expect(f.calls).toHaveLength(2);
+    // та же модель — ответ из кэша, но уже без адаптера
+    expect(await decide(db, 'match', input('v', noul, [1]), { budget: budget(), client: f.client })).toMatchObject({ raw: 0.5, sure: false });
+    expect(f.calls).toHaveLength(1);
   });
 });

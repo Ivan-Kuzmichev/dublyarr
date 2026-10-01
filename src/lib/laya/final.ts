@@ -10,10 +10,13 @@ import { decide, type Budget, type DecideInput } from './decide';
 const MAX_CHECKS = 3;
 const pct = (p: number) => `${Math.round(p * 100)} %`;
 
-/** Что проверяем: сериал/фильм, код («S01E03» / «S02» / «фильм»), текст для вопроса и озвучка. */
-export type FinalTarget = { title: Title; code: string; what: string; dubOf: (v: Verdict, r: Release) => string };
+/**
+ * Что проверяем: сериал/фильм; код для ключа вопроса — у пака один на раздачу («S01»), у серии «S01E03», у фильма «фильм»;
+ * текст для вопроса и озвучка (по позиции профиля раздачи).
+ */
+export type FinalTarget = { title: Title; codeOf: (r: Release) => string; what: string; dubOf: (v: Verdict, r: Release) => string; today: string };
 
-export function finalInput(t: Omit<FinalTarget, 'dubOf'> & { dub: string }, r: Release): DecideInput {
+export function finalInput(t: { title: Title; code: string; what: string; dub: string }, r: Release): DecideInput {
   const name = `${t.title.nameRu}${t.title.nameOriginal && t.title.nameOriginal !== t.title.nameRu ? ` (${t.title.nameOriginal})` : ''}${t.title.year ? `, ${t.title.year}` : ''}`;
   return {
     key: `final|${t.title.tmdbType}:${t.title.tmdbId}|${t.code}|${t.dub}|${r.trackerName}|${r.title}|${r.size}`,
@@ -37,8 +40,13 @@ export async function finalChecks(db: Db, verdicts: Verdict[], byId: Map<number,
     const r = byId.get(v.releaseId);
     if (!r) continue;
     const dub = t.dubOf(v, r);
-    const d = await decide<boolean>(db, 'final', finalInput({ ...t, dub }, r), o);
-    if (d.by === 'rules' || (d.sure && d.answer)) {
+    const d = await decide<boolean>(db, 'final', finalInput({ title: t.title, code: t.codeOf(r), what: t.what, dub }, r), o);
+    if (d.by === 'budget') {
+      // вопросы на этот проход кончились — непроверенное не качаем, проверим на следующем поиске
+      for (const x of out.values()) if (x.ok) Object.assign(x, { ok: false, best: false, tone: 'wait' as const, until: t.today, reason: 'Ждём проверку Laya' });
+      return verdicts.map((x) => out.get(x.releaseId)!);
+    }
+    if (d.by === 'rules' || (d.by === 'laya' && d.sure && d.answer)) {
       // проверено или проверить нечем — эта раздача лучшая
       for (const x of out.values()) x.best = x.releaseId === v.releaseId;
       Object.assign(out.get(v.releaseId)!, { best: true, tone: 'best' as const });
@@ -47,6 +55,7 @@ export async function finalChecks(db: Db, verdicts: Verdict[], byId: Map<number,
     failed.push(v.releaseId);
     Object.assign(out.get(v.releaseId)!, { ok: false, best: false, tone: 'reject' as const, reason: d.sure ? `Laya: не то · ${pct(1 - d.p)}` : `Laya не уверена · ${pct(Math.max(d.p, 1 - d.p))}` });
   }
+  if (!failed.length) return verdicts;
   // ни одна не прошла — сомнительное не качаем: вопрос пользователю
   for (const x of out.values()) if (x.ok) Object.assign(x, { ok: false, best: false, tone: 'reject' as const, reason: 'Не проверена: Laya отклонила лучшие' });
   const first = out.get(failed[0])!;
