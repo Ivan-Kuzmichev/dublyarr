@@ -8,14 +8,14 @@ import { ensureTracker, markSourceTrackers } from './trackers';
 import { torznabSearch, TorznabError, type TorznabItem } from './torznab';
 import { parseRelease } from './parse/dubs';
 import { normalizeTitle } from './parse/normalize';
-import { matchRelease, resolveAbsolute, toTitleInfo } from './match';
+import { absoluteCandidates, matchRelease, resolveAbsolute, toTitleInfo } from './match';
 import { isDigital, matchMovie, movieSource } from './movie-evaluate';
 import { ruleFor } from './release-rules';
 import { encrypt } from './crypto/secretbox';
 import { recordSightings } from './sightings';
 import { checkSourcesDown } from './notify-events';
 import { log } from './log';
-import { applyMatchDecision, matchKey, reviewMatches, reviewStudios } from './laya/review';
+import { animeKey, applyAnimeDecision, applyMatchDecision, matchKey, reviewAnime, reviewMatches, reviewStudios } from './laya/review';
 import { cachedDecision, SEARCH_BUDGET } from './laya/decide';
 import type { LayaClient } from './laya/client';
 
@@ -132,7 +132,8 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
   // Laya: сомнительные совпадения (бюджет вопросов на поиск — CPU NAS)
   const budget = { left: SEARCH_BUDGET };
   const matched = await reviewMatches(db, title, saved, { budget, client: opts.layaClient });
-  const reviewed = await reviewStudios(db, title, matched, { budget, client: opts.layaClient });
+  const named = await reviewStudios(db, title, matched, { budget, client: opts.layaClient });
+  const reviewed = await reviewAnime(db, title, named, { budget, client: opts.layaClient });
   if (title.kind === 'movie') noteDigital(db, title, reviewed, now);
   else recordSightings(db, titleId, reviewed);
   return { releases: reviewed, sources: statuses };
@@ -151,7 +152,9 @@ function analyze(
 ) {
   const rule = ruleFor(db, title.id, r.trackerName, r.title);
   const raw = parseRelease(r.title, r.attrs, { id: r.indexerId, name: r.trackerName }, studios);
-  const parsed = title.kind === 'movie' ? raw : resolveAbsolute(raw, info);
+  // сквозная нумерация: уже выбранная Laya раскладка (переразбор её не теряет), иначе эвристика
+  const cands = title.kind === 'anime' ? absoluteCandidates(raw, info) : [];
+  const parsed = title.kind === 'movie' ? raw : ((cands.length > 1 && applyAnimeDecision(cands, cachedDecision<string>(db, 'anime', animeKey(title, r)))) || resolveAbsolute(raw, info));
   const match = title.kind === 'movie' ? matchMovie(raw, r.size, title, rule, r.title) : matchRelease(parsed, r.size, info, rule);
   // уже известный ответ Laya по сомнительному совпадению (переразбор не спрашивает её заново)
   return { parsed, match: match.level === 'doubt' && !match.rule ? applyMatchDecision(match, cachedDecision<boolean>(db, 'match', matchKey(title, r))) : match };

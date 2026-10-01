@@ -2,7 +2,10 @@ import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { layaAnswers, releases as releasesT, studios as studiosT, type Release, type Studio, type Title } from '../db/schema';
 import { listStudios, normalizeStudio, StudioError, updateStudio } from '../studios';
-import { dice } from '../match';
+import { absoluteCandidates, dice, toTitleInfo, type AbsoluteCandidate, type TitleInfo } from '../match';
+import { listSeasons } from '../catalog';
+import { parseRelease } from '../parse/dubs';
+import type { ParsedRelease } from '../parse/types';
 import { seriesKind } from '../profile';
 import { reparseReleases } from '../search';
 import { addExample } from './examples';
@@ -125,4 +128,48 @@ export function confirmLayaAlias(db: Db, studioId: number, alias: string, ok: bo
     .where(eq(studiosT.id, s.id))
     .run();
   for (const { id } of db.selectDistinct({ id: releasesT.titleId }).from(releasesT).all()) reparseReleases(db, id);
+}
+
+// --- «Нумерация аниме» ---
+
+export const animeKey = (t: Pick<Title, 'tmdbType' | 'tmdbId'>, r: Pick<Release, 'trackerName' | 'title'>) => `anime|${t.tmdbType}:${t.tmdbId}|${r.trackerName}|${r.title}`;
+
+export function animeInput(t: Title, r: Pick<Release, 'trackerName' | 'title'>, cands: AbsoluteCandidate[], info: TitleInfo): DecideInput {
+  const seasonsText = info.seasons.filter((s) => s.number > 0).map((s) => `сезон ${s.number} — ${s.episodeCount} серий`).join(', ');
+  return {
+    key: animeKey(t, r),
+    state: { аниме: t.nameRu, раздача: r.title, сезоны: seasonsText },
+    question: { type: 'choice', instructions: 'Какой сезон и серия в этой раздаче?', criteria: Object.fromEntries(cands.map((c) => [c.label, c.label.replace(/^S0?(\d+)E0?(\d+)/, 'сезон $1, серия $2')])) },
+    features: [cands.length],
+  };
+}
+
+/** Выбранная Laya раскладка (или null — эвристика как раньше). */
+export function applyAnimeDecision(cands: AbsoluteCandidate[], d: Decision<string> | null): ParsedRelease | null {
+  if (!d || d.by !== 'laya' || !d.sure) return null;
+  return cands.find((c) => c.label === d.answer)?.parsed ?? null;
+}
+
+/** Сквозная нумерация, которую нельзя разложить однозначно: Laya выбирает сезон и серию. */
+export async function reviewAnime(db: Db, t: Title, rows: Release[], o: { budget: Budget; client?: LayaClient }): Promise<Release[]> {
+  if (t.kind !== 'anime') return rows;
+  const info = toTitleInfo(t, listSeasons(db, t.id));
+  const out: Release[] = [];
+  for (const r of rows) {
+    const cands = absoluteCandidates(parseRelease(r.title, r.attrs, { id: r.trackerName.toLowerCase(), name: r.trackerName }, []), info);
+    if (cands.length < 2) {
+      out.push(r);
+      continue;
+    }
+    const chosen = applyAnimeDecision(cands, await decide<string>(db, 'anime', animeInput(t, r, cands, info), o));
+    if (!chosen) {
+      out.push(r);
+      continue;
+    }
+    // студии и качество — из текущего разбора, сезон и серия — из выбора
+    const parsed = { ...r.parsed, seasons: chosen.seasons, episodes: chosen.episodes, absolute: false, pack: chosen.pack };
+    db.update(releasesT).set({ parsed }).where(eq(releasesT.id, r.id)).run();
+    out.push({ ...r, parsed });
+  }
+  return out;
 }

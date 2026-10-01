@@ -74,6 +74,37 @@ export function resolveAbsolute(p: ParsedRelease, t: TitleInfo): ParsedRelease {
   return { ...p, seasons, episodes: null, absolute: false, pack: true };
 }
 
+export type AbsoluteCandidate = { label: string; parsed: ParsedRelease };
+
+const epLabel = (season: number, from: number, to: number) => `S${String(season).padStart(2, '0')}E${String(from).padStart(2, '0')}${to !== from ? `–E${String(to).padStart(2, '0')}` : ''}`;
+
+/**
+ * Варианты раскладки сквозного номера по сезонам (для вопроса Laya): эвристика — первой, затем нумерация последнего сезона,
+ * продолжение последнего сезона и новый сезон после известных серий. Один вариант — неоднозначности нет.
+ */
+export function absoluteCandidates(p: ParsedRelease, t: TitleInfo): AbsoluteCandidate[] {
+  if (!p.absolute || !p.episodes) return [];
+  const counts = t.seasons.filter((s) => s.number > 0).map((s) => ({ season: s.number, count: s.episodeCount })).sort((a, b) => a.season - b.season);
+  if (!counts.length) return [];
+  const h = resolveAbsolute(p, t);
+  if (!h.episodes || h.seasons.length !== 1) return []; // пак на несколько сезонов — не спрашиваем
+  const out: AbsoluteCandidate[] = [];
+  const add = (season: number, from: number, to: number) => {
+    const label = epLabel(season, from, to);
+    if (from < 1 || out.some((c) => c.label === label)) return;
+    out.push({ label, parsed: { ...p, seasons: [season], episodes: { from, to }, absolute: false } });
+  };
+  out.push({ label: epLabel(h.seasons[0], h.episodes.from, h.episodes.to), parsed: h });
+  const { from, to } = p.episodes;
+  const last = counts.at(-1)!;
+  const before = counts.slice(0, -1).reduce((n, c) => n + c.count, 0);
+  const total = before + last.count;
+  if (to <= last.count) add(last.season, from, to); // нумерация внутри последнего сезона
+  add(last.season, from - before, to - before); // продолжение последнего сезона (онгоинг)
+  if (from > total) add(last.season + 1, from - total, to - total); // новый сезон, которого TMDB ещё не знает
+  return out.slice(0, 4);
+}
+
 const SIZE_LIMITS: Record<string, [number, number]> = { 2160: [0.1, 15], 1080: [0.1, 8], other: [0.05, 4] };
 
 export function matchRelease(p: ParsedRelease, size: number, t: TitleInfo, rule?: 'match' | 'reject'): MatchResult {
