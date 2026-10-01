@@ -100,3 +100,18 @@ test('сеть недоступна', async () => {
   expect(err).toBeInstanceOf(QbitError);
   expect(err.code).toBe('network');
 });
+
+test('getQbit: один клиент, пока не сменились настройки', async () => {
+  const { randomBytes } = await import('node:crypto');
+  process.env.DUBLYARR_SECRET_KEY ??= randomBytes(32).toString('base64');
+  const { testDb } = await import('./helpers');
+  const { setSecretSetting } = await import('@/lib/settings');
+  const { getQbit } = await import('@/lib/qbit');
+  const db = testDb();
+  setSecretSetting(db, 'qbittorrent', { url: 'http://q', username: 'a', password: 'p' });
+  const a = getQbit(db);
+  expect(a).not.toBeNull();
+  expect(getQbit(db)).toBe(a);
+  setSecretSetting(db, 'qbittorrent', { url: 'http://q', username: 'a', password: 'p2' });
+  expect(getQbit(db)).not.toBe(a);
+});

@@ -18,6 +18,8 @@ test.each([
   ['Show S01 - 12 [WEB-DL 720p].mkv', 1, 12],
   ['Season 1/Episode 04.mkv', 1, 4],
   ['03.mkv', 1, 3],
+  ['Show - 2023 - 03 [1080p].mkv', 1, 3],
+  ['Show - 2023.mkv', 1, null],
   ['Show/03.mkv', 1, 3],
 ])('%s', (name, season, n) => expect(episodeFromFilename(name, season)).toBe(n));
 

@@ -147,7 +147,13 @@ export function createQbit(cfg: QbitConfig, opts: { fetchImpl?: typeof fetch } =
   };
 }
 
+// Один клиент (и одна сессия qBittorrent) на настройки; повторный вход — только при 403.
+let cached: { key: string; qbit: Qbit } | null = null;
+
 export function getQbit(db: Db): Qbit | null {
   const cfg = tryGetSecretSetting<QbitConfig>(db, 'qbittorrent');
-  return cfg?.url ? createQbit(cfg) : null;
+  if (!cfg?.url) return null;
+  const key = JSON.stringify([cfg.url, cfg.username, cfg.password]);
+  if (cached?.key !== key) cached = { key, qbit: createQbit(cfg) };
+  return cached.qbit;
 }

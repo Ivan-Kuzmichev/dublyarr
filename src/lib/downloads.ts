@@ -83,7 +83,12 @@ export async function startRelease(
   const savePath = `${deps.paths.qbitDownloads.replace(/\/+$/, '')}/${CATEGORY}`;
   await deps.qbit.ensureCategory(CATEGORY, savePath);
   const magnetPack = !Buffer.isBuffer(torrent) && kind === 'pack';
-  await deps.qbit.add(torrent, { savePath, category: CATEGORY, paused: !magnetPack, stopOnMetadata: magnetPack });
+  try {
+    await deps.qbit.add(torrent, { savePath, category: CATEGORY, paused: !magnetPack, stopOnMetadata: magnetPack });
+  } catch (e) {
+    // другой вызов (ручное «Скачать» и воркер одновременно) уже добавил этот торрент
+    if (!(await deps.qbit.list(CATEGORY)).some((t) => t.hash === meta.infohash)) throw e;
+  }
   let files: DownloadFile[] = meta.files.map((f) => ({ index: f.index, name: f.path, size: f.size, priority: 1 }));
   if (!files.length) files = (await deps.qbit.files(meta.infohash)).map((f) => ({ index: f.index, name: f.name, size: f.size, priority: f.priority }));
   const row = {
@@ -105,7 +110,16 @@ export async function startRelease(
     completedAt: null,
     importedAt: null,
   };
-  const d = existing ? update(db, existing.id, row) : db.insert(downloads).values(row).returning().get();
+  let d: Download;
+  try {
+    d = existing ? update(db, existing.id, row) : db.insert(downloads).values(row).returning().get();
+  } catch (e) {
+    // запись с этим хэшем успел создать другой вызов — дополняем её
+    const other = e instanceof Error && /UNIQUE/.test(e.message) ? db.select().from(downloads).where(eq(downloads.hash, meta.infohash)).get() : undefined;
+    if (!other) throw e;
+    await enableFiles(db, deps, other.id, want);
+    return db.select().from(downloads).where(eq(downloads.id, other.id)).get()!;
+  }
   // magnet-пак без метаданных: файлы выберет синхронизация, когда qBittorrent их получит
   if (kind === 'pack' && !files.length) return d;
   return selectAndStart(db, deps.qbit, d, files);
