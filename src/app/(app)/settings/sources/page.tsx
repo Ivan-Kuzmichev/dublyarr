@@ -27,12 +27,12 @@ export default function SourcesSettingsPage() {
     <>
       <SectionHeader
         title="Источники поиска"
-        description="Любой Torznab: Jackett или Prowlarr. Опрашиваются параллельно, одинаковые раздачи склеиваются."
+        description="Jackett, JacRed или любой Torznab (Prowlarr). Опрашиваются параллельно, одинаковые раздачи склеиваются."
         action={<SourceEditor className={buttonClass('primary', 'md')}>+ Добавить источник</SourceEditor>}
       />
       {cards.length === 0 ? (
         <Card>
-          <p className="m-0 text-[15px] text-muted">Источников пока нет — добавьте Jackett или Prowlarr.</p>
+          <p className="m-0 text-[15px] text-muted">Источников пока нет — добавьте Jackett или JacRed.</p>
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -44,7 +44,7 @@ export default function SourcesSettingsPage() {
                   <span className={`h-2 w-2 rounded-full ${c.lastError ? 'bg-danger' : c.lastOkAt ? 'bg-progress' : 'bg-dim'}`} />
                   <span className="grow text-base font-semibold">{c.name}</span>
                   <SourceEditor
-                    source={{ id: s.id, name: s.name, url: s.url, timeoutMs: s.timeoutMs }}
+                    source={{ id: s.id, name: s.name, url: s.url, timeoutMs: s.timeoutMs, kind: s.kind }}
                     className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-lg border border-line text-muted hover:text-text"
                   >
                     <Icon d={SLIDERS} size={14} strokeWidth={2} />

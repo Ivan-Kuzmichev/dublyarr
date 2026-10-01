@@ -6,7 +6,7 @@ test('источник → ручной поиск → вердикты → на
 
   await page.goto('/settings/sources');
   await page.getByRole('button', { name: '+ Добавить источник' }).click();
-  await page.getByLabel('Адрес Torznab').fill('http://127.0.0.1:3198/api/v2.0/indexers/all/results/torznab/');
+  await page.getByLabel('Адрес Jackett').fill('http://127.0.0.1:3198');
   await page.getByLabel('API-ключ').fill('bad');
   await page.getByRole('button', { name: 'Проверить и сохранить' }).click();
   await expect(page.getByText('Неверный API-ключ')).toBeVisible();

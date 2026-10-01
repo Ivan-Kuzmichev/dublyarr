@@ -6,6 +6,8 @@ import { listStudios } from './studios';
 import { sourcesForSearch } from './sources';
 import { ensureTracker, markSourceTrackers } from './trackers';
 import { torznabSearch, TorznabError, type TorznabItem } from './torznab';
+import { jacredSearch } from './jacred';
+import { endpointFor } from './source-kinds';
 import { parseRelease } from './parse/dubs';
 import { normalizeTitle } from './parse/normalize';
 import { absoluteCandidates, matchRelease, resolveAbsolute, toTitleInfo } from './match';
@@ -44,6 +46,13 @@ export function queriesFor(t: Pick<Title, 'kind' | 'nameRu' | 'nameOriginal' | '
 }
 
 type Found = { sourceId: number; item: TorznabItem };
+export type SearchSource = ReturnType<typeof sourcesForSearch>[number];
+
+/** Один запрос к источнику: Jackett и Torznab — Torznab (у Jackett путь дописывается), JacRed — его JSON. */
+export function searchSource(src: SearchSource, q: string, kind: Title['kind'], fetchImpl?: typeof fetch): Promise<TorznabItem[]> {
+  if (src.kind === 'jacred') return jacredSearch(src, q, kind, { fetchImpl });
+  return torznabSearch({ ...src, url: endpointFor(src) }, q, kind === 'movie' ? MOVIE_CATEGORIES : CATEGORIES, fetchImpl);
+}
 
 /** Поиск раздач сериала во всех источниках: параллельно, со склейкой дублей и основным/запасным источником трекера. */
 export async function searchTitle(db: Db, titleId: number, opts: SearchOptions = {}): Promise<{ releases: Release[]; sources: SourceStatus[] }> {
@@ -57,7 +66,7 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
     srcs.map(async (src) => {
       const started = Date.now();
       try {
-        const lists = await Promise.all(queries.map((q) => torznabSearch(src, q, title.kind === 'movie' ? MOVIE_CATEGORIES : CATEGORIES, opts.fetchImpl)));
+        const lists = await Promise.all(queries.map((q) => searchSource(src, q, title.kind, opts.fetchImpl)));
         const items = lists.flat();
         const distinct = new Set(items.map((i) => i.infohash ?? `${i.indexerId}|${i.title}|${i.size}`)).size;
         log.debug({ source: src.name, queries, found: distinct, ms: Date.now() - started }, 'source search');

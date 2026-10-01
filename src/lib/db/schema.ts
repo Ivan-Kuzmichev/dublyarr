@@ -71,6 +71,7 @@ export const sources = sqliteTable('sources', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   name: text('name').notNull(),
   url: text('url').notNull(),
+  kind: text('kind', { enum: ['jackett', 'jacred', 'torznab'] }).notNull().default('torznab'), // jackett — адрес без пути
   apiKeyEnc: text('api_key_enc'),
   enabled: integer('enabled', { mode: 'boolean' }).notNull().default(true),
   timeoutMs: integer('timeout_ms').notNull().default(15000),

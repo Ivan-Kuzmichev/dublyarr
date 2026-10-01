@@ -1,0 +1,2 @@
+ALTER TABLE `sources` ADD `kind` text DEFAULT 'torznab' NOT NULL;--> statement-breakpoint
+UPDATE `sources` SET `kind` = 'jackett', `url` = substr(`url`, 1, instr(`url`, '/api/v2.0/indexers/all/results/torznab') - 1) WHERE instr(`url`, '/api/v2.0/indexers/all/results/torznab') > 1;

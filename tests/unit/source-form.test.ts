@@ -18,6 +18,7 @@ test('разбор формы источника', () => {
     url: 'http://j:9117/api/v2.0/indexers/all/results/torznab/',
     apiKey: 'K',
     timeoutMs: 20_000,
+    kind: 'jackett',
   });
   expect(parseSourceForm(f({ name: '', url: 'http://j', apiKey: '', timeout: '15' }))).toMatchObject({ name: 'Jackett' });
   expect(parseSourceForm(f({ name: 'J', url: 'ftp://j', apiKey: '', timeout: '15' }))).toEqual({ error: 'Адрес — http(s)://…' });
@@ -36,4 +37,14 @@ test('правка источника: ключ шифруется, пустой
 
 test('адрес с неверным портом не принимается', () => {
   expect(parseSourceForm(f({ name: 'J', url: 'http://host:99999/api', apiKey: '', timeout: '15' }))).toEqual({ error: 'Адрес — http(s)://…' });
+});
+
+test('тип источника: jackett по умолчанию, jacred без ключа, неизвестный — ошибка', () => {
+  const d = f({ url: 'http://j:9117', timeout: '15' });
+  expect(parseSourceForm(d)).toMatchObject({ kind: 'jackett', url: 'http://j:9117', name: 'Jackett' });
+  d.set('kind', 'jacred');
+  d.set('url', 'https://jac.red');
+  expect(parseSourceForm(d)).toMatchObject({ kind: 'jacred', name: 'JacRed' });
+  d.set('kind', 'x');
+  expect(parseSourceForm(d)).toEqual({ error: 'Неизвестный тип источника' });
 });

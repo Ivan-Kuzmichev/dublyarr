@@ -114,3 +114,22 @@ test('раздача сначала без infohash, потом с ним — о
   expect(rows).toHaveLength(4);
   expect(rows.find((x) => x.trackerName === 'LostFilm.tv')).toMatchObject({ infohash: 'ffff0000ffff0000ffff0000ffff0000ffff0000', firstSeenAt: 100 });
 });
+
+test('JacRed-источник участвует в поиске; его трекер создаётся на лету', async () => {
+  const { db, t } = await setup();
+  addSource(db, { name: 'JacRed', url: 'http://jr', apiKey: '', kind: 'jacred' });
+  const body = JSON.stringify([
+    { tracker: 'kinozal', url: 'https://kinozal.tv/details.php?id=5', title: 'Игра престолов / Game of Thrones / Сезон: 1 / Серии: 1-10 из 10 [2011, WEB-DL 1080p] MVO (LostFilm)', size: 20e9, sid: 9, pir: 1, magnet: 'magnet:?xt=urn:btih:' + 'b'.repeat(40), types: ['serial'] },
+  ]);
+  const r = await searchTitle(db, t.id, { fetchImpl: router({ jr: () => new Response(body) }), now: 100 });
+  expect(r.sources).toEqual([expect.objectContaining({ name: 'JacRed', ok: true, found: 1 })]);
+  expect(r.releases[0]).toMatchObject({ trackerName: 'kinozal', infohash: 'b'.repeat(40), detailsUrl: 'https://kinozal.tv/details.php?id=5' });
+});
+
+test('Jackett по адресу без пути: запрос идёт по пути Torznab Jackett', async () => {
+  const { db, t } = await setup();
+  addSource(db, { name: 'J', url: 'http://jk:9117', apiKey: 'K', kind: 'jackett' });
+  const seen: string[] = [];
+  await searchTitle(db, t.id, { fetchImpl: router({ 'jk:9117': (u) => (seen.push(u.pathname), new Response(xml)) }), now: 100 });
+  expect(seen[0]).toBe('/api/v2.0/indexers/all/results/torznab/api');
+});
