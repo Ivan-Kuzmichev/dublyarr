@@ -1,5 +1,6 @@
 'use server';
 
+import { confirmLayaAlias } from '@/lib/laya/review';
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
 import { requireSession } from '@/lib/auth/current';
@@ -54,4 +55,14 @@ export async function saveDefaultProfileAction(_prev: DialogState, form: FormDat
   if (!r.ok) return { error: r.error };
   saveDefaultProfile(db, kind, r.profile);
   return done();
+}
+
+/** «Верно» / «Нет» на вариант написания, который добавила Laya. */
+export async function confirmLayaAliasAction(form: FormData) {
+  await requireSession();
+  const id = Number(form.get('studioId'));
+  const alias = String(form.get('alias') ?? '');
+  if (!Number.isInteger(id) || !alias) return;
+  confirmLayaAlias(getDb(), id, alias, form.get('verdict') === 'ok');
+  revalidatePath('/settings/studios');
 }

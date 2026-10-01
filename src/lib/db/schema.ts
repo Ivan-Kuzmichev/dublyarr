@@ -183,6 +183,7 @@ export const studios = sqliteTable('studios', {
   aliases: json<string[]>('aliases').notNull().default([]),
   kind: text('kind', { enum: ['series', 'anime', 'both'] }).notNull(),
   trackers: json<string[]>('trackers').notNull().default([]),
+  layaAliases: json<string[]>('laya_aliases').notNull().default([]), // варианты написания, добавленные Laya и ещё не подтверждённые
   source: text('source', { enum: ['seed', 'manual', 'laya'] }).notNull(),
   confirmed: integer('confirmed', { mode: 'boolean' }).notNull().default(true),
   createdAt: ts('created_at').notNull(),
@@ -477,6 +478,7 @@ export const layaAnswers = sqliteTable(
     answer: json<string | boolean>('answer').notNull(),
     p: real('p').notNull(), // после адаптера: P(true) для «да/нет», уверенность выбора для «выбора»
     raw: real('raw').notNull(), // как ответила сама Laya
+    input: json<{ state: unknown; question: unknown; features: number[] }>('input'), // что спросили — для примера, если пользователь потом поправит
     at: ts('at').notNull(),
   },
   (t) => [uniqueIndex('laya_answers_key').on(t.task, t.key, t.version)],

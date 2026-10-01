@@ -15,7 +15,7 @@ import { encrypt } from './crypto/secretbox';
 import { recordSightings } from './sightings';
 import { checkSourcesDown } from './notify-events';
 import { log } from './log';
-import { applyMatchDecision, matchKey, reviewMatches } from './laya/review';
+import { applyMatchDecision, matchKey, reviewMatches, reviewStudios } from './laya/review';
 import { cachedDecision, SEARCH_BUDGET } from './laya/decide';
 import type { LayaClient } from './laya/client';
 
@@ -131,7 +131,8 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
   }
   // Laya: сомнительные совпадения (бюджет вопросов на поиск — CPU NAS)
   const budget = { left: SEARCH_BUDGET };
-  const reviewed = await reviewMatches(db, title, saved, { budget, client: opts.layaClient });
+  const matched = await reviewMatches(db, title, saved, { budget, client: opts.layaClient });
+  const reviewed = await reviewStudios(db, title, matched, { budget, client: opts.layaClient });
   if (title.kind === 'movie') noteDigital(db, title, reviewed, now);
   else recordSightings(db, titleId, reviewed);
   return { releases: reviewed, sources: statuses };

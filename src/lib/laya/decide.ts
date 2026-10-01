@@ -43,7 +43,7 @@ export async function decide<T extends string | boolean>(db: Db, task: LayaTask,
     p = applyAdapter(adapter, raw, input.features);
   }
   db.insert(layaAnswers)
-    .values({ task, key: input.key, version, answer, p, raw, at: o.now ?? Date.now() })
+    .values({ task, key: input.key, version, answer, p, raw, input: { state: input.state, question: input.question, features: input.features }, at: o.now ?? Date.now() })
     .onConflictDoUpdate({ target: [layaAnswers.task, layaAnswers.key, layaAnswers.version], set: { answer, p, raw } })
     .run();
   return { by: 'laya', answer: answer as T, p, raw, sure: sure(p, answer) };
