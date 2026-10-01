@@ -36,6 +36,7 @@ export default defineConfig({
         TMDB_BASE_URL: 'http://127.0.0.1:3199/3',
         TMDB_IMAGE_BASE_URL: 'http://127.0.0.1:3199/t/p',
         TELEGRAM_API_BASE: 'http://127.0.0.1:3196',
+        LAYA_STUB: '1', // предсказуемая Laya без модели (laya/serve.py)
       },
     },
   ],

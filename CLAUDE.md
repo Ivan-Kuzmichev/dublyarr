@@ -173,6 +173,19 @@ Self-hosted сервис для одного пользователя: подп�
 
 <!-- BEGIN:nextjs-agent-rules -->
 
+## Решения (фаза 4 — Laya)
+
+- laya-serve — `laya/serve.py` (venv `/opt/laya` в образе: `laya==0.3.22`, `torch==2.14.1+cpu`), модель `convaiinnovations/laya-multilingual` с закреплённой ревизией,
+  скачивается при первом запуске в `/data/laya/base`; PyTorch CPU fp32 (ONNX INT8 нет в пакете, `quantize_dynamic` портит ответы) — ~1,9 ГБ памяти.
+  `GET /health`, `POST /ask`; `LAYA_STUB=1` — без модели (e2e: финальная проверка «да», «тот ли сериал» — не уверена, студия — «новая»). Запуск — `src/entry/laya-child.ts`, замер — `dublyarr laya-bench`.
+- Node: клиент `src/lib/laya/client.ts` (таймаут 10 с, три подряд — пауза 10 мин), решения `decide.ts` (адаптер → порог, кэш `laya_answers`, бюджет 20 вопросов на поиск),
+  задачи `review.ts` (тот ли сериал, какая студия, нумерация аниме — внутри `searchTitle`), `final.ts` (до 3 лучших перед загрузкой), настройки `app_settings['laya']`.
+- Laya недоступна / задача выключена — поведение как без Laya (решают правила). Её решения применяются при переразборе раздач из кэша.
+- Примеры — `laya_examples` (`examples.ts`: «Это он»/«Не тот сериал», Telegram, «Назначить студию», «Верно/Нет» по вариантам от Laya, ручная загрузка отклонённой раздачи).
+- Дообучение — адаптер (логистическая регрессия поверх logit(p Laya) и признаков правил), `adapter.ts` + `versions.ts`: ночью при 30+ новых примерах (`laya.train`),
+  «Обучить сейчас» (`laya.train-now`), «не хуже» по log-loss на отложенных 20 % (id % 5), 3 версии + базовая, откат; несовместимая версия `laya`/модели — базовая и переобучение.
+- Экраны: «Настройки → AI» `/settings/ai`, «Дообучение» `/settings/ai/training`, варианты от Laya — карточка в словаре студий.
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.

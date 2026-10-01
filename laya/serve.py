@@ -25,15 +25,19 @@ ask_lock = threading.Lock()  # один вопрос за раз: CPU NAS и п�
 
 
 def stub_answers(st, questions):
-    text = json.dumps(st, ensure_ascii=False).lower()
+    """Предсказуемо и «безвредно» для сценариев без Laya: финальная проверка — уверенное «да»,
+    «тот ли сериал» — не уверена (вопрос остаётся пользователю), «какая студия» — «новая»."""
     out = {}
     for qid, q in questions.items():
         if q.get("type") == "choice":
             keys = list(q.get("criteria", {}).keys())
-            rest = (0.1 / (len(keys) - 1)) if len(keys) > 1 else 0
-            out[qid] = {"choice": keys[0], "probabilities": {k: (0.9 if i == 0 else rest) for i, k in enumerate(keys)}}
+            pick = "новая" if "новая" in keys else keys[0]
+            p = 0.9 if pick == "новая" else 0.5
+            rest = (1 - p) / (len(keys) - 1) if len(keys) > 1 else 0
+            out[qid] = {"choice": pick, "probabilities": {k: (p if k == pick else rest) for k in keys}}
         else:
-            out[qid] = {"noul": 0.9 if "yes" in text else 0.1}
+            final = "в озвучке" in q.get("instructions", "")
+            out[qid] = {"noul": 0.95 if final else 0.5}
     return out
 
 
