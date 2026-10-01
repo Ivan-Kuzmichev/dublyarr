@@ -238,3 +238,42 @@ export async function runCleanup(db: Db, qbit: Qbit, paths: Paths, s: CleanupSet
   else setSetting(db, 'cleanup.pending', { count: 0, size: 0 });
   return res;
 }
+
+/**
+ * Убрать торренты из клиента (без файлов) и удалить их файлы внутри {downloads}/dublyarr,
+ * кроме файлов, нужных другим торрентам в клиенте. Не получили список файлов — ничего не удаляем.
+ */
+export async function dropTorrents(db: Db, qbit: Qbit, paths: Paths, rows: Download[], note: string) {
+  const res = { torrents: 0, files: 0, freed: 0 };
+  const all = await qbit.list();
+  const dropping = new Set(rows.map((r) => r.hash));
+  const ours = norm(path.join(paths.downloads, CATEGORY));
+  const kept = new Set<string>();
+  const filesOf = new Map<string, string[]>();
+  for (const t of all) {
+    const save = localOf(paths, t.save_path, '.');
+    if (!dropping.has(t.hash) && t.category !== CATEGORY && !(save && (save === ours || save.startsWith(`${ours}/`)))) continue;
+    const fs = (await qbit.files(t.hash)).map((f) => localOf(paths, t.save_path, f.name)).filter((x): x is string => !!x);
+    if (dropping.has(t.hash)) filesOf.set(t.hash, fs);
+    else for (const f of fs) kept.add(f);
+  }
+  const savePath = `${(paths.qbitDownloads ?? paths.downloads).replace(/\/+$/, '')}/${CATEGORY}`;
+  for (const d of rows) {
+    const inClient = filesOf.has(d.hash);
+    const files = filesOf.get(d.hash) ?? (d.files ?? []).map((f) => localOf(paths, savePath, f.name)).filter((x): x is string => !!x);
+    if (inClient) {
+      await qbit.remove([d.hash]);
+      res.torrents++;
+    }
+    for (const f of files) {
+      if (kept.has(f)) continue;
+      const st = await stat(f).catch(() => null);
+      if (st && (await removeFile(paths, f))) {
+        res.files++;
+        res.freed += st.size;
+      }
+    }
+    db.update(downloads).set({ state: 'removed', note }).where(eq(downloads.id, d.id)).run();
+  }
+  return res;
+}
