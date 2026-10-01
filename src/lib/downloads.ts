@@ -1,12 +1,19 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { Db } from './db/client';
 import path from 'node:path';
-import { downloads, episodeFiles, oldCopies, releases, titles, wantedState, type Download, type DownloadFile, type EpisodeRef, type Release } from './db/schema';
+import { downloads, episodeFiles, episodes, oldCopies, releases, studios, subscriptions, titles, wantedState, type Download, type DownloadFile, type EpisodeRef, type Release } from './db/schema';
 import { DEFAULT_TEMPLATE, PathError, renderTemplate, toLocalPath } from './library-path';
 import { importFile } from './importer';
 import { access } from 'node:fs/promises';
 import { restoreOldCopy, settleOldCopy, stashOldCopy } from './old-copies';
 import { notifyGone, notifyImported, notifyStalled } from './notify-events';
+import { mkdir, rm, stat } from 'node:fs/promises';
+import { processEpisode, WrongEpisodeError, type ProcessResult } from './media/process';
+import { systemRunner, type Runner } from './media/runner';
+import { findExternal, getProcessing, describePlan, type External } from './media/tracks';
+import { hdrOf, resolutionOf } from './media/probe';
+import { normalizeStudio } from './studios-normalize';
+import { enqueue } from '../worker/jobs';
 
 const fileExists = (p: string) =>
   access(p).then(
@@ -15,7 +22,7 @@ const fileExists = (p: string) =>
   );
 import type { Qbit } from './qbit';
 import { parseTorrent, magnetHash, TorrentFileError } from './torrent-file';
-import { filesForEpisodes, filesForEpisodesStrict, otherSeasonInPath } from './episode-file';
+import { filesForEpisodes, filesForEpisodesStrict, isVideo, otherSeasonInPath } from './episode-file';
 import { decrypt } from './crypto/secretbox';
 import type { ActiveDownload } from './plan';
 import { log, redactUrl } from './log';
@@ -328,7 +335,7 @@ export type Paths = { qbitDownloads?: string; downloads: string; media: string; 
 const DAY = 86_400_000;
 
 /** Состояние загрузок из qBittorrent; завершённые — импорт нужных файлов в медиатеку. */
-export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; now?: number }) {
+export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; now?: number; runner?: Runner }) {
   const now = deps.now ?? Date.now();
   const res = { updated: 0, imported: 0, errors: 0 };
   const active = db.select().from(downloads).where(inArray(downloads.state, [...ACTIVE])).all();
@@ -377,12 +384,21 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
     res.updated++;
     if (!done) continue;
     try {
-      const got = await importDownload(db, d, t.save_path, qfiles, deps.paths, now);
+      const got = await importDownload(db, d, t.save_path, qfiles, deps.paths, now, deps.runner ?? systemRunner);
       notifyImported(db, update(db, d.id, { state: 'imported', importedAt: now, lastError: null, episodes: got }), got, now);
       res.imported++;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      update(db, d.id, { lastError: e instanceof PathError ? msg : `Ошибка импорта: ${msg}` });
+      if (e instanceof WrongEpisodeError) {
+        // не та серия: раздача отвергнута для этих серий (ошибка загрузки), торрент убран из клиента без файлов, поиск заново
+        const wrong = (e as WrongEpisodeError & { episodes?: EpisodeRef[] }).episodes ?? d.episodes;
+        update(db, d.id, { state: 'error', lastError: msg, episodes: wrong, processing: false });
+        await deps.qbit.remove([d.hash]).catch(() => undefined);
+        enqueue(db, 'subscriptions.search');
+        res.errors++;
+        continue;
+      }
+      update(db, d.id, { lastError: e instanceof PathError ? msg : `Ошибка импорта: ${msg}`, processing: false });
       log.warn({ download: d.id, err: msg }, 'import failed');
       res.errors++;
     }
@@ -390,7 +406,7 @@ export async function syncDownloads(db: Db, deps: { qbit: Qbit; paths: Paths; no
   return res;
 }
 
-async function importDownload(db: Db, d: Download, savePath: string, files: { index: number; name: string; size: number }[], paths: Paths, now: number): Promise<EpisodeRef[]> {
+async function importDownload(db: Db, d: Download, savePath: string, files: { index: number; name: string; size: number }[], paths: Paths, now: number, runner: Runner): Promise<EpisodeRef[]> {
   const title = db.select().from(titles).where(eq(titles.id, d.titleId)).get();
   if (!title) throw new Error('Сериал удалён');
   const map = filesForEpisodes(files, d.season, d.episodes.filter((e) => e.season === d.season).map((e) => e.number));
@@ -406,15 +422,53 @@ async function importDownload(db: Db, d: Download, savePath: string, files: { in
   }
   // каждая серия отдельно: сбой одной не мешает остальным, уже импортированные этой загрузкой не копируются заново
   let failure: unknown = null;
+  const wrong: EpisodeRef[] = [];
+  const ctx = processingContext(db, d, title, files, savePath, paths, runner);
+  update(db, d.id, { processing: true });
   for (const ep of found) {
     try {
-      await importEpisode(db, d, ep, title, savePath, files.find((f) => f.index === map.get(ep.number)![0])!, paths, now);
+      await importEpisode(db, d, ep, title, savePath, files.find((f) => f.index === map.get(ep.number)![0])!, paths, now, ctx);
     } catch (e) {
+      if (e instanceof WrongEpisodeError) wrong.push(ep);
       failure ??= e;
     }
   }
+  update(db, d.id, { processing: false });
+  if (wrong.length) throw Object.assign(new WrongEpisodeError((failure as Error).message), { episodes: wrong });
   if (failure) throw failure;
   return found;
+}
+
+type ProcessingContext = {
+  base: Omit<Parameters<typeof processEpisode>[0], 'src' | 'targetDir' | 'runtime' | 'external'>;
+  externalFor: (fileName: string, ep: EpisodeRef) => External[];
+};
+
+/** Что нужно для пересборки: настройки, нужная и запасные студии, язык оригинала, внешние дорожки раздачи. */
+function processingContext(db: Db, d: Download, title: typeof titles.$inferSelect, files: { name: string }[], savePath: string, paths: Paths, runner: Runner): ProcessingContext {
+  const settings = getProcessing(db);
+  const allStudios = db.select().from(studios).all();
+  const sub = db.select().from(subscriptions).where(eq(subscriptions.titleId, d.titleId)).get();
+  const dubs = sub?.profile.dubs ?? [];
+  const pos = d.dubPosition !== null ? dubs[d.dubPosition] : undefined;
+  const byLabel = allStudios.find((s) => d.studioLabel && [s.name, ...s.aliases].some((v) => normalizeStudio(v) === normalizeStudio(d.studioLabel!)));
+  const wanted = pos?.kind === 'studio' ? [pos.studioId] : byLabel ? [byLabel.id] : [];
+  const backups = dubs.flatMap((x, i) => (x.kind === 'studio' && i !== d.dubPosition ? [x.studioId] : []));
+  const local = (name: string) => toLocalPath(`${savePath.replace(/\/+$/, '')}/${name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
+  const videos = files.filter((f) => isVideo(f.name));
+  return {
+    base: { runner, settings, wanted, backups, originalLang: title.originalLanguage, studios: allStudios.map((s) => ({ id: s.id, name: s.name, aliases: s.aliases })) },
+    externalFor: (fileName, ep) =>
+      settings.external
+        ? findExternal(
+            files.map((f) => f.name),
+            fileName,
+            ep.season,
+            ep.number,
+            videos.length === 1,
+          ).map((e) => ({ ...e, path: local(e.path) }))
+        : [],
+  };
 }
 
 async function importEpisode(
@@ -426,13 +480,38 @@ async function importEpisode(
   file: { index: number; name: string; size: number },
   paths: Paths,
   now: number,
+  ctx: ProcessingContext,
 ) {
   const src = toLocalPath(`${savePath.replace(/\/+$/, '')}/${file.name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
+  const runtime = db.select({ r: episodes.runtime }).from(episodes).where(and(eq(episodes.titleId, d.titleId), eq(episodes.season, ep.season), eq(episodes.number, ep.number))).get()?.r ?? null;
+  await mkdir(paths.media, { recursive: true });
+  const proc = await processEpisode({ ...ctx.base, src, targetDir: paths.media, runtime, external: ctx.externalFor(file.name, ep) });
+  const quality = (proc.probe ? resolutionOf(proc.probe) : null) ?? d.resolution;
   const rel = renderTemplate(
     paths.template || DEFAULT_TEMPLATE,
-    { name: title.nameRu, original: title.nameOriginal, year: title.year, season: ep.season, episode: ep.number, studio: d.studioLabel ?? '', quality: d.resolution ? `${d.resolution}p` : '' },
-    path.extname(file.name),
+    { name: title.nameRu, original: title.nameOriginal, year: title.year, season: ep.season, episode: ep.number, studio: d.studioLabel ?? '', quality: quality ? `${quality}p` : '' },
+    proc.kind === 'remux' ? '.mkv' : path.extname(file.name),
   );
+  const source = proc.kind === 'remux' ? proc.tmp : src;
+  try {
+    await placeEpisode(db, d, ep, rel, source, file, paths, now, proc, quality);
+  } finally {
+    if (proc.kind === 'remux') await rm(proc.tmp, { force: true });
+  }
+}
+
+async function placeEpisode(
+  db: Db,
+  d: Download,
+  ep: EpisodeRef,
+  rel: string,
+  src: string,
+  file: { size: number },
+  paths: Paths,
+  now: number,
+  proc: ProcessResult,
+  quality: number | null,
+) {
   const own = db
     .select()
     .from(episodeFiles)
@@ -468,7 +547,24 @@ async function importEpisode(
       log.warn({ download: d.id, err: e instanceof Error ? e.message : String(e) }, 'old copy handling failed');
     }
   }
-  const row = { titleId: d.titleId, season: ep.season, number: ep.number, path: rel, size: file.size, downloadId: d.id, studioLabel: d.studioLabel, resolution: d.resolution, method: r.method, importedAt: now, dubPosition: d.dubPosition };
+  const size = proc.kind === 'remux' ? ((await stat(path.resolve(paths.media, rel)).catch(() => null))?.size ?? file.size) : file.size;
+  const row = {
+    titleId: d.titleId,
+    season: ep.season,
+    number: ep.number,
+    path: rel,
+    size,
+    downloadId: d.id,
+    studioLabel: d.studioLabel,
+    resolution: quality,
+    method: r.method,
+    importedAt: now,
+    dubPosition: d.dubPosition,
+    processed: proc.kind === 'remux',
+    hdr: proc.probe ? hdrOf(proc.probe) : false,
+    duration: proc.probe?.duration ? Math.round(proc.probe.duration) : null,
+    tracks: proc.kind === 'remux' ? describePlan(proc.probe, proc.plan, () => undefined) : null,
+  };
   db.insert(episodeFiles)
     .values(row)
     .onConflictDoUpdate({ target: [episodeFiles.titleId, episodeFiles.season, episodeFiles.number], set: row })

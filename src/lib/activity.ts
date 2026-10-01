@@ -58,6 +58,7 @@ function stateOf(d: Download, now: number): Pick<QueueRow, 'state' | 'tone'> {
     case 'stalled':
       return { state: `Нет сидов ${Math.round((now - (d.lastSeededAt ?? d.addedAt)) / HOUR)} ч · ${pct} %`, tone: 'danger' };
     case 'completed':
+      if (d.processing) return { state: 'Пересборка…', tone: 'progress' };
       return d.lastError ? { state: d.lastError, tone: 'danger' } : { state: 'Скачана, переношу в медиатеку', tone: 'progress' };
     case 'imported':
       return { state: 'В медиатеке', tone: 'ok' };

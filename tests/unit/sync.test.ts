@@ -1,14 +1,15 @@
 import { describe, expect, test } from 'vitest';
 import { setSetting } from '@/lib/settings';
 import { randomBytes } from 'node:crypto';
-import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync, readFileSync, rmSync, copyFileSync, readdirSync } from 'node:fs';
+import type { Runner } from '@/lib/media/runner';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { testDb } from './helpers';
 import { fakeQbit } from './fake-qbit';
 import { bencode } from '@/lib/torrent-file';
 import { startRelease, syncDownloads } from '@/lib/downloads';
-import { downloads, episodeFiles, notifications, oldCopies, releases, sources, titles, wantedState, type Release } from '@/lib/db/schema';
+import { downloads, episodeFiles, episodes, notifications, oldCopies, studios, subscriptions, releases, sources, titles, wantedState, type Release } from '@/lib/db/schema';
 import type { ParsedRelease } from '@/lib/parse/types';
 
 process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
@@ -272,5 +273,94 @@ describe('уведомления о загрузках', () => {
     fq.torrents.clear();
     await syncDownloads(db, { qbit: fq.qbit, paths, now: 27 * HOUR });
     expect(texts(db)).toEqual(['⏳ Застряла: Игра престолов · S01E01 — нет сидов больше суток', '⚠️ Раздача пропала из qBittorrent: Игра престолов · S01E01']);
+  });
+});
+
+describe('пересборка при импорте', () => {
+  const probeJson = (o: { durationMin?: number; extraAudio?: boolean } = {}) => ({
+    streams: [
+      { index: 0, codec_name: 'h264', codec_type: 'video', width: 1920, height: 1080, color_transfer: 'smpte2084', disposition: { default: 1 }, tags: {} },
+      { index: 1, codec_name: 'aac', codec_type: 'audio', channels: 2, disposition: { default: 1 }, tags: { language: 'eng', title: 'Original' } },
+      ...(o.extraAudio === false ? [] : [{ index: 2, codec_name: 'ac3', codec_type: 'audio', channels: 6, disposition: { default: 0 }, tags: { language: 'rus', title: 'LostFilm' } }]),
+    ],
+    format: { format_name: 'matroska,webm', duration: String((o.durationMin ?? 50) * 60) },
+  });
+  function fakeRunner(o: { json?: unknown; code?: number; avail?: boolean } = {}) {
+    const calls: string[][] = [];
+    const runner: Runner = {
+      available: async () => ({ ffprobe: o.avail !== false, mkvmerge: o.avail !== false }),
+      probe: async () => o.json ?? probeJson(),
+      async mkvmerge(args) {
+        calls.push(args);
+        if ((o.code ?? 0) >= 2) return { code: 2, output: 'Error: нет места на диске' };
+        writeFileSync(args[1], 'пересобрано'); // «сборка» — новый файл по пути после -o
+        void copyFileSync;
+        return { code: 0, output: '' };
+      },
+    };
+    return { runner, calls };
+  }
+  const start = async (s: ReturnType<typeof setup>) => {
+    const studio = s.db.insert(studios).values({ name: 'LostFilm', kind: 'both', source: 'manual', createdAt: 1 }).returning().get();
+    s.db.insert(subscriptions).values({ titleId: s.t.id, profile: { dubs: [{ kind: 'studio', studioId: studio.id, waitDays: 0 }], quality: { target: 1080, allowLower: true, preferHdr: false, maxSizeGb: null }, scope: { mode: 'all' }, wholeSeasonAfterFinale: false, replaceWithHigher: true, autoNextSeason: true }, subscribedAt: 1, updatedAt: 1 }).run();
+    s.db.insert(episodes).values({ titleId: s.t.id, season: 1, number: 1, name: 'E1', airDate: '2011-04-17', runtime: 55 }).run();
+    const r = s.mk('GoT S01E01', { pack: false });
+    s.files.set(r.id, torrent('Game.of.Thrones.S01E01.mkv', null));
+    const d = await startRelease(s.db, s.deps, r, [{ season: 1, number: 1 }], 'episode', 'LostFilm', { dubPosition: 0 });
+    s.finish(d.hash);
+    return d;
+  };
+  const rel = 'Игра престолов (2011)/Season 01/Игра престолов S01E01 [LostFilm 1080p].mkv';
+
+  test('пересборка: в медиатеке новый файл, источник не тронут, сведения о файле', async () => {
+    const s = setup();
+    await start(s);
+    const { runner, calls } = fakeRunner();
+    await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: HOUR, runner });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toEqual(expect.arrayContaining(['--audio-tracks', '2,1']));
+    expect(readFileSync(path.join(s.media, rel), 'utf8')).toBe('пересобрано');
+    expect(readFileSync(path.join(s.paths.downloads, 'dublyarr', 'Game.of.Thrones.S01E01.mkv'), 'utf8')).toBe('video');
+    expect(s.db.select().from(episodeFiles).get()).toMatchObject({ path: rel, processed: true, hdr: true, resolution: 1080, duration: 3000 });
+    expect(s.db.select().from(episodeFiles).get()!.tracks!.after.map((t) => t.name)).toEqual(['H264 1080p HDR', 'LostFilm 5.1', 'Original 2.0']);
+    expect(readdirSync(path.dirname(path.join(s.media, rel))).filter((f) => f.includes('.dy-'))).toEqual([]);
+  });
+
+  test('менять нечего — жёсткая ссылка без пересборки', async () => {
+    const s = setup();
+    await start(s);
+    const { runner, calls } = fakeRunner({ json: probeJson({ extraAudio: false }) }); // нужной озвучки нет — аудио не трогаем, субтитров нет
+    await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: HOUR, runner });
+    expect(calls).toEqual([]);
+    expect(s.db.select().from(episodeFiles).get()).toMatchObject({ processed: false, method: 'hardlink' });
+  });
+
+  test('mkvmerge упал — временного файла нет, ошибка в загрузке', async () => {
+    const s = setup();
+    await start(s);
+    const { runner } = fakeRunner({ code: 2 });
+    await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: HOUR, runner });
+    expect(s.db.select().from(downloads).get()!.lastError).toMatch(/mkvmerge.*нет места/);
+    expect(s.db.select().from(episodeFiles).all()).toEqual([]);
+    const dir = path.join(s.media, 'Игра престолов (2011)', 'Season 01');
+    expect(existsSync(dir) ? readdirSync(dir) : []).toEqual([]);
+  });
+
+  test('не та серия — не импортируется, загрузка с ошибкой, торрент убран', async () => {
+    const s = setup();
+    const d = await start(s);
+    const { runner } = fakeRunner({ json: probeJson({ durationMin: 130 }) });
+    await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: HOUR, runner });
+    expect(s.db.select().from(downloads).get()).toMatchObject({ state: 'error', lastError: 'Не та серия: 2 ч 10 мин вместо ~55 мин' });
+    expect(s.fq.torrents.has(d.hash)).toBe(false);
+    expect(s.db.select().from(episodeFiles).all()).toEqual([]);
+  });
+
+  test('программ нет — как раньше', async () => {
+    const s = setup();
+    await start(s);
+    const { runner } = fakeRunner({ avail: false });
+    await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: HOUR, runner });
+    expect(s.db.select().from(episodeFiles).get()).toMatchObject({ processed: false, path: rel.replace('.mkv', '.mkv') });
   });
 });

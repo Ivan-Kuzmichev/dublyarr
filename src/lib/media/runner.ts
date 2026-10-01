@@ -1,0 +1,36 @@
+import { execFile } from 'node:child_process';
+
+// Запуск ffprobe и mkvmerge. В тестах подменяется.
+
+export type Runner = {
+  available(): Promise<{ ffprobe: boolean; mkvmerge: boolean }>;
+  probe(file: string): Promise<unknown>;
+  mkvmerge(args: string[]): Promise<{ code: number; output: string }>;
+};
+
+const run = (cmd: string, args: string[], timeout: number) =>
+  new Promise<{ code: number; stdout: string; stderr: string }>((resolve) => {
+    execFile(cmd, args, { timeout, maxBuffer: 32 * 1024 * 1024 }, (err, stdout, stderr) => {
+      const code = err ? (typeof (err as NodeJS.ErrnoException & { code?: unknown }).code === 'number' ? Number((err as { code: number }).code) : -1) : 0;
+      resolve({ code, stdout: String(stdout), stderr: String(stderr) });
+    });
+  });
+
+let cached: Promise<{ ffprobe: boolean; mkvmerge: boolean }> | null = null;
+
+export const systemRunner: Runner = {
+  available() {
+    cached ??= Promise.all([run('ffprobe', ['-version'], 10_000), run('mkvmerge', ['--version'], 10_000)]).then(([a, b]) => ({ ffprobe: a.code === 0, mkvmerge: b.code === 0 }));
+    return cached;
+  },
+  async probe(file) {
+    const r = await run('ffprobe', ['-v', 'error', '-print_format', 'json', '-show_streams', '-show_format', file], 120_000);
+    if (r.code !== 0) throw new Error('Файл не читается');
+    return JSON.parse(r.stdout);
+  },
+  async mkvmerge(args) {
+    // mkvmerge: 0 — успех, 1 — предупреждения, 2 — ошибка
+    const r = await run('mkvmerge', args, 30 * 60_000);
+    return { code: r.code < 0 ? 2 : r.code, output: `${r.stdout}\n${r.stderr}`.trim() };
+  },
+};

@@ -67,3 +67,10 @@ test('кнопки управления проверяют состояние и
   expect(db.select().from(downloads).where(eq(downloads.id, dl.id)).get()!.state).toBe('paused');
   expect(await controlDownload(db, fq.qbit, 999, 'pause')).toEqual({ error: 'Загрузка не найдена' });
 });
+
+test('идёт пересборка — «Пересборка…»', () => {
+  const db = testDb();
+  const t = db.insert(titles).values({ tmdbId: 7, kind: 'series', nameRu: 'Эль', nameOriginal: 'Elle', originalLanguage: 'en', status: 'returning', createdAt: 1, refreshedAt: 1 }).returning().get();
+  db.insert(downloads).values({ hash: 'p', titleId: t.id, season: 1, kind: 'episode', episodes: [{ season: 1, number: 1 }], state: 'completed', processing: true, progress: 1, name: 'x', size: 1, addedAt: NOW }).run();
+  expect(activityQueue(db, NOW)[0].state).toBe('Пересборка…');
+});
