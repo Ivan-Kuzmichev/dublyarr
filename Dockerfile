@@ -17,8 +17,13 @@ RUN pnpm build && pnpm prune --prod
 
 FROM --platform=linux/amd64 node:24-bookworm-slim AS runtime
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends python3 mkvtoolnix ffmpeg tini ca-certificates \
+  && apt-get install -y --no-install-recommends python3 python3-venv mkvtoolnix ffmpeg tini ca-certificates \
   && rm -rf /var/lib/apt/lists/*
+# Laya: PyTorch только для CPU (без CUDA), версия пакета закреплена; модель скачивается при первом запуске в /data/laya
+RUN python3 -m venv /opt/laya \
+  && /opt/laya/bin/pip install --no-cache-dir -U pip \
+  && /opt/laya/bin/pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple torch==2.14.1 \
+  && /opt/laya/bin/pip install --no-cache-dir laya==0.3.22
 WORKDIR /app
 ENV NODE_ENV=production DATA_DIR=/data PORT=3000 LAYA_PORT=8765 NEXT_TELEMETRY_DISABLED=1
 COPY --from=build /app/package.json ./

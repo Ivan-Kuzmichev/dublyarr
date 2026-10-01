@@ -2,11 +2,14 @@ import readline from 'node:readline';
 import { Writable } from 'node:stream';
 import { getDb } from '../lib/db/client';
 import { resetPassword } from './reset-password';
+import { runBench } from './laya-bench';
+import { loadConfig } from '../lib/config';
 
 const HELP = `Dublyarr CLI
 
   dublyarr reset-password [--disable-2fa]   задать новый пароль (все сеансы завершатся);
                                             --disable-2fa — ещё и выключить код из приложения
+  dublyarr laya-bench                       замерить скорость Laya на этом железе
   dublyarr help                             эта справка
 `;
 
@@ -48,6 +51,16 @@ function prompter() {
 
 async function main(argv: string[]) {
   const [cmd, ...rest] = argv;
+  if (cmd === 'laya-bench') {
+    try {
+      const r = await runBench(getDb(), { port: loadConfig().layaPort });
+      console.log(`Laya (${r.runtime}): в среднем ${r.mean} мс, p95 ${r.p95} мс на вопрос`);
+      return 0;
+    } catch (e) {
+      console.error(e instanceof Error ? e.message : String(e));
+      return 1;
+    }
+  }
   if (cmd !== 'reset-password') {
     process.stdout.write(HELP);
     return cmd === 'help' || cmd === undefined ? 0 : 1;

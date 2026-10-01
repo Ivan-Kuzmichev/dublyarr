@@ -5,6 +5,7 @@ import { loadConfig } from '../lib/config';
 import { openDb, migrateDb } from '../lib/db/client';
 import { loadMasterKey } from '../lib/crypto/key';
 import { startSupervisor } from './supervisor';
+import { layaChild } from './laya-child';
 
 const cfg = loadConfig();
 const keyFile = path.join(cfg.dataDir, 'secret.key');
@@ -16,13 +17,14 @@ if (!cfg.secretKeyEnv && !hadKeyFile) {
 
 const db = openDb(cfg.dbPath);
 migrateDb(db);
+const laya = layaChild(cfg, db);
 db.$client.close();
 
 const sup = startSupervisor({
   children: [
     { name: 'web', command: process.execPath, args: ['node_modules/next/dist/bin/next', 'start', '-p', String(cfg.port), '-H', '0.0.0.0'] },
     { name: 'worker', command: process.execPath, args: ['dist/worker.cjs'] },
-    { name: 'laya', command: 'python3', args: ['laya/serve.py', '--port', String(cfg.layaPort)] },
+    laya,
   ],
 });
 
