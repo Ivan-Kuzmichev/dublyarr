@@ -25,7 +25,9 @@ RUN python3 -m venv /opt/laya \
   && /opt/laya/bin/pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu --extra-index-url https://pypi.org/simple torch==2.14.1 \
   && /opt/laya/bin/pip install --no-cache-dir laya==0.3.22
 WORKDIR /app
-ENV NODE_ENV=production DATA_DIR=/data PORT=3000 LAYA_PORT=8765 NEXT_TELEMETRY_DISABLED=1
+# версия образа (тег из CI: 2.0.0 / edge / sha-…)
+ARG VERSION=dev
+ENV NODE_ENV=production DATA_DIR=/data PORT=3000 LAYA_PORT=8765 NEXT_TELEMETRY_DISABLED=1 DUBLYARR_VERSION=$VERSION
 COPY --from=build /app/package.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next
