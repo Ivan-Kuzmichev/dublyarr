@@ -57,3 +57,8 @@ test('названия, год и основа', () => {
   expect(baseOf('Медведь (The Bear)S5E00-08 (HD 1080p WEBRip)')).toBe('медведь');
   expect(normalizeTitle('Frieren: Beyond Journey’s End — Ёжик')).toBe('frieren beyond journeys end ежик');
 });
+
+test.each([
+  ['Сериал / Show / Сезон: 2 / Серии: 1 из 8 [WEB-DL 1080p]', { seasons: [2], episodes: { from: 1, to: 1 }, totalInSeason: 8, pack: false }],
+  ['Сериал / Show / Сезон: 2 / Серия: 5 [WEB-DL 1080p]', { seasons: [2], episodes: { from: 5, to: 5 }, pack: false }],
+])('одна серия в русском формате: %s', (t, exp) => expect(parseEpisodes(t)).toMatchObject(exp));

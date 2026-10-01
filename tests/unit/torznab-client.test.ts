@@ -63,3 +63,11 @@ test('ошибки', async () => {
 test('пустой ответ — пустой список', async () => {
   expect(await torznabSearch(src, 'x', [5000], respond('<rss><channel><title>t</title></channel></rss>'))).toEqual([]);
 });
+
+test('ключ не попадает в текст ошибки', async () => {
+  const leak = (async (u: RequestInfo | URL) => {
+    throw new TypeError(`Failed to parse URL from ${String(u)}`);
+  }) as typeof fetch;
+  const err = await torznabSearch({ ...src, apiKey: 'TOPSECRET' }, 'x', [5000], leak).catch((e: Error) => e);
+  expect(String((err as Error).message)).not.toContain('TOPSECRET');
+});

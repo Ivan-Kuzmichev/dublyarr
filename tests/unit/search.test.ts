@@ -103,3 +103,14 @@ test('разбор и совпадение сохраняются', async () => 
   expect(lf.parsed.dubs[0]).toMatchObject({ by: 'tracker' });
   expect(lf.match.level).toBe('match');
 });
+
+test('раздача сначала без infohash, потом с ним — обновляется, а не падает', async () => {
+  const { db, t } = await setup();
+  addSource(db, { name: 'A', url: 'http://a/api', apiKey: 'k' });
+  const noHash = xml.replace(/<torznab:attr name="infohash" value="[^"]+" \/>/g, '');
+  await searchTitle(db, t.id, { fetchImpl: router({ a: () => new Response(noHash) }), now: 100 });
+  await expect(searchTitle(db, t.id, { fetchImpl: router({ a: ok }), now: 200 })).resolves.toBeDefined();
+  const rows = db.select().from(releases).all();
+  expect(rows).toHaveLength(4);
+  expect(rows.find((x) => x.trackerName === 'LostFilm.tv')).toMatchObject({ infohash: 'ffff0000ffff0000ffff0000ffff0000ffff0000', firstSeenAt: 100 });
+});

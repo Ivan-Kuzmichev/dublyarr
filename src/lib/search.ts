@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm';
+import { and, eq, or } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { releases, titles, trackers, type Release, type Title } from './db/schema';
 import { listSeasons } from './catalog';
@@ -111,24 +111,7 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
       parsed,
       match,
     };
-    const existing = db
-      .select()
-      .from(releases)
-      .where(
-        it.infohash
-          ? and(eq(releases.titleId, title.id), eq(releases.infohash, it.infohash))
-          : and(eq(releases.titleId, title.id), eq(releases.trackerName, k.trackerName), eq(releases.title, it.title), eq(releases.size, it.size)),
-      )
-      .get();
-    saved.push(
-      existing
-        ? db.update(releases).set(fields).where(eq(releases.id, existing.id)).returning().get()
-        : db
-            .insert(releases)
-            .values({ ...fields, titleId: title.id, firstSeenAt: now })
-            .returning()
-            .get(),
-    );
+    saved.push(upsertRelease(db, title.id, fields, now));
   }
   return { releases: saved, sources: statuses };
 }
@@ -161,4 +144,30 @@ export function reparseReleases(db: Db, titleId: number) {
       db.update(releases).set(res).where(eq(releases.id, r.id)).run();
     }
   });
+}
+
+type ReleaseFields = Omit<typeof releases.$inferInsert, 'id' | 'titleId' | 'firstSeenAt'>;
+
+/** Найти раздачу по infohash или по трекеру+заголовку+размеру (у неё мог не быть хэша раньше). */
+function findRelease(db: Db, titleId: number, f: ReleaseFields) {
+  const byKey = and(eq(releases.trackerName, f.trackerName), eq(releases.title, f.title), eq(releases.size, f.size));
+  return db
+    .select()
+    .from(releases)
+    .where(and(eq(releases.titleId, titleId), f.infohash ? or(eq(releases.infohash, f.infohash), byKey) : byKey))
+    .get();
+}
+
+function upsertRelease(db: Db, titleId: number, f: ReleaseFields, now: number): Release {
+  for (let attempt = 0; ; attempt++) {
+    const existing = findRelease(db, titleId, f);
+    if (existing) return db.update(releases).set(f).where(eq(releases.id, existing.id)).returning().get();
+    try {
+      return db.insert(releases).values({ ...f, titleId, firstSeenAt: now }).returning().get();
+    } catch (e) {
+      // другой процесс (воркер) успел вставить ту же раздачу — обновляем её
+      if (attempt === 0 && e instanceof Error && /UNIQUE/.test(e.message)) continue;
+      throw e;
+    }
+  }
 }

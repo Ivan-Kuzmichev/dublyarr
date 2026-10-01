@@ -49,6 +49,9 @@ const num = (v: unknown): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
+/** Ключ источника не должен попасть в сообщения об ошибках, логи и статус трекеров. */
+const hideKey = (s: string) => s.replace(/(apikey|api_key|jackett_apikey)=[^&\s]+/gi, '$1=***');
+
 export function torznabUrl(base: string, params: Record<string, string>): string {
   return `${base}${base.includes('?') ? '&' : '?'}${new URLSearchParams(params).toString()}`;
 }
@@ -61,10 +64,15 @@ async function request(src: TorznabSource, params: Record<string, string>, fetch
   } catch (e) {
     if (e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError'))
       throw new TorznabError(`Нет ответа за ${String(src.timeoutMs / 1000).replace('.', ',')} с`, 'timeout');
-    throw new TorznabError(`Источник не отвечает: ${e instanceof Error ? e.message : String(e)}`, 'network');
+    throw new TorznabError(`Источник не отвечает: ${hideKey(e instanceof Error ? e.message : String(e))}`, 'network');
   }
   if (!res.ok) throw new TorznabError(`HTTP ${res.status}`, 'http');
-  const body = await res.text();
+  let body: string;
+  try {
+    body = await res.text();
+  } catch {
+    throw new TorznabError(`Нет ответа за ${String(src.timeoutMs / 1000).replace('.', ',')} с`, 'timeout');
+  }
   let doc: Node;
   try {
     doc = parser.parse(body) as Node;

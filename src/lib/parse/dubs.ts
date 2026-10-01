@@ -22,8 +22,8 @@ const LANGUAGE = /^(?:ukr|укр|украинский|eng|english|англ|rus|�
 const STOP = 'Sub|Original|Оригинал|WEB|WEBDL|WEB-DL|WEBRip|HEVC|BDRip|Rus|RUSSIAN|Eng|AVC|HDR|DV|x264|x265|DUB|Dub|MVO|DVO|AVO|VO';
 // «6 x MVO (A, B)», «DUB (X)», «MVO Paravozik», «DUB»
 const GROUP = new RegExp(
-  `(?:\\d+\\s*x\\s*)?\\b(DUB|Dub|MVO|DVO|AVO|VO)\\b(?:\\s*\\(([^)]*)\\)|\\s+(?!(?:${STOP})\\b)([A-Za-zА-Яа-яЁё][\\w.-]+))?`,
-  'g',
+  `(?:\\d+\\s*x\\s*)?\\b(DUB|Dub|MVO|DVO|AVO|VO)\\b(?:\\s*\\(([^)]*)\\)|\\s+(?!(?:${STOP})(?![\\p{L}\\p{N}]))(\\p{L}[\\p{L}\\p{N}_.-]+))?`,
+  'gu',
 );
 
 const trackerMatches = (s: StudioRef, t: TrackerRef) => {

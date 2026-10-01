@@ -101,3 +101,10 @@ test('parseRelease собирает всё вместе', () => {
     dubs: [{ kind: 'mvo', studioId: 1, by: 'tracker' }],
   });
 });
+
+test('студия кириллицей без скобок', () => {
+  const r = parseDubs('Show S01E01 [WEB-DL 1080p] MVO Кураж-Бамбей', [], tracker('Kinozal'), find, studios);
+  expect(r.dubs.map((d) => nameOf(d.studioId))).toEqual(['Кураж-Бамбей']);
+  const u = parseDubs('Show S01E01 MVO Паравозик', [], tracker('Kinozal'), find, studios);
+  expect(u.dubs).toEqual([{ kind: 'mvo', studioId: null, label: 'Паравозик', by: 'none' }]);
+});

@@ -33,3 +33,7 @@ test('правка источника: ключ шифруется, пустой
   expect(sourcesForSearch(db)[0].apiKey).toBe('NEW');
   expect(db.select().from(sources).get()!.apiKeyEnc).not.toContain('NEW');
 });
+
+test('адрес с неверным портом не принимается', () => {
+  expect(parseSourceForm(f({ name: 'J', url: 'http://host:99999/api', apiKey: '', timeout: '15' }))).toEqual({ error: 'Адрес — http(s)://…' });
+});

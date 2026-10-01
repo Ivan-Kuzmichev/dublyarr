@@ -66,3 +66,8 @@ test('правила пользователя', () => {
     rule: 'reject',
   });
 });
+
+test('сквозные серии дальше, чем знает TMDB, — в сезон, где начинаются', () => {
+  const t: TitleInfo = { names: ['X'], year: 2024, kind: 'anime', seasons: [{ number: 1, episodeCount: 12, year: 2024 }, { number: 2, episodeCount: 12, year: 2025 }] };
+  expect(resolveAbsolute(parsed('X / E13-E25 X'), t)).toMatchObject({ seasons: [2], episodes: { from: 1, to: 13 }, absolute: false });
+});

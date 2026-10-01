@@ -33,11 +33,15 @@ export function ensureTracker(db: Db, sourceId: number, indexerId: string, name:
     .from(trackers)
     .where(and(eq(trackers.indexerId, indexerId), ne(trackers.sourceId, sourceId)))
     .get();
-  return db
-    .insert(trackers)
+  db.insert(trackers)
     .values({ sourceId, indexerId, name, kind: kind ?? 'unknown', role: other ? 'backup' : 'primary' })
-    .returning()
-    .get();
+    .onConflictDoNothing() // другой процесс мог вставить его одновременно
+    .run();
+  return db
+    .select()
+    .from(trackers)
+    .where(and(eq(trackers.sourceId, sourceId), eq(trackers.indexerId, indexerId)))
+    .get()!;
 }
 
 export function syncTrackers(db: Db, sourceId: number, indexers: TorznabIndexer[]) {

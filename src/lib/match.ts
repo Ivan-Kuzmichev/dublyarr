@@ -63,7 +63,12 @@ export function resolveAbsolute(p: ParsedRelease, t: TitleInfo): ParsedRelease {
   if (counts.length === 0) return p;
   const from = absoluteToSeason(Math.max(1, p.episodes.from), counts);
   const to = absoluteToSeason(p.episodes.to, counts);
-  if (!from || !to) return { ...p, seasons: [counts[0].season], absolute: false };
+  if (!from) return { ...p, seasons: [counts[0].season], absolute: false };
+  if (!to) {
+    // TMDB ещё не знает последних серий (онгоинг): всё — в сезон, где диапазон начинается
+    const before = counts.filter((c) => c.season < from.season).reduce((n, c) => n + c.count, 0);
+    return { ...p, seasons: [from.season], episodes: { from: from.episode, to: p.episodes.to - before }, absolute: false };
+  }
   if (from.season === to.season) return { ...p, seasons: [from.season], episodes: { from: from.episode, to: to.episode }, absolute: false };
   const seasons = counts.map((c) => c.season).filter((s) => s >= from.season && s <= to.season);
   return { ...p, seasons, episodes: null, absolute: false, pack: true };
