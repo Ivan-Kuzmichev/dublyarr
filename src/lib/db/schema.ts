@@ -281,6 +281,7 @@ export const downloads = sqliteTable(
     season: integer('season').notNull(),
     kind: text('kind', { enum: ['episode', 'pack', 'season'] }).notNull(),
     episodes: json<EpisodeRef[]>('episodes').notNull().default([]), // что из этой раздачи нужно
+    files: json<DownloadFile[]>('files'), // снимок файлов раздачи с приоритетами
     state: text('state', { enum: ['adding', 'downloading', 'paused', 'stalled', 'completed', 'imported', 'error', 'removed'] }).notNull(),
     progress: real('progress').notNull().default(0),
     dlSpeed: integer('dl_speed').notNull().default(0),
@@ -339,3 +340,5 @@ export const wantedState = sqliteTable(
 export type Download = typeof downloads.$inferSelect;
 export type EpisodeFile = typeof episodeFiles.$inferSelect;
 export type WantedState = typeof wantedState.$inferSelect;
+
+export type DownloadFile = { index: number; name: string; size: number; priority: number };
