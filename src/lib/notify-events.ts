@@ -1,3 +1,4 @@
+import { titleHref } from './title-href';
 import { eq } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { releases, sources, titles, type Download, type EpisodeRef, type WantedState } from './db/schema';
@@ -14,6 +15,7 @@ const HOUR = 3_600_000;
 export function codeRange(eps: EpisodeRef[]): string {
   const s = [...eps].sort((a, b) => a.season - b.season || a.number - b.number);
   if (!s.length) return '';
+  if (s.length === 1 && s[0].season === 0 && s[0].number === 0) return 'фильм';
   if (s.length === 1) return `S${pad(s[0].season)}E${pad(s[0].number)}`;
   const oneSeason = s.every((e) => e.season === s[0].season);
   const run = oneSeason && s.every((e, i) => i === 0 || e.number === s[i - 1].number + 1);
@@ -35,7 +37,12 @@ export function notifyImported(db: Db, d: Download, eps: EpisodeRef[], now = Dat
   const what = d.note ? d.note.replace(/^Улучшение/, 'Улучшено') : [d.studioLabel, d.resolution ? `${d.resolution}p` : null].filter(Boolean).join(' ');
   notify(
     db,
-    { key: `import:${d.id}:${eps.map((e) => `${e.season}.${e.number}`).join(',')}`, kind: 'downloaded', text: `📥 ${t.nameRu} · ${codeRange(eps)}${what ? ` — ${what}` : ''}`, buttons: linkButton(db, `/series/${t.tmdbId}`) },
+    {
+      key: `import:${d.id}:${eps.map((e) => `${e.season}.${e.number}`).join(',')}`,
+      kind: 'downloaded',
+      text: `📥 ${t.nameRu}${t.kind === 'movie' ? '' : ` · ${codeRange(eps)}`}${what ? ` — ${what}` : ''}`,
+      buttons: linkButton(db, titleHref(t)),
+    },
     now,
   );
 }
@@ -106,7 +113,7 @@ export function checkSourcesDown(db: Db, now = Date.now()) {
 /** Заметки «Сегодня» (новый сезон) — туда же. */
 export function notifyNotice(db: Db, noticeId: number, titleId: number, text: string, now = Date.now()) {
   const t = titleOf(db, titleId);
-  if (t) notify(db, { key: `notice:${noticeId}`, kind: 'downloaded', text: `🗓 ${t.nameRu}: ${text}`, buttons: linkButton(db, `/series/${t.tmdbId}`) }, now);
+  if (t) notify(db, { key: `notice:${noticeId}`, kind: 'downloaded', text: `🗓 ${t.nameRu}: ${text}`, buttons: linkButton(db, titleHref(t)) }, now);
 }
 
 /** Сводка «ждёт подтверждения» (старые копии, уборка) — не чаще раза в сутки. */

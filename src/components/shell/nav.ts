@@ -26,7 +26,7 @@ export const SETTINGS_SECTIONS = [
   { id: 'download', label: 'Загрузка и папки', phase: 1 },
   { id: 'schedule', label: 'Расписание', phase: 2 },
   { id: 'files', label: 'Обработка файлов', phase: 3 },
-  { id: 'movies', label: 'Фильмы', phase: 3 },
+  { id: 'movies', label: 'Фильмы', phase: 3 }, // своя страница /settings/movies
   { id: 'storage', label: 'Хранение', phase: 3 },
   { id: 'notify', label: 'Уведомления', phase: 2 },
   { id: 'ai', label: 'AI', phase: 4 },

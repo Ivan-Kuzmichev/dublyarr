@@ -7,6 +7,7 @@ import type { Paths } from '@/lib/downloads';
 import type { QbitConfig } from '@/lib/integrations/qbittorrent';
 import { QbitCard } from './QbitCard';
 import { PathsCard } from './PathsCard';
+import { DEFAULT_MOVIE_TEMPLATE } from '@/lib/movie-files';
 import { CleanupCard } from './CleanupCard';
 import { getCleanup } from '@/lib/cleanup';
 
@@ -45,6 +46,9 @@ export default function DownloadSettingsPage() {
         template={template}
         example={example(template)}
         defaultTemplate={DEFAULT_TEMPLATE}
+        movies={paths?.movies ?? ''}
+        movieTemplate={paths?.movieTemplate ?? ''}
+        defaultMovieTemplate={DEFAULT_MOVIE_TEMPLATE}
       />
       <Card className="flex flex-col gap-4">
         <CardTitle>Как качается серия</CardTitle>

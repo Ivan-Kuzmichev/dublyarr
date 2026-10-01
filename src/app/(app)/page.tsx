@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { titleHref } from '@/lib/title-href';
 import { PageTitle } from '@/components/shell/PageTitle';
 import { Card } from '@/components/ui/Card';
 import { Poster } from '@/components/catalog/Poster';
@@ -78,7 +79,7 @@ export default function TodayPage() {
           {sectionHead('Новые серии', { href: '/calendar', text: 'Весь календарь →' })}
           <div className="grid grid-cols-2 gap-3 lg:grid-cols-4 lg:gap-4">
             {d.fresh.map((e) => (
-              <Link key={`${e.tmdbId}-${e.code}`} href={`/series/${e.tmdbId}`} className="flex flex-col gap-3 text-text no-underline hover:text-text">
+              <Link key={`${e.tmdbId}-${e.code}`} href={titleHref({ kind: e.movie ? 'movie' : 'series', tmdbId: e.tmdbId })} className="flex flex-col gap-3 text-text no-underline hover:text-text">
                 <div className="relative h-[120px] overflow-hidden rounded-[14px] lg:h-[158px]">
                   <Poster tmdbId={e.tmdbId} name={e.title} path={e.posterPath} size="w342" className="h-full w-full" />
                   <span className="absolute top-3 left-3 rounded-md bg-bg/80 px-2 py-1 font-mono text-xs">{e.code}</span>
@@ -102,18 +103,18 @@ export default function TodayPage() {
       )}
 
       {(d.waiting.length > 0 || d.downloads.length > 0 || d.attention.length > 0) && (
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)]">
           <Card className="flex flex-col gap-5 !p-6">
             {sectionHead('Ждём озвучку', undefined, undefined, 'прогноз по истории студий')}
             {d.waiting.length === 0 ? (
               <p className="m-0 text-sm text-muted">Все вышедшие серии уже в нужной озвучке.</p>
             ) : (
               d.waiting.map((w) => (
-                <Link key={`${w.tmdbId}-${w.code}`} href={`/series/${w.tmdbId}`} className="flex items-start gap-4 text-text no-underline hover:text-text">
+                <Link key={`${w.tmdbId}-${w.code}`} href={titleHref({ kind: w.movie ? 'movie' : 'series', tmdbId: w.tmdbId })} className="flex items-start gap-4 text-text no-underline hover:text-text">
                   <Poster tmdbId={w.tmdbId} name={w.title} path={w.posterPath} size="w185" className="h-[72px] w-12 shrink-0 rounded-lg" />
                   <div className="flex min-w-0 grow flex-col gap-2">
                     <div className="flex justify-between gap-3">
-                      <span className="truncate text-[15px] font-semibold">
+                      <span className="min-w-0 truncate text-[15px] font-semibold">
                         {w.title} <span className="font-mono text-[13px] font-normal text-muted">{w.code}</span>
                       </span>
                       <span className={`text-[13px] font-semibold whitespace-nowrap ${w.progress === null ? 'text-faint' : 'text-accent'}`}>{w.etaText}</span>
@@ -125,7 +126,7 @@ export default function TodayPage() {
                       </div>
                     )}
                     <div className="flex justify-between gap-3 text-xs text-faint">
-                      <span className="whitespace-nowrap">Оригинал {w.aired}</span>
+                      <span className="whitespace-nowrap">{w.movie ? 'Цифровой релиз' : 'Оригинал'} {w.aired}</span>
                       {w.delayText && <span className="truncate">{w.delayText}</span>}
                     </div>
                     <span className="text-[13px] leading-snug text-text-3">{w.fallbackNote || w.reason}</span>
@@ -199,7 +200,7 @@ export default function TodayPage() {
             {d.week.map((w) => (
               <Link
                 key={`${w.tmdbId}-${w.code}`}
-                href={`/series/${w.tmdbId}`}
+                href={titleHref({ kind: w.movie ? 'movie' : 'series', tmdbId: w.tmdbId })}
                 className="grid grid-cols-[56px_minmax(0,1fr)_auto] items-center gap-3 border-t border-line-soft px-4 py-3 text-sm text-text no-underline first:border-t-0 hover:bg-surface hover:text-text"
               >
                 <span className="text-[13px] text-muted">{w.day}</span>

@@ -6,7 +6,7 @@ import { Field } from '@/components/ui/Field';
 import { Button } from '@/components/ui/Button';
 import { savePathsAction, type FormState } from './actions';
 
-type Props = { qbitDownloads: string; downloads: string; media: string; template: string; example: string; defaultTemplate: string };
+type Props = { qbitDownloads: string; downloads: string; media: string; template: string; example: string; defaultTemplate: string; movies: string; movieTemplate: string; defaultMovieTemplate: string };
 
 export function PathsCard(p: Props) {
   const [state, action, pending] = useActionState<FormState, FormData>(savePathsAction, {});
@@ -28,6 +28,10 @@ export function PathsCard(p: Props) {
         </div>
         <Field label="Медиатека" name="media" mono required defaultValue={v?.media ?? p.media} placeholder="/storage/media" hint="Здесь будут серии для VidHub" />
         <Field label="Имя файла" name="template" mono defaultValue={v?.template ?? p.template} placeholder={p.defaultTemplate} hint={`→ ${p.example}`} />
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="Папка фильмов" name="movies" mono defaultValue={v?.movies ?? p.movies} placeholder="/storage/movies" hint="Без неё фильмы не скачиваются" />
+          <Field label="Имя файла фильма" name="movieTemplate" mono defaultValue={v?.movieTemplate ?? p.movieTemplate} placeholder={p.defaultMovieTemplate} />
+        </div>
         <p className="m-0 text-[13px] leading-normal text-faint">
           Чтобы файлы попадали в медиатеку мгновенно и без лишнего места (жёсткой ссылкой), загрузки и медиатека должны лежать на одном томе — например, смонтируйте общую папку
           целиком. Иначе Dublyarr будет копировать.

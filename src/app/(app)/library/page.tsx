@@ -15,6 +15,7 @@ const FILTERS: { id: LibraryFilter; label: string }[] = [
   { id: 'all', label: 'Все' },
   { id: 'airing', label: 'В эфире' },
   { id: 'ended', label: 'Завершены' },
+  { id: 'movies', label: 'Фильмы' },
 ];
 
 export default async function LibraryPage({ searchParams }: { searchParams: Promise<{ filter?: string }> }) {
@@ -23,7 +24,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
   const db = getDb();
   const today = todayIso();
   const items = libraryItems(db, today);
-  const counts = libraryCounts(items);
+  const counts = { ...libraryCounts(items), movies: filterLibrary(items, 'movies').length };
   const shown = filterLibrary(items, filter);
   const studioNames = Object.fromEntries(listStudios(db).map((s) => [s.id, s.name]));
   return (
@@ -34,7 +35,7 @@ export default async function LibraryPage({ searchParams }: { searchParams: Prom
       </div>
       {items.length === 0 ? (
         <Card className="flex max-w-xl flex-col items-start gap-4">
-          <p className="m-0 text-[15px] leading-normal text-text-2">Библиотека пуста. Найдите сериал в «Поиске и трендах» и подпишитесь.</p>
+          <p className="m-0 text-[15px] leading-normal text-text-2">Библиотека пуста. Найдите сериал или фильм в «Поиске и трендах» и подпишитесь.</p>
           <Link href="/discover" className={buttonClass('primary', 'md', 'no-underline hover:text-on-accent')}>
             Поиск и тренды
           </Link>

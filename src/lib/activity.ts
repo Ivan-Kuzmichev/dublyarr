@@ -12,6 +12,7 @@ export type QueueRow = {
   id: number;
   hash: string;
   tmdbId: number;
+  movie: boolean;
   title: string;
   code: string;
   release: string;
@@ -43,6 +44,7 @@ const eta = (s: number | null) => {
 };
 
 function codeOf(d: Download): string {
+  if (d.kind === 'movie') return 'фильм';
   const s = `S${pad(d.season)}`;
   if (d.kind === 'season') return `${s} · весь сезон`;
   if (d.episodes.length === 1) return `${s}E${pad(d.episodes[0].number)}`;
@@ -79,7 +81,7 @@ const ACTIVE = new Set(['adding', 'downloading', 'paused', 'stalled', 'completed
 
 export function activityQueue(db: Db, now = Date.now()): QueueRow[] {
   const rows = db
-    .select({ d: downloads, tmdbId: titles.tmdbId, title: titles.nameRu, topic: releases.detailsUrl })
+    .select({ d: downloads, tmdbId: titles.tmdbId, kind: titles.kind, title: titles.nameRu, topic: releases.detailsUrl })
     .from(downloads)
     .innerJoin(titles, eq(titles.id, downloads.titleId))
     .leftJoin(releases, eq(releases.id, downloads.releaseId))
@@ -100,13 +102,14 @@ export function activityQueue(db: Db, now = Date.now()): QueueRow[] {
   return rows
     .filter(({ d }) => group(d) >= 0)
     .sort((a, b) => group(a.d) - group(b.d))
-    .map(({ d, tmdbId, title, topic }) => {
+    .map(({ d, tmdbId, kind, title, topic }) => {
       const st = stateOf(d, now, lowDisk);
       const watched = (d.note && ACTIVE.has(d.state) ? `${d.note} · ` : '') + (topic && d.kind === 'pack' && ACTIVE.has(d.state) ? 'Пак · следим за обновлениями · ' : '');
       return {
         id: d.id,
         hash: d.hash,
         tmdbId,
+        movie: kind === 'movie',
         title,
         code: codeOf(d),
         release: d.name,

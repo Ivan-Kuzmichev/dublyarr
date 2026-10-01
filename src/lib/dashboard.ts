@@ -3,6 +3,7 @@ import { and, eq, gte, inArray, lte } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { downloads, episodeFiles, episodes, studios, subscriptions, titles, wantedState, type Download } from './db/schema';
 import type { Paths } from './downloads';
+import { digitalReleased } from './movies';
 import { forecastEpisode, formatDelay, studioDelays, titleSightings, type EpisodeForecast, type StudioDelay } from './forecast';
 import { dubLabel, type Profile } from './profile-core';
 import { wantedEpisodes } from './subscriptions';
@@ -27,7 +28,7 @@ export type EpisodeStatus = {
 const HOUR = 3_600_000;
 const ACTIVE: Download['state'][] = ['adding', 'downloading', 'paused', 'stalled', 'completed'];
 const pad = (n: number) => String(n).padStart(2, '0');
-const code = (s: number, n: number) => `S${pad(s)}E${pad(n)}`;
+const code = (s: number, n: number) => (s === 0 && n === 0 ? 'фильм' : `S${pad(s)}E${pad(n)}`);
 const key = (s: number, n: number) => `${s}:${n}`;
 const quality = (res: number | null) => (res ? `${res}p` : '');
 
@@ -82,9 +83,10 @@ function ago(ms: number) {
   return `${Math.round(min / 1440)} дн назад`;
 }
 
-export type FreshItem = { tmdbId: number; title: string; posterPath: string | null; code: string; quality: string; state: string; loading: boolean; pct: number };
+export type FreshItem = { tmdbId: number; movie: boolean; title: string; posterPath: string | null; code: string; quality: string; state: string; loading: boolean; pct: number };
 export type WaitingItem = {
   tmdbId: number;
+  movie: boolean;
   title: string;
   posterPath: string | null;
   code: string;
@@ -97,8 +99,8 @@ export type WaitingItem = {
   delayText: string;
   fallbackNote: string;
 };
-export type AttentionItem = { tmdbId: number; title: string; code: string; text: string; href: string };
-export type WeekItem = { date: string; day: string; tmdbId: number; title: string; code: string; kind: 'downloaded' | 'aired' | 'upcoming' | 'forecast'; sub: string };
+export type AttentionItem = { tmdbId: number; movie?: boolean; title: string; code: string; text: string; href: string };
+export type WeekItem = { date: string; day: string; tmdbId: number; movie: boolean; title: string; code: string; kind: 'downloaded' | 'aired' | 'upcoming' | 'forecast'; sub: string };
 
 const WEEKDAYS = ['вс', 'пн', 'вт', 'ср', 'чт', 'пт', 'сб'];
 const dayLabel = (date: string) => `${WEEKDAYS[new Date(`${date}T00:00:00Z`).getUTCDay()]} ${Number(date.slice(8))}`;
@@ -133,7 +135,7 @@ function airing(db: Db, from: string, to: string, today: string): WeekItem[] {
       const f = files.get(`${e.titleId}:${key(e.season, e.number)}`);
       const kind = f ? 'downloaded' : e.airDate! <= today ? 'aired' : 'upcoming';
       const sub = f ? [f.studioLabel, quality(f.resolution)].filter(Boolean).join(' · ') : kind === 'aired' ? 'оригинал' : 'эфир';
-      return { date: e.airDate!, day: dayLabel(e.airDate!), tmdbId, title, code: code(e.season, e.number), kind, sub };
+      return { date: e.airDate!, day: dayLabel(e.airDate!), tmdbId, movie: false, title, code: code(e.season, e.number), kind, sub };
     });
 }
 
@@ -177,18 +179,27 @@ function waitingWithForecast(db: Db, today: string) {
 }
 
 export function todayData(db: Db, today: string, now = Date.now()) {
-  const meta = new Map(db.select({ id: titles.id, tmdbId: titles.tmdbId, title: titles.nameRu, posterPath: titles.posterPath }).from(titles).all().map((t) => [t.id, t]));
+  const meta = new Map(
+    db
+      .select({ id: titles.id, tmdbId: titles.tmdbId, title: titles.nameRu, posterPath: titles.posterPath, kind: titles.kind, releaseDates: titles.releaseDates, digitalSeenAt: titles.digitalSeenAt })
+      .from(titles)
+      .all()
+      .map((t) => [t.id, { ...t, movie: t.kind === 'movie' }]),
+  );
   const fresh: (FreshItem & { at: number })[] = [];
   for (const d of db.select().from(downloads).where(inArray(downloads.state, ACTIVE)).all()) {
     const t = meta.get(d.titleId)!;
     const pct = Math.round(d.progress * 100);
     const c = d.episodes.length === 1 ? code(d.episodes[0].season, d.episodes[0].number) : `S${pad(d.season)} · ${d.episodes.length} сер.`;
-    fresh.push({ ...t, code: c, quality: quality(d.resolution), state: downloadingText(d), loading: true, pct, at: Number.MAX_SAFE_INTEGER - d.addedAt });
+    fresh.push({ tmdbId: t.tmdbId, movie: t.movie, title: t.title, posterPath: t.posterPath, code: d.kind === 'movie' ? 'фильм' : c, quality: quality(d.resolution), state: downloadingText(d), loading: true, pct, at: Number.MAX_SAFE_INTEGER - d.addedAt });
   }
   for (const f of db.select().from(episodeFiles).where(gte(episodeFiles.importedAt, now - 72 * HOUR)).all().sort((a, b) => b.importedAt - a.importedAt)) {
     const t = meta.get(f.titleId)!;
     fresh.push({
-      ...t,
+      tmdbId: t.tmdbId,
+      movie: t.movie,
+      title: t.title,
+      posterPath: t.posterPath,
       code: code(f.season, f.number),
       quality: quality(f.resolution),
       state: `${f.studioLabel ? `${f.studioLabel} · ` : ''}скачано ${ago(now - f.importedAt)}`,
@@ -202,15 +213,18 @@ export function todayData(db: Db, today: string, now = Date.now()) {
   const waiting: WaitingItem[] = waitingWithForecast(db, today)
     .map(({ w, aired, f }) => {
       const t = meta.get(w.titleId)!;
+      // фильм: «вышел» — цифровой релиз, прогноз — конец ожидания дубляжа
+      const digital = t.movie ? digitalReleased(t, today) : null;
       return {
         tmdbId: t.tmdbId,
+        movie: t.movie,
         title: t.title,
         posterPath: t.posterPath,
         code: code(w.season, w.number),
-        aired: aired ? formatShortDate(aired, today) : '—',
+        aired: t.movie ? (digital ? formatShortDate(digital, today) : '—') : aired ? formatShortDate(aired, today) : '—',
         until: w.until ? formatShortDate(w.until, today) : null,
         reason: w.reason,
-        etaText: f?.etaText ?? 'прогноза нет',
+        etaText: t.movie ? (w.until ? `Дубляж ≈ ${formatShortDate(w.until, today)}` : 'ждём цифровой релиз') : (f?.etaText ?? 'прогноза нет'),
         progress: f?.progress ?? null,
         fallbackMark: f?.fallbackMark ?? null,
         delayText: f?.delayText ?? '',
@@ -230,7 +244,8 @@ export function todayData(db: Db, today: string, now = Date.now()) {
       .all()
       .map(({ wanted_state: w }) => {
         const t = meta.get(w.titleId)!;
-        return { tmdbId: t.tmdbId, title: t.title, code: code(w.season, w.number), text: w.reason, href: `/search/${t.tmdbId}?s=${w.season}&e=${w.number}` };
+        const href = t.movie ? `/search/${t.tmdbId}?type=movie` : `/search/${t.tmdbId}?s=${w.season}&e=${w.number}`;
+        return { tmdbId: t.tmdbId, ...(t.movie ? { movie: true } : {}), title: t.title, code: code(w.season, w.number), text: w.reason, href };
       }),
     ...db
       .select()
@@ -240,7 +255,7 @@ export function todayData(db: Db, today: string, now = Date.now()) {
       .map((d) => {
         const t = meta.get(d.titleId)!;
         const c = d.episodes.length === 1 ? code(d.episodes[0].season, d.episodes[0].number) : `S${pad(d.season)}`;
-        return { tmdbId: t.tmdbId, title: t.title, code: c, text: d.lastError ?? 'Ошибка загрузки', href: '/activity' };
+        return { tmdbId: t.tmdbId, ...(t.movie ? { movie: true } : {}), title: t.title, code: c, text: d.lastError ?? 'Ошибка загрузки', href: '/activity' };
       }),
   ];
 
@@ -277,13 +292,28 @@ export function todayData(db: Db, today: string, now = Date.now()) {
   };
 }
 
+/** Фильмы в подписках: цифровой релиз на этой неделе и прогноз дубляжа (конец ожидания). */
+function movieWeek(db: Db, from: string, to: string, today: string): WeekItem[] {
+  const out: WeekItem[] = [];
+  const rows = db.select({ t: titles }).from(subscriptions).innerJoin(titles, eq(titles.id, subscriptions.titleId)).where(eq(titles.kind, 'movie')).all();
+  for (const { t } of rows) {
+    const file = db.select().from(episodeFiles).where(and(eq(episodeFiles.titleId, t.id), eq(episodeFiles.season, 0), eq(episodeFiles.number, 0))).get();
+    const digital = t.releaseDates?.digital;
+    if (digital && digital >= from && digital <= to)
+      out.push({ date: digital, day: dayLabel(digital), tmdbId: t.tmdbId, movie: true, title: t.nameRu, code: 'фильм', kind: file ? 'downloaded' : digital <= today ? 'aired' : 'upcoming', sub: 'цифровой релиз' });
+    const w = db.select().from(wantedState).where(and(eq(wantedState.titleId, t.id), eq(wantedState.state, 'waiting'))).get();
+    if (w?.until && w.until >= from && w.until <= to) out.push({ date: w.until, day: dayLabel(w.until), tmdbId: t.tmdbId, movie: true, title: t.nameRu, code: 'фильм', kind: 'forecast', sub: 'дубляж' });
+  }
+  return out;
+}
+
 export function calendarWeek(db: Db, monday: string, today: string) {
   const sunday = addDays(monday, 6);
   const meta = new Map(db.select().from(titles).all().map((t) => [t.id, t]));
   const forecasts: WeekItem[] = waitingWithForecast(db, today)
     .filter(({ f }) => f?.eta && f.eta >= monday && f.eta <= sunday && f.sub)
-    .map(({ w, f }) => ({ date: f!.eta!, day: dayLabel(f!.eta!), tmdbId: meta.get(w.titleId)!.tmdbId, title: meta.get(w.titleId)!.nameRu, code: code(w.season, w.number), kind: 'forecast' as const, sub: f!.sub }));
-  const items = [...airing(db, monday, sunday, today), ...forecasts];
+    .map(({ w, f }) => ({ date: f!.eta!, day: dayLabel(f!.eta!), tmdbId: meta.get(w.titleId)!.tmdbId, movie: false, title: meta.get(w.titleId)!.nameRu, code: code(w.season, w.number), kind: 'forecast' as const, sub: f!.sub }));
+  const items = [...airing(db, monday, sunday, today), ...movieWeek(db, monday, sunday, today), ...forecasts];
   const days = Array.from({ length: 7 }, (_, i) => {
     const date = addDays(monday, i);
     return { date, label: dayLabel(date), today: date === today, events: items.filter((x) => x.date === date) };

@@ -18,7 +18,7 @@ function Grid({ cards, note }: { cards: CardData[]; note?: (c: CardData) => stri
   return (
     <div className={grid}>
       {cards.map((c) => (
-        <PosterCard key={c.tmdbId} {...c} note={note?.(c)} />
+        <PosterCard key={`${c.movie ? 'm' : 's'}${c.tmdbId}`} {...c} note={note?.(c)} />
       ))}
     </div>
   );
@@ -74,6 +74,12 @@ export default async function DiscoverPage({ searchParams }: { searchParams: Pro
                 <ErrorLine message={data.error} />
                 <Grid cards={data.trending} />
               </section>
+              {data.movies.length > 0 && (
+                <section className="flex flex-col gap-4">
+                  <Heading>Популярные фильмы</Heading>
+                  <Grid cards={data.movies} />
+                </section>
+              )}
             </>
           )}
         </>

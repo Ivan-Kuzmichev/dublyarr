@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { titleHref } from '@/lib/title-href';
 import { PageTitle } from '@/components/shell/PageTitle';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -20,7 +21,7 @@ function Row({ r }: { r: QueueRow }) {
   return (
     <div className="flex flex-col gap-2 border-t border-line-soft px-4 py-3.5 first:border-t-0 lg:px-[18px]">
       <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <Link href={`/series/${r.tmdbId}`} className="text-[15px] font-semibold text-text no-underline hover:text-accent">
+        <Link href={titleHref({ kind: r.movie ? 'movie' : 'series', tmdbId: r.tmdbId })} className="text-[15px] font-semibold text-text no-underline hover:text-accent">
           {r.title} · {r.code}
         </Link>
         <span className="font-mono text-[13px] text-text-3">{r.speed}</span>

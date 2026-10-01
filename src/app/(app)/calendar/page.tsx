@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { titleHref } from '@/lib/title-href';
 import { PageTitle } from '@/components/shell/PageTitle';
 import { Icon } from '@/components/ui/Icon';
 import { getDb } from '@/lib/db/client';
@@ -68,7 +69,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
               <span className={`font-display text-xl font-semibold ${d.today ? 'text-accent' : ''}`}>{d.label.split(' ')[1]}</span>
             </div>
             {d.events.map((e) => (
-              <Link key={`${e.tmdbId}-${e.code}-${e.kind}`} href={`/series/${e.tmdbId}`} className={`flex flex-col gap-1 rounded-[10px] border-[1.5px] p-2.5 no-underline ${EVENT[e.kind]} hover:opacity-90`}>
+              <Link key={`${e.movie ? 'm' : 's'}${e.tmdbId}-${e.code}-${e.kind}`} href={titleHref({ kind: e.movie ? 'movie' : 'series', tmdbId: e.tmdbId })} className={`flex flex-col gap-1 rounded-[10px] border-[1.5px] p-2.5 no-underline ${EVENT[e.kind]} hover:opacity-90`}>
                 <span className="text-[13px] leading-tight font-semibold">{e.title}</span>
                 <span className="font-mono text-[11px] opacity-85">{e.code}</span>
                 <span className="text-xs opacity-85">{e.sub}</span>

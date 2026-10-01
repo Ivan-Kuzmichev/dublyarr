@@ -31,10 +31,10 @@ export async function saveQbitAction(_prev: FormState, form: FormData): Promise<
 
 export async function savePathsAction(_prev: FormState, form: FormData): Promise<FormState> {
   await requireSession();
-  const values = formValues(form, ['qbitDownloads', 'downloads', 'media', 'template']);
+  const values = formValues(form, ['qbitDownloads', 'downloads', 'media', 'template', 'movies', 'movieTemplate']);
   const p = parsePathsForm(form);
   if ('error' in p) return { values, error: p.error };
-  for (const [label, dir] of [['Папка загрузок', p.downloads], ['Медиатека', p.media]] as const) {
+  for (const [label, dir] of [['Папка загрузок', p.downloads], ['Медиатека', p.media], ...(p.movies ? [['Папка фильмов', p.movies] as const] : [])] as const) {
     const c = await checkWritableDir(dir);
     if (!c.ok) return { values, error: `${label}: ${c.error.toLowerCase()}` };
   }

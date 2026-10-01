@@ -1,3 +1,4 @@
+import { movieCard } from './movie-card';
 import { isMovieProfile, type MovieProfile } from './movie-profile';
 import { and, eq, gte, gt, max, min } from 'drizzle-orm';
 import type { Db } from './db/client';
@@ -52,8 +53,9 @@ export function wantedEpisodes(sub: Pick<Subscription, 'subscribedAt' | 'profile
     .map((e) => ({ season: e.season, number: e.number }));
 }
 
-export type LibraryFilter = 'all' | 'airing' | 'ended';
-export type LibraryItem = { title: Title; profile: Profile | MovieProfile; next: { season: number; number: number; airDate: string } | null };
+export type LibraryFilter = 'all' | 'airing' | 'ended' | 'movies';
+/** status — у фильма: «Дубляж · 2160p · 24 ГБ» / «Ждём дубляж до …». */
+export type LibraryItem = { title: Title; profile: Profile | MovieProfile; next: { season: number; number: number; airDate: string } | null; status?: string };
 
 const isEnded = (t: Title) => t.status === 'ended' || t.status === 'canceled';
 
@@ -73,6 +75,7 @@ export function libraryItems(db: Db, today: string): LibraryItem[] {
           .orderBy(episodes.season, episodes.number)
           .get()
       : undefined;
+    if (title.kind === 'movie') return { title, profile, next: null, status: movieCard(db, title, today).status };
     return { title, profile, next: next ? { season: next.season, number: next.number, airDate: next.airDate! } : null };
   });
   return items.sort((a, b) => {
@@ -82,11 +85,14 @@ export function libraryItems(db: Db, today: string): LibraryItem[] {
   });
 }
 
-export const filterLibrary = (items: LibraryItem[], f: LibraryFilter) =>
-  f === 'all' ? items : items.filter((i) => (f === 'ended' ? isEnded(i.title) : !isEnded(i.title)));
+const isMovie = (t: Title) => t.kind === 'movie';
 
-export const libraryCounts = (items: LibraryItem[]): Record<LibraryFilter, number> => ({
+/** «В эфире» и «Завершены» — только сериалы; фильмы — своим фильтром. */
+export const filterLibrary = (items: LibraryItem[], f: LibraryFilter) =>
+  f === 'all' ? items : f === 'movies' ? items.filter((i) => isMovie(i.title)) : items.filter((i) => !isMovie(i.title) && (f === 'ended' ? isEnded(i.title) : !isEnded(i.title)));
+
+export const libraryCounts = (items: LibraryItem[]): Record<Exclude<LibraryFilter, 'movies'>, number> => ({
   all: items.length,
-  airing: items.filter((i) => !isEnded(i.title)).length,
-  ended: items.filter((i) => isEnded(i.title)).length,
+  airing: filterLibrary(items, 'airing').length,
+  ended: filterLibrary(items, 'ended').length,
 });

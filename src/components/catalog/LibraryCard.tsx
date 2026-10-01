@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { titleHref } from '@/lib/title-href';
 import { Poster } from './Poster';
 import { dubLabel } from '@/lib/profile-core';
 import { formatAirDate } from '@/lib/dates';
@@ -15,13 +16,15 @@ export function LibraryCard({ item, studioNames, today }: { item: LibraryItem; s
   const dubs = isMovieProfile(profile) ? profile.dubs.filter((d) => d.on).map((d) => MOVIE_DUB_LABEL[d.kind]) : profile.dubs.map((d) => dubLabel(d, (id) => studioNames[id]));
   const chain = dubs.slice(0, 2).join(' → ') + (dubs.length > 2 ? ' → …' : '');
   const ended = t.status === 'ended' || t.status === 'canceled';
-  const line = next
+  const line = item.status !== undefined
+    ? { text: item.status || 'Ищем раздачу', cls: /^Ждём|^Нет|^Не /.test(item.status) ? 'text-accent' : 'text-text-2' }
+    : next
     ? { text: `${code(next.season, next.number)} · ${formatAirDate(next.airDate, today)}`, cls: 'text-text-2' }
     : ended
       ? { text: 'Завершён', cls: 'text-faint' }
       : { text: 'Новых серий пока не объявлено', cls: 'text-faint' };
   return (
-    <Link href={`/series/${t.tmdbId}`} className="group flex min-w-0 flex-col gap-2 text-text no-underline hover:text-text">
+    <Link href={titleHref(t)} className="group flex min-w-0 flex-col gap-2 text-text no-underline hover:text-text">
       <div className="aspect-[2/3] overflow-hidden rounded-[14px] bg-surface-2 transition group-hover:ring-2 group-hover:ring-accent">
         <Poster tmdbId={t.tmdbId} name={t.nameRu} path={t.posterPath} className="h-full w-full" />
       </div>
