@@ -121,3 +121,34 @@ test('ошибка пака по одной серии не отсекает р�
   const fresh = db.select().from(downloads).all().filter((x) => x.state !== 'error');
   expect(fresh.find((x) => x.releaseId === d.releaseId)?.episodes).toEqual([{ season: 1, number: 1 }]);
 });
+
+test('застрявшая раздача меняется на следующую по рейтингу', async () => {
+  const { db, t, fq, deps, profile } = await setup();
+  subscribe(db, t.id, profile(), 0);
+  await searchSubscription(db, t.id, deps);
+  const stuck = db.select().from(downloads).get()!;
+  db.update(downloads).set({ state: 'stalled' }).run();
+  const r = await searchSubscription(db, t.id, deps);
+  expect(r.started).toBe(1);
+  const fresh = db.select().from(downloads).all().find((x) => x.id !== stuck.id)!;
+  expect(fresh.episodes).toEqual([{ season: 1, number: 1 }, { season: 1, number: 2 }]);
+  expect(db.select().from(downloads).where(eq(downloads.id, stuck.id)).get()).toMatchObject({ state: 'replaced', replacedById: fresh.id, note: 'Заменена: нет сидов' });
+  expect(fq.torrents.has(stuck.hash)).toBe(false);
+});
+
+test('застрявшая без замены остаётся как есть', async () => {
+  const { db, t, fq, deps, profile } = await setup();
+  subscribe(db, t.id, profile(), 0);
+  await searchSubscription(db, t.id, deps);
+  const stuck = db.select().from(downloads).get()!;
+  db.update(downloads).set({ state: 'stalled' }).run();
+  // других подходящих раздач нет: 720p убрали из клиента раньше
+  const { releases } = await import('@/lib/db/schema');
+  const r720 = db.select().from(releases).all().find((x) => x.title.includes('720p'))!;
+  db.insert(downloads).values({ hash: 'c'.repeat(40), titleId: t.id, releaseId: r720.id, season: 1, kind: 'pack', episodes: [], state: 'removed', name: 'x', size: 1, addedAt: 1 }).run();
+  const r = await searchSubscription(db, t.id, deps);
+  expect(r.started).toBe(0);
+  expect(db.select().from(downloads).where(eq(downloads.id, stuck.id)).get()!.state).toBe('stalled');
+  expect(fq.torrents.has(stuck.hash)).toBe(true);
+  expect(db.select().from(wantedState).all()).toEqual([]);
+});

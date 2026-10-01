@@ -8,7 +8,7 @@ import type { Profile } from './profile-core';
 import { searchTitle, type SearchOptions } from './search';
 import { evaluateReleases, type Verdict } from './evaluate';
 import { planEpisode, seasonFinished, coversWholeSeason } from './plan';
-import { activeDownloads, enableFiles, startRelease, type DownloadDeps, type Paths } from './downloads';
+import { activeDownloads, enableFiles, releaseStalled, startRelease, type DownloadDeps, type Paths } from './downloads';
 import type { Qbit } from './qbit';
 import { todayIso } from './dates';
 import { log } from './log';
@@ -58,7 +58,10 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   const seasons = listSeasons(db, titleId);
   const eps = seasons.flatMap((s) => listEpisodes(db, titleId, s.number));
   const have = new Set(db.select().from(episodeFiles).where(eq(episodeFiles.titleId, titleId)).all().map(key));
-  const busy = new Set(activeDownloads(db, titleId).flatMap((d) => d.episodes.map(key)));
+  // застрявшие (сутки без сидов) не считаются «уже качается» — для их серий ищем замену
+  const stalled = activeDownloads(db, titleId).filter((d) => d.state === 'stalled');
+  const stuck = new Set(stalled.flatMap((d) => d.episodes.map(key)));
+  const busy = new Set(activeDownloads(db, titleId).filter((d) => d.state !== 'stalled').flatMap((d) => d.episodes.map(key)));
   let need = wantedEpisodes(sub, eps, today).filter((e) => !have.has(key(e)) && !busy.has(key(e)));
   if (!need.length) return res;
 
@@ -80,7 +83,7 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   const { releases } = await searchTitle(db, titleId, deps.searchOpts);
   // отвергнутые раздачи: убранная из клиента — целиком, с ошибкой «нет файла» — только для тех серий
   const rejected = new Map<number, Set<string> | 'all'>();
-  for (const d of db.select().from(downloads).where(and(eq(downloads.titleId, titleId), inArray(downloads.state, ['error', 'removed']))).all()) {
+  for (const d of db.select().from(downloads).where(and(eq(downloads.titleId, titleId), inArray(downloads.state, ['error', 'removed', 'stalled']))).all()) {
     if (d.releaseId === null) continue;
     const prev = rejected.get(d.releaseId);
     if (d.state === 'removed' || prev === 'all') rejected.set(d.releaseId, 'all');
@@ -114,11 +117,13 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
     starts.set(r.id, { release: r, eps: seasonEps, kind: 'season', label: studioFor(profile, best, r, names) });
   }
 
-  const active = activeDownloads(db, titleId);
+  const active = activeDownloads(db, titleId).filter((d) => d.state !== 'stalled');
   for (const ep of need) {
     const verdicts = evaluateReleases(usableFor(ep), ctx, { season: ep.season, episode: ep.number });
     const plan = planEpisode(ep, verdicts, byId, active);
     if (plan.action === 'have') continue;
+    // замены нет — серия остаётся в застрявшей загрузке («качается»)
+    if (stuck.has(key(ep)) && (plan.action === 'wait' || plan.action === 'ask' || plan.action === 'none')) continue;
     if (plan.action === 'wait') {
       setWanted(db, titleId, ep, 'waiting', plan.reason, plan.until, now);
       res.waiting++;
@@ -157,6 +162,10 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
       if (d.state === 'error') for (const e of s.eps) setWanted(db, titleId, e, 'missing', d.lastError ?? 'Ошибка загрузки', null, now);
       else {
         for (const e of s.eps) clearWanted(db, titleId, e);
+        for (const st of stalled) {
+          const moved = s.eps.filter((e) => st.episodes.some((x) => key(x) === key(e)));
+          if (moved.length) await releaseStalled(db, st.id, moved, d.id, dl.qbit);
+        }
         res.started++;
       }
     } catch (e) {

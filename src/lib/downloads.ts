@@ -247,6 +247,23 @@ export async function switchTorrent(db: Db, deps: DownloadDeps, old: Download, t
   return { switched: true, download: update(db, fresh.id, { state: 'downloading' }), added };
 }
 
+/** Серии застрявшей загрузки перешли в замену; не осталось ни одной — торрент убирается из клиента (файлы остаются). */
+export async function releaseStalled(db: Db, stalledId: number, moved: EpisodeRef[], replacedById: number, qbit: Qbit) {
+  const d = db.select().from(downloads).where(eq(downloads.id, stalledId)).get();
+  if (!d) return;
+  const left = d.episodes.filter((e) => !moved.some((m) => m.season === e.season && m.number === e.number));
+  if (left.length) {
+    update(db, d.id, { episodes: left });
+    return;
+  }
+  try {
+    await qbit.remove([d.hash]);
+  } catch (e) {
+    log.warn({ download: d.id, err: e instanceof Error ? e.message : String(e) }, 'stalled remove failed');
+  }
+  update(db, d.id, { state: 'replaced', replacedById, note: 'Заменена: нет сидов' });
+}
+
 /** Включить файлы ещё нужных серий в уже качающемся паке. */
 export async function enableFiles(db: Db, deps: DownloadDeps, downloadId: number, want: EpisodeRef[]) {
   const d = db.select().from(downloads).where(eq(downloads.id, downloadId)).get();
