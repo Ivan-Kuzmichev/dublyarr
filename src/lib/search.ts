@@ -11,6 +11,7 @@ import { normalizeTitle } from './parse/normalize';
 import { matchRelease, resolveAbsolute, toTitleInfo } from './match';
 import { ruleFor } from './release-rules';
 import { encrypt } from './crypto/secretbox';
+import { recordSightings } from './sightings';
 import { log } from './log';
 
 export type SourceStatus = { sourceId: number; name: string; ok: boolean; found: number; ms: number; error?: string };
@@ -113,6 +114,7 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
     };
     saved.push(upsertRelease(db, title.id, fields, now));
   }
+  recordSightings(db, titleId, saved);
   return { releases: saved, sources: statuses };
 }
 

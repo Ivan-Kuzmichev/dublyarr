@@ -6,6 +6,7 @@ import { runOnce, requeueStale, pruneJobs } from './jobs';
 import { buildHandlers } from './handlers';
 import { SEARCH_EVERY } from '../lib/autosearch';
 import { PACK_CHECK_EVERY } from '../lib/pack-watch';
+import { backfillSightings } from '../lib/sightings';
 import { scheduleDaily, scheduleEvery } from './schedule';
 
 const db = getDb();
@@ -27,6 +28,11 @@ async function checkLaya() {
 
 async function loop() {
   requeueStale(db);
+  try {
+    backfillSightings(db);
+  } catch (e) {
+    log.warn({ err: e instanceof Error ? e.message : String(e) }, 'sightings backfill failed');
+  }
   log.info('worker started');
   while (!stopping) {
     beat(db, 'worker', true);
