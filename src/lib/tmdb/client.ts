@@ -1,4 +1,4 @@
-import type { TmdbPage, TmdbSeason, TmdbTvDetails, TmdbTvListItem } from './types';
+import type { TmdbPage, TmdbSeason, TmdbTvDetails, TmdbTvListItem, TmdbListItem, TmdbMovieDetails } from './types';
 
 export type TmdbConfig = { apiKey: string; proxy?: string };
 export type TmdbErrorCode = 'auth' | 'rate' | 'network' | 'not_found' | 'http';
@@ -20,10 +20,13 @@ export type Tmdb = {
   season(id: number, n: number): Promise<TmdbSeason>;
   search(query: string): Promise<TmdbTvListItem[]>;
   trending(): Promise<TmdbTvListItem[]>;
+  movie(id: number): Promise<TmdbMovieDetails>;
+  searchMulti(query: string): Promise<TmdbListItem[]>;
+  trendingAll(): Promise<TmdbListItem[]>;
 };
 
 const LIST_TTL = 3_600_000;
-const listCache = new Map<string, { at: number; items: TmdbTvListItem[] }>();
+const listCache = new Map<string, { at: number; items: unknown[] }>();
 export const clearTmdbCache = () => listCache.clear();
 
 // Ключ API v3 — 32 hex-символа; всё остальное считаем токеном v4 (Read Access Token).
@@ -62,10 +65,10 @@ export function createTmdb(cfg: TmdbConfig, opts: TmdbOptions = {}): Tmdb {
     }
   }
 
-  async function list(key: string, path: string, params: Record<string, string>) {
+  async function list<T = TmdbTvListItem>(key: string, path: string, params: Record<string, string>): Promise<T[]> {
     const hit = listCache.get(key);
-    if (hit && now() - hit.at < LIST_TTL) return hit.items;
-    const page = await get<TmdbPage<TmdbTvListItem>>(path, params);
+    if (hit && now() - hit.at < LIST_TTL) return hit.items as T[];
+    const page = await get<TmdbPage<T>>(path, params);
     listCache.set(key, { at: now(), items: page.results });
     return page.results;
   }
@@ -89,5 +92,23 @@ export function createTmdb(cfg: TmdbConfig, opts: TmdbOptions = {}): Tmdb {
       return list(`search:${query}`, '/search/tv', { query, include_adult: 'false' });
     },
     trending: () => list('trending', '/trending/tv/week', {}),
+    async movie(id) {
+      const d = await get<TmdbMovieDetails>(`/movie/${id}`, { append_to_response: 'alternative_titles,release_dates' });
+      if (!d.overview || !d.title) {
+        const en = await get<TmdbMovieDetails>(`/movie/${id}`, {}, 'en-US');
+        d.overview ||= en.overview;
+        d.title ||= en.title;
+      }
+      return d;
+    },
+    async searchMulti(q) {
+      const query = q.trim().toLowerCase();
+      const items = await list<TmdbListItem>(`multi:${query}`, '/search/multi', { query, include_adult: 'false' });
+      return items.filter((i) => i.media_type === 'tv' || i.media_type === 'movie');
+    },
+    async trendingAll() {
+      const items = await list<TmdbListItem>('trending-all', '/trending/all/week', {});
+      return items.filter((i) => i.media_type === 'tv' || i.media_type === 'movie');
+    },
   };
 }

@@ -107,17 +107,20 @@ export const heartbeats = sqliteTable('heartbeats', {
 
 const json = <T>(name: string) => text(name, { mode: 'json' }).$type<T>();
 
-export const titles = sqliteTable('titles', {
+export const titles = sqliteTable(
+  'titles',
+  {
   id: integer('id').primaryKey({ autoIncrement: true }),
-  tmdbId: integer('tmdb_id').notNull().unique(),
-  kind: text('kind', { enum: ['series', 'anime'] }).notNull(),
+  tmdbId: integer('tmdb_id').notNull(),
+  tmdbType: text('tmdb_type', { enum: ['tv', 'movie'] }).notNull().default('tv'), // id сериалов и фильмов в TMDB пересекаются
+  kind: text('kind', { enum: ['series', 'anime', 'movie'] }).notNull(),
   kindManual: integer('kind_manual', { mode: 'boolean' }).notNull().default(false),
   nameRu: text('name_ru').notNull(),
   nameOriginal: text('name_original').notNull(),
   originalLanguage: text('original_language').notNull(),
   altNames: json<string[]>('alt_names').notNull().default([]),
   year: integer('year'),
-  status: text('status', { enum: ['returning', 'ended', 'canceled', 'in_production', 'planned'] }).notNull(),
+  status: text('status', { enum: ['returning', 'ended', 'canceled', 'in_production', 'planned', 'released'] }).notNull(),
   overview: text('overview').notNull().default(''),
   genres: json<string[]>('genres').notNull().default([]),
   originCountries: json<string[]>('origin_countries').notNull().default([]),
@@ -126,9 +129,14 @@ export const titles = sqliteTable('titles', {
   backdropPath: text('backdrop_path'),
   nextAirDate: text('next_air_date'),
   lastAirDate: text('last_air_date'),
+  runtime: integer('runtime'), // фильм: минуты
+  releaseDates: json<{ theatrical: string | null; digital: string | null; physical: string | null }>('release_dates'), // фильм: TMDB release_dates
+  digitalSeenAt: text('digital_seen_at'), // фильм: первая цифровая раздача на трекерах
   refreshedAt: ts('refreshed_at').notNull(),
   createdAt: ts('created_at').notNull(),
-});
+  },
+  (t) => [uniqueIndex('titles_tmdb').on(t.tmdbType, t.tmdbId)],
+);
 
 export const seasons = sqliteTable(
   'seasons',

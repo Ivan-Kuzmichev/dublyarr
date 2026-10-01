@@ -2,6 +2,7 @@ import type { Db } from '../lib/db/client';
 import type { Tmdb } from '../lib/tmdb/client';
 import { getTmdb } from '../lib/tmdb';
 import { syncTitle, titlesDueForRefresh } from '../lib/catalog';
+import { syncMovie } from '../lib/movies';
 import { log } from '../lib/log';
 import type { Handler } from './jobs';
 import { getQbit } from '../lib/qbit';
@@ -28,7 +29,8 @@ export async function refreshAll(db: Db, tmdb: Tmdb | null, now = Date.now()) {
   if (!tmdb) return res;
   for (const t of titlesDueForRefresh(db, now)) {
     try {
-      await syncTitle(db, tmdb, t.tmdbId, { now });
+      if (t.kind === 'movie') await syncMovie(db, tmdb, t.tmdbId, now);
+      else await syncTitle(db, tmdb, t.tmdbId, { now });
       res.ok++;
     } catch (e) {
       res.failed++;

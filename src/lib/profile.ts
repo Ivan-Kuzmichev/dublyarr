@@ -1,3 +1,4 @@
+import type { Title } from './db/schema';
 import type { Db } from './db/client';
 import { getSetting, setSetting } from './settings';
 import { findStudioByAlias, listStudios } from './studios';
@@ -17,9 +18,9 @@ const ANY_WAIT = 5;
 const knownIds = (db: Db) => new Set(listStudios(db).map((s) => s.id));
 
 /** Встроенный профиль; студии, которых нет в словаре, пропускаются. */
-export function builtinProfile(db: Db, kind: 'series' | 'anime'): Profile {
+export function builtinProfile(db: Db, kind: Title['kind']): Profile {
   const dubs: DubPosition[] = [];
-  BUILTIN[kind].forEach((name, i) => {
+  BUILTIN[seriesKind(kind)].forEach((name, i) => {
     const s = findStudioByAlias(db, name);
     if (s) dubs.push({ kind: 'studio', studioId: s.id, waitDays: dubs.length === 0 ? 0 : BUILTIN_WAITS[i] });
   });
@@ -34,7 +35,8 @@ export function builtinProfile(db: Db, kind: 'series' | 'anime'): Profile {
   };
 }
 
-export function getDefaultProfile(db: Db, kind: 'series' | 'anime'): Profile {
+export function getDefaultProfile(db: Db, k: Title['kind']): Profile {
+  const kind = seriesKind(k);
   const saved = getSetting<Profile>(db, `profile.${kind}`);
   if (!saved) return builtinProfile(db, kind);
   const known = knownIds(db);
@@ -49,9 +51,13 @@ export function saveDefaultProfile(db: Db, kind: 'series' | 'anime', p: Profile)
 
 
 /** Для окна подписки: добавлять можно студии нужного типа, а подписи нужны для всех (тип мог смениться). */
-export function subscribeDialogStudios(db: Db, kind: 'series' | 'anime') {
+export function subscribeDialogStudios(db: Db, k: Title['kind']) {
+  const kind = seriesKind(k);
   return {
     addable: listStudios(db, kind).map((s) => ({ id: s.id, name: s.name })),
     names: Object.fromEntries(listStudios(db).map((s) => [s.id, s.name])) as Record<number, string>,
   };
 }
+
+/** Вид для сериальных профилей и словаря студий: фильм считается сериалом. */
+export const seriesKind = (k: Title['kind']): 'series' | 'anime' => (k === 'anime' ? 'anime' : 'series');

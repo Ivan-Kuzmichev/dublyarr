@@ -8,7 +8,7 @@ import type { Season, Title } from './db/schema';
 export type TitleInfo = {
   names: string[];
   year: number | null;
-  kind: 'series' | 'anime';
+  kind: Title['kind'];
   seasons: { number: number; episodeCount: number; year: number | null }[];
 };
 

@@ -17,6 +17,7 @@ import { plural } from '@/lib/plural';
 import { RefreshButton } from './RefreshButton';
 import { SubscribeButton } from './SubscribeButton';
 import { SubscriptionPanel } from './SubscriptionPanel';
+import { seriesKind } from '@/lib/profile';
 import { RetentionToggles } from './RetentionToggles';
 import { DeleteSeriesDialog } from '@/app/(app)/storage/DeleteSeriesDialog';
 import { getRetention } from '@/lib/retention-settings';
@@ -48,6 +49,7 @@ const STATUS: Record<Title['status'], string> = {
   canceled: 'закрыт',
   in_production: 'в производстве',
   planned: 'анонсирован',
+  released: 'вышел',
 };
 
 
@@ -144,7 +146,7 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
               Ручной поиск
             </Link>
             <RefreshButton tmdbId={t.tmdbId} />
-            <KindSwitch tmdbId={t.tmdbId} kind={t.kind} />
+            <KindSwitch tmdbId={t.tmdbId} kind={seriesKind(t.kind)} />
           </div>
         </div>
       </section>

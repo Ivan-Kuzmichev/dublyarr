@@ -16,6 +16,11 @@ const tmdb = (over: Partial<Tmdb> = {}): Tmdb => ({
   },
   search: async (q) => trending.filter((t) => t.name.toLowerCase().includes(q.toLowerCase())),
   trending: async () => trending,
+  movie: async () => {
+    throw new Error();
+  },
+  searchMulti: async () => [],
+  trendingAll: async () => [],
   ...over,
 });
 

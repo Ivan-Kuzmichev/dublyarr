@@ -1,5 +1,5 @@
 import type { Title, titles } from '../db/schema';
-import type { TmdbSeason, TmdbTvDetails } from './types';
+import type { TmdbMovieDetails, TmdbReleaseDates, TmdbSeason, TmdbTvDetails } from './types';
 
 export const ANIMATION_GENRE = 16;
 // Альтернативные названия, полезные для поиска раздач: русские, английские и японские (там романдзи).
@@ -72,3 +72,55 @@ export const mapEpisodes = (s: TmdbSeason) =>
     airDate: date(e.air_date),
     runtime: e.runtime ?? null,
   }));
+
+export type ReleaseDates = { theatrical: string | null; digital: string | null; physical: string | null };
+
+/** Самые ранние даты кинотеатрального (3), цифрового (4) и физического (5) релиза: RU, иначе US, иначе любая страна. */
+export function pickReleaseDates(r: TmdbReleaseDates | undefined): ReleaseDates {
+  const res: ReleaseDates = { theatrical: null, digital: null, physical: null };
+  const all = r?.results ?? [];
+  const order = [...all.filter((x) => x.iso_3166_1 === 'RU'), ...all.filter((x) => x.iso_3166_1 === 'US'), ...all.filter((x) => x.iso_3166_1 !== 'RU' && x.iso_3166_1 !== 'US')];
+  const field = { 3: 'theatrical', 4: 'digital', 5: 'physical' } as const;
+  for (const type of [3, 4, 5] as const) {
+    for (const c of order) {
+      const dates = c.release_dates.filter((d) => d.type === type && d.release_date).map((d) => d.release_date.slice(0, 10)).sort();
+      if (dates.length) {
+        res[field[type]] = dates[0];
+        break;
+      }
+    }
+  }
+  return res;
+}
+
+export function mapMovie(d: TmdbMovieDetails): TitleFields {
+  const norm = (s: string) => s.trim().toLowerCase();
+  const seen = new Set([norm(d.title), norm(d.original_title)]);
+  const altNames: string[] = [];
+  for (const a of d.alternative_titles?.titles ?? []) {
+    if (!ALT_COUNTRIES.has(a.iso_3166_1) || !a.title.trim() || seen.has(norm(a.title))) continue;
+    seen.add(norm(a.title));
+    altNames.push(a.title.trim());
+  }
+  return {
+    tmdbId: d.id,
+    tmdbType: 'movie',
+    kind: 'movie',
+    nameRu: d.title,
+    nameOriginal: d.original_title,
+    originalLanguage: d.original_language,
+    altNames,
+    year: d.release_date ? Number(d.release_date.slice(0, 4)) : null,
+    status: d.status === 'Released' ? 'released' : 'planned',
+    overview: d.overview ?? '',
+    genres: d.genres.map((g) => g.name),
+    originCountries: d.origin_country ?? (d.production_countries ?? []).map((c) => c.iso_3166_1),
+    networks: [],
+    posterPath: d.poster_path,
+    backdropPath: d.backdrop_path,
+    nextAirDate: null,
+    lastAirDate: null,
+    runtime: d.runtime || null,
+    releaseDates: pickReleaseDates(d.release_dates),
+  };
+}

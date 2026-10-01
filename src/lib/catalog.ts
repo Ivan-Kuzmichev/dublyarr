@@ -1,4 +1,4 @@
-import { and, asc, between, eq, lt, notInArray, or } from 'drizzle-orm';
+import { and, asc, between, eq, notInArray } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { episodes, seasons, titles, type Episode, type Season, type Title } from './db/schema';
 import type { Tmdb } from './tmdb/client';
@@ -7,10 +7,13 @@ import type { TmdbSeason } from './tmdb/types';
 import { extendSeasons } from './seasons-watch';
 
 /** Карточку старше этого обновляем при открытии. */
+import { digitalReleased } from './movies';
+
 export const STALE_MS = 12 * 3_600_000;
 const MONTH = 30 * 86_400_000;
 
-export const getTitleByTmdbId = (db: Db, tmdbId: number) => db.select().from(titles).where(eq(titles.tmdbId, tmdbId)).get();
+export const getTitleByTmdbId = (db: Db, tmdbId: number, type: Title['tmdbType'] = 'tv') =>
+  db.select().from(titles).where(and(eq(titles.tmdbType, type), eq(titles.tmdbId, tmdbId))).get();
 
 export const listSeasons = (db: Db, titleId: number): Season[] =>
   db.select().from(seasons).where(eq(seasons.titleId, titleId)).orderBy(asc(seasons.number)).all();
@@ -49,12 +52,12 @@ export async function syncTitle(db: Db, tmdb: Tmdb, tmdbId: number, opts: { allS
   // Все запросы сделаны — пишем одной транзакцией. Строку перечитываем внутри: пока шли запросы,
   // пользователь мог сменить тип, а параллельное открытие — уже вставить сериал.
   const title = db.transaction((tx) => {
-    const current = tx.select().from(titles).where(eq(titles.tmdbId, tmdbId)).get();
+    const current = tx.select().from(titles).where(and(eq(titles.tmdbType, 'tv'), eq(titles.tmdbId, tmdbId))).get();
     const kind = current?.kindManual ? current.kind : fields.kind;
     const row = tx
       .insert(titles)
       .values({ ...fields, kind, refreshedAt: now, createdAt: now })
-      .onConflictDoUpdate({ target: titles.tmdbId, set: { ...fields, kind, refreshedAt: now } })
+      .onConflictDoUpdate({ target: [titles.tmdbType, titles.tmdbId], set: { ...fields, kind, refreshedAt: now } })
       .returning()
       .get();
     const numbers = newSeasons.map((s) => s.number);
@@ -131,14 +134,22 @@ export async function openTitle(db: Db, tmdb: Tmdb | null, tmdbId: number, now =
   }
 }
 
-/** Выходящие — каждый день; завершённые и закрытые — раз в месяц. */
-export const titlesDueForRefresh = (db: Db, now: number) =>
-  db
+/** Выходящие сериалы и фильмы без цифрового релиза — каждый день; остальное — раз в месяц. */
+export function titlesDueForRefresh(db: Db, now: number) {
+  const today = new Date(now).toLocaleDateString('sv-SE');
+  return db
     .select()
     .from(titles)
-    .where(or(notInArray(titles.status, ['ended', 'canceled']), lt(titles.refreshedAt, now - MONTH)))
     .orderBy(asc(titles.refreshedAt))
-    .all();
+    .all()
+    .filter((t) =>
+      t.refreshedAt < now - MONTH
+        ? true
+        : t.kind === 'movie'
+          ? t.status !== 'released' || !t.releaseDates || !digitalReleased(t, today)
+          : t.status !== 'ended' && t.status !== 'canceled',
+    );
+}
 
 export function upcomingTitles(db: Db, today: string, days = 60): Title[] {
   const end = new Date(Date.parse(today) + days * 86_400_000).toISOString().slice(0, 10);
