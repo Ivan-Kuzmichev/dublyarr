@@ -161,6 +161,15 @@ Self-hosted сервис для одного пользователя: подп�
 - В имени файла и `episode_files.resolution` — реальное разрешение по ffprobe; `episode_files.processed/hdr/duration/tracks`.
 - Настоящая пересборка проверяется в образе: `docker run --rm --entrypoint sh dublyarr:dev scripts/remux-smoke.sh` → «remux smoke: OK».
 
+## Решения (фаза 3b — хранение)
+
+- Правила — `src/lib/retention.ts` (`seasonRule`, `retentionPlan`, `runRetention`, `deleteMediaFile`), настройки и расписание — `src/lib/retention-settings.ts`
+  (`app_settings['retention']`; сезоны по умолчанию выключены — решение владельца; уборка в 04:00 каждый день / по воскресеньям / вручную, задача `retention.tick`).
+- Первое срабатывание каждого правила — список с галочками на «Хранилище» (флаги `retention.<правило>.confirmed`, «не удалять» — `retention.declined`); удаляются только файлы из `episode_files`/`old_copies` внутри медиатеки; история — таблица `deletions`.
+- Исключения сериала — `subscriptions.keep_all`, `subscriptions.auto_delete`.
+- Диск и переполнение — `src/lib/storage.ts` (`diskUsage` через `fs.statfs`, `checkDisk` в синхронизации, пауза через `applySpeed`); данные экрана — `storageData`.
+- Удаление сериала — `src/lib/delete-series.ts` (решение владельца: и торренты с файлами в папке загрузок; общие с другими торрентами файлы остаются — `cleanup.dropTorrents`).
+
 <!-- BEGIN:nextjs-agent-rules -->
 
 # This is NOT the Next.js you know
