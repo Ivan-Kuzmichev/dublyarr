@@ -184,6 +184,7 @@ export const subscriptions = sqliteTable('subscriptions', {
     .unique()
     .references(() => titles.id, { onDelete: 'cascade' }),
   profile: json<Profile>('profile').notNull(),
+  maxSeason: integer('max_season'), // последний сезон, на который распространяется подписка (null — без границы)
   subscribedAt: ts('subscribed_at').notNull(),
   updatedAt: ts('updated_at').notNull(),
 });
@@ -296,6 +297,7 @@ export const downloads = sqliteTable(
     importedAt: ts('imported_at'),
     lastSeededAt: ts('last_seeded_at'),
     lastError: text('last_error'),
+    dubPosition: integer('dub_position'),
     replacedById: integer('replaced_by_id').references((): AnySQLiteColumn => downloads.id, { onDelete: 'set null' }),
     note: text('note'),
   },
@@ -318,6 +320,7 @@ export const episodeFiles = sqliteTable(
     resolution: integer('resolution'),
     method: text('method', { enum: ['hardlink', 'copy'] }).notNull(),
     importedAt: ts('imported_at').notNull(),
+    dubPosition: integer('dub_position'), // позиция профиля, по которой взята серия
   },
   (t) => [uniqueIndex('episode_files_title_season_number').on(t.titleId, t.season, t.number)],
 );
@@ -344,3 +347,50 @@ export type EpisodeFile = typeof episodeFiles.$inferSelect;
 export type WantedState = typeof wantedState.$inferSelect;
 
 export type DownloadFile = { index: number; name: string; size: number; priority: number };
+
+/** Когда Dublyarr впервые увидел серию в озвучке студии (spec §9). */
+export const studioSightings = sqliteTable(
+  'studio_sightings',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    titleId: integer('title_id')
+      .notNull()
+      .references(() => titles.id, { onDelete: 'cascade' }),
+    studioId: integer('studio_id')
+      .notNull()
+      .references(() => studios.id, { onDelete: 'cascade' }),
+    season: integer('season').notNull(),
+    number: integer('number').notNull(),
+    seenAt: ts('seen_at').notNull(),
+    basis: text('basis', { enum: ['seen', 'published'] }).notNull(),
+    fromPack: integer('from_pack', { mode: 'boolean' }).notNull(),
+  },
+  (t) => [uniqueIndex('studio_sightings_key').on(t.titleId, t.studioId, t.season, t.number)],
+);
+export type StudioSighting = typeof studioSightings.$inferSelect;
+
+/** Старые копии после улучшения, ждущие подтверждения правила (spec §8). */
+export const oldCopies = sqliteTable('old_copies', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  titleId: integer('title_id')
+    .notNull()
+    .references(() => titles.id, { onDelete: 'cascade' }),
+  season: integer('season').notNull(),
+  number: integer('number').notNull(),
+  path: text('path').notNull(), // относительно медиатеки, внутри .dublyarr-old
+  size: integer('size').notNull(),
+  reason: text('reason').notNull(),
+  createdAt: ts('created_at').notNull(),
+});
+export type OldCopy = typeof oldCopies.$inferSelect;
+
+/** Заметки для «Сегодня» (и Telegram в 2d). */
+export const notices = sqliteTable('notices', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  titleId: integer('title_id')
+    .notNull()
+    .references(() => titles.id, { onDelete: 'cascade' }),
+  kind: text('kind', { enum: ['season-subscribed', 'season-not-included'] }).notNull(),
+  text: text('text').notNull(),
+  createdAt: ts('created_at').notNull(),
+});

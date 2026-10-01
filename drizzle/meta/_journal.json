@@ -50,6 +50,13 @@
       "when": 1790849664358,
       "tag": "0006_slimy_shadow_king",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1790853284740,
+      "tag": "0007_uneven_sauron",
+      "breakpoints": true
     }
   ]
 }
