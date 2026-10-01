@@ -14,7 +14,9 @@ import { createTelegram, getTelegramSettings, telegramProxy } from '../lib/teleg
 import { sendPending } from '../lib/notify';
 import { pollUpdates } from '../lib/telegram-updates';
 import { checkPacks } from '../lib/pack-watch';
-import { getSetting } from '../lib/settings';
+import { getSetting, setSetting } from '../lib/settings';
+import { runRetention } from '../lib/retention';
+import { getRetention, retentionDue } from '../lib/retention-settings';
 import { beat } from '../lib/heartbeat';
 import { downloads } from '../lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -53,6 +55,14 @@ export async function syncJob(db: Db) {
   }
 }
 
+async function retentionJob(db: Db) {
+  const paths = getSetting<Paths>(db, 'paths');
+  if (!paths) return;
+  const r = await runRetention(db, paths.media, getRetention(db), Date.now());
+  setSetting(db, 'retention.lastRun', Date.now());
+  if (r.deleted || r.pending) log.info(r, 'retention done');
+}
+
 async function packsJob(db: Db) {
   const qbit = getQbit(db);
   const paths = getSetting<Paths>(db, 'paths');
@@ -85,6 +95,12 @@ export const buildHandlers = (db: Db): Record<string, Handler> => ({
     if (r.titles && !getSchedule(db).packChecks) await packsJob(db);
   },
   'packs.check': () => packsJob(db),
+  // уборка медиатеки: по расписанию (04:00) и «Запустить сейчас»
+  'retention.tick': async () => {
+    const settings = getRetention(db);
+    if (retentionDue(settings.schedule, getSetting<number>(db, 'retention.lastRun') ?? null, new Date())) await retentionJob(db);
+  },
+  'retention.run': () => retentionJob(db),
   'telegram.poll': async () => {
     const s = getTelegramSettings(db);
     if (!s?.token) return;

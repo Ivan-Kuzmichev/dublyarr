@@ -4,6 +4,7 @@ import { eq, inArray } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { oldCopies } from './db/schema';
 import { getSetting, setSetting } from './settings';
+import { getRetention } from './retention-settings';
 import { log } from './log';
 import { notifyPendingConfirm } from './notify-events';
 import { formatSize } from './format';
@@ -51,7 +52,8 @@ export const restoreOldCopy = (media: string, stashed: string, rel: string) => r
 export async function settleOldCopy(db: Db, media: string, stashed: string, row: { titleId: number; season: number; number: number }, reason: string, now: number) {
   const abs = insideOld(media, stashed);
   if (!abs) throw new Error('Путь старой копии вне скрытой папки');
-  if (oldCopyRuleConfirmed(db)) {
+  // «сразу» после подтверждения правила — удалить; «через 3 дня» / «при уборке» — ждёт уборки медиатеки
+  if (oldCopyRuleConfirmed(db) && getRetention(db).oldCopy === 'now') {
     await rm(abs, { force: true });
     return;
   }

@@ -110,7 +110,8 @@ export function notifyNotice(db: Db, noticeId: number, titleId: number, text: st
 }
 
 /** Сводка «ждёт подтверждения» (старые копии, уборка) — не чаще раза в сутки. */
-export function notifyPendingConfirm(db: Db, what: 'old-copies' | 'cleanup', text: string, now = Date.now()) {
+export function notifyPendingConfirm(db: Db, what: 'old-copies' | 'cleanup' | 'retention', text: string, now = Date.now()) {
   const day = new Date(now).toISOString().slice(0, 10);
-  notify(db, { key: `${what}:${day}`, kind: 'ask', text, buttons: linkButton(db, what === 'old-copies' ? '/old-copies' : '/cleanup', 'Посмотреть список') }, now);
+  const page = { 'old-copies': '/old-copies', cleanup: '/cleanup', retention: '/storage' }[what];
+  notify(db, { key: `${what}:${day}`, kind: 'ask', text, buttons: linkButton(db, page, 'Посмотреть список') }, now);
 }

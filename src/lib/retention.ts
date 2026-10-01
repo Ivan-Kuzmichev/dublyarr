@@ -1,6 +1,13 @@
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { episodeFiles, episodes, oldCopies, seasons, subscriptions, titles } from './db/schema';
+import { deletions, episodeFiles, episodes, oldCopies, seasons, subscriptions, titles } from './db/schema';
+import { readdir, rm, rmdir } from 'node:fs/promises';
+import path from 'node:path';
+import { getSetting, setSetting } from './settings';
+import { OLD_DIR } from './old-copies';
+import { notifyPendingConfirm } from './notify-events';
+import { formatSize } from './format';
+import { log } from './log';
 import type { RetentionSettings } from './retention-settings';
 
 // Правила хранения (spec §8): что удалило бы каждое правило. Удаляются только файлы, записанные Dublyarr.
@@ -97,4 +104,84 @@ export function retentionPlan(db: Db, settings: RetentionSettings, now: number, 
     }
   }
   return items;
+}
+
+const CONFIRMED: Record<RetentionRule, string> = { seasons: 'retention.seasons.confirmed', oldCopy: 'retention.oldCopy.confirmed', age: 'retention.age.confirmed' };
+const DECLINED = 'retention.declined';
+
+export const retentionConfirmed = (db: Db): Record<RetentionRule, boolean> => ({
+  seasons: getSetting<boolean>(db, CONFIRMED.seasons) === true,
+  oldCopy: getSetting<boolean>(db, CONFIRMED.oldCopy) === true,
+  age: getSetting<boolean>(db, CONFIRMED.age) === true,
+});
+
+/** Абсолютный путь строго внутри корня, иначе null. */
+function inside(root: string, rel: string): string | null {
+  const r = path.resolve(root);
+  const abs = path.resolve(r, rel);
+  const x = path.relative(r, abs);
+  return x && !x.startsWith('..') && !path.isAbsolute(x) && !path.isAbsolute(rel) ? abs : null;
+}
+
+/** Удалить файл медиатеки (только внутри неё) и опустевшие папки над ним. false — путь вне медиатеки или файла нет. */
+export async function deleteMediaFile(media: string, rel: string, under = ''): Promise<boolean> {
+  const root = under ? path.join(media, under) : media;
+  const abs = inside(root, under ? path.relative(under, rel) : rel);
+  if (!abs) return false;
+  await rm(abs, { force: true });
+  const top = path.resolve(media);
+  for (let dir = path.dirname(abs); dir.startsWith(`${top}${path.sep}`) && dir !== top; dir = path.dirname(dir)) {
+    if ((await readdir(dir).catch(() => ['?'])).length) break;
+    await rmdir(dir).catch(() => undefined);
+  }
+  return true;
+}
+
+/**
+ * Уборка медиатеки. Без confirmKeys — по подтверждённым правилам (остальное ждёт и попадает в сводку «Требует внимания»);
+ * с confirmKeys — выполнить отмеченное на странице, включить затронутые правила; неотмеченное — «не удалять».
+ */
+export async function runRetention(db: Db, media: string, settings: RetentionSettings, now: number, opts: { confirmKeys?: string[] } = {}) {
+  const res = { deleted: 0, freed: 0, pending: 0 };
+  const today = new Date(now).toLocaleDateString('sv-SE');
+  const plan = retentionPlan(db, settings, now, today);
+  const confirmed = retentionConfirmed(db);
+  const keys = opts.confirmKeys ? new Set(opts.confirmKeys) : null;
+  const declined = new Set(getSetting<string[]>(db, DECLINED) ?? []);
+  if (keys) {
+    for (const i of plan) if (!confirmed[i.rule] && !keys.has(i.key)) declined.add(i.key);
+    for (const k of keys) declined.delete(k);
+    setSetting(db, DECLINED, [...declined]);
+  }
+  let pendingSize = 0;
+  for (const i of plan) {
+    if (declined.has(i.key)) continue;
+    if (keys ? !keys.has(i.key) : !confirmed[i.rule]) {
+      if (!keys) {
+        res.pending++;
+        pendingSize += i.size;
+      }
+      continue;
+    }
+    if (keys) setSetting(db, CONFIRMED[i.rule], true);
+    let freed = 0;
+    for (const f of i.files) {
+      const ok = f.oldCopyId ? await deleteMediaFile(media, f.path, OLD_DIR) : await deleteMediaFile(media, f.path);
+      if (!ok) {
+        log.warn({ item: i.key, path: f.path }, 'retention: path outside media library');
+        continue;
+      }
+      if (f.episodeFileId) db.delete(episodeFiles).where(eq(episodeFiles.id, f.episodeFileId)).run();
+      if (f.oldCopyId) db.delete(oldCopies).where(eq(oldCopies.id, f.oldCopyId)).run();
+      res.deleted++;
+      freed += f.size;
+    }
+    if (freed) db.insert(deletions).values({ titleId: i.titleId, label: i.label, why: i.why, size: freed, at: now }).run();
+    res.freed += freed;
+  }
+  if (!keys) {
+    setSetting(db, 'retention.pending', { count: res.pending, size: pendingSize });
+    if (res.pending) notifyPendingConfirm(db, 'retention', `🗄 Уборка медиатеки ждёт подтверждения: ${res.pending} · ${formatSize(pendingSize)}`, now);
+  } else setSetting(db, 'retention.pending', { count: 0, size: 0 });
+  return res;
 }

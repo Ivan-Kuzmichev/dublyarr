@@ -2,9 +2,14 @@ import { describe, expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { testDb } from './helpers';
-import { retentionPlan, seasonRule } from '@/lib/retention';
+import { retentionConfirmed, retentionPlan, runRetention, seasonRule } from '@/lib/retention';
+import { settleOldCopy } from '@/lib/old-copies';
+import { getSetting, setSetting } from '@/lib/settings';
+import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
 import { DEFAULT_RETENTION, type RetentionSettings } from '@/lib/retention-settings';
-import { episodeFiles, episodes, oldCopies, seasons, subscriptions, titles } from '@/lib/db/schema';
+import { deletions, episodeFiles, episodes, oldCopies, seasons, subscriptions, titles } from '@/lib/db/schema';
 import type { Profile } from '@/lib/profile-core';
 
 process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
@@ -82,5 +87,58 @@ describe('старая копия и N дней', () => {
     const age = retentionPlan(db, DEFAULT_RETENTION, NOW, today).filter((i) => i.rule === 'age');
     expect(age).toHaveLength(9); // 4 сезона по 2 + вышедшая серия S5
     expect(age[0]).toMatchObject({ why: 'скачано больше 30 дн назад' });
+  });
+});
+
+describe('выполнение уборки', () => {
+  const withFiles = () => {
+    const s = setup();
+    const media = mkdtempSync(path.join(tmpdir(), 'dy-ret-'));
+    for (const f of s.db.select().from(episodeFiles).all()) {
+      mkdirSync(path.dirname(path.join(media, f.path)), { recursive: true });
+      writeFileSync(path.join(media, f.path), 'x');
+    }
+    return { ...s, media };
+  };
+  test('до подтверждения ничего не удаляется; подтверждение — удаляет отмеченное, неотмеченное потом не трогается', async () => {
+    const { db, media } = withFiles();
+    expect(await runRetention(db, media, on(), NOW)).toEqual({ deleted: 0, freed: 0, pending: 1 });
+    expect(existsSync(path.join(media, 'G/S1/E1.mkv'))).toBe(true);
+    expect(getSetting(db, 'retention.pending')).toEqual({ count: 1, size: 6000 });
+    const [item] = retentionPlan(db, on(), NOW, today);
+    expect(await runRetention(db, media, on(), NOW, { confirmKeys: [item.key] })).toMatchObject({ deleted: 6, freed: 6000 });
+    expect(existsSync(path.join(media, 'G/S1'))).toBe(false); // пустая папка сезона убрана
+    expect(existsSync(path.join(media, 'G/S4/E1.mkv'))).toBe(true);
+    expect(retentionConfirmed(db).seasons).toBe(true);
+    expect(db.select().from(deletions).all()).toEqual([expect.objectContaining({ label: 'Гриффины · S01–S03', why: 'старше последнего вышедшего сезона', size: 6000 })]);
+  });
+  test('неотмеченное — «не удалять»', async () => {
+    const { db, media } = withFiles();
+    db.update(subscriptions).set({ autoDelete: true }).run();
+    const ages = retentionPlan(db, DEFAULT_RETENTION, NOW, today).filter((i) => i.rule === 'age');
+    await runRetention(db, media, DEFAULT_RETENTION, NOW, { confirmKeys: [ages[0].key] });
+    expect(await runRetention(db, media, DEFAULT_RETENTION, NOW + DAY)).toMatchObject({ deleted: 0, pending: 0 });
+    expect(db.select().from(episodeFiles).all()).toHaveLength(8);
+  });
+  test('путь вне медиатеки — отказ, запись на месте', async () => {
+    const { db, media } = withFiles();
+    db.update(episodeFiles).set({ path: '../evil.mkv' }).where(eq(episodeFiles.season, 1)).run();
+    const [item] = retentionPlan(db, on(), NOW, today);
+    const r = await runRetention(db, media, on(), NOW, { confirmKeys: [item.key] });
+    expect(r.deleted).toBe(4);
+    expect(db.select().from(episodeFiles).where(eq(episodeFiles.season, 1)).all()).toHaveLength(2);
+  });
+  test('«Удалить через 3 дня»: старая копия после подтверждения правила остаётся в скрытой папке до уборки', async () => {
+    const { db, media } = withFiles();
+    setSetting(db, 'retention', { ...DEFAULT_RETENTION, oldCopy: '3days' });
+    setSetting(db, 'retention.oldCopy.confirmed', true);
+    mkdirSync(path.join(media, '.dublyarr-old/G'), { recursive: true });
+    writeFileSync(path.join(media, '.dublyarr-old/G/x.mkv'), 'old');
+    await settleOldCopy(db, media, '.dublyarr-old/G/x.mkv', { titleId: 1, season: 5, number: 1 }, '1080p → 2160p', NOW);
+    expect(existsSync(path.join(media, '.dublyarr-old/G/x.mkv'))).toBe(true);
+    const settings = { ...DEFAULT_RETENTION, oldCopy: '3days' as const };
+    expect((await runRetention(db, media, settings, NOW + DAY)).deleted).toBe(0);
+    expect((await runRetention(db, media, settings, NOW + 4 * DAY)).deleted).toBe(1);
+    expect(existsSync(path.join(media, '.dublyarr-old/G/x.mkv'))).toBe(false);
   });
 });
