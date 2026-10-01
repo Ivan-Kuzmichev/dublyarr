@@ -141,6 +141,13 @@
       "when": 1790887797088,
       "tag": "0019_oval_patch",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1790887976326,
+      "tag": "0020_clean_human_torch",
+      "breakpoints": true
     }
   ]
 }

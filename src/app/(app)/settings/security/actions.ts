@@ -8,6 +8,7 @@ import { getUser, setPassword, setTotpSecret } from '@/lib/auth/users';
 import { verifyPassword, validateNewPassword } from '@/lib/auth/password';
 import { startTotpSetup, confirmTotpSetup, disableTotp } from '@/lib/auth/twofa';
 import { revokeAllSessions, revokeSessionById, revokeTrustedDevices } from '@/lib/auth/sessions';
+import { createApiToken, revokeApiToken, setApiEnabled } from '@/lib/api/tokens';
 
 export type TwoFaState = { mode: 'off' | 'setup' | 'on' | 'disabling'; secret?: string; qr?: string; error?: string };
 export type PasswordState = { error?: string; ok?: string };
@@ -80,5 +81,32 @@ export async function logoutEverywhereAction() {
   const db = getDb();
   revokeAllSessions(db, user.id, session.id);
   revokeTrustedDevices(db, user.id);
+  revalidatePath('/settings/security');
+}
+
+export type ApiState = { ok?: string; error?: string; token?: string };
+
+/** «API включён»: доступ по токену только из локальной сети. */
+export async function saveApiAccessAction(_prev: ApiState, form: FormData): Promise<ApiState> {
+  await requireSession();
+  setApiEnabled(getDb(), form.get('enabled') === 'on');
+  revalidatePath('/settings/security');
+  return { ok: form.get('enabled') === 'on' ? 'API включён' : 'API выключен' };
+}
+
+/** Новый токен — показывается один раз, в базе остаётся только хэш. */
+export async function createApiTokenAction(_prev: ApiState, form: FormData): Promise<ApiState> {
+  await requireSession();
+  const name = String(form.get('name') ?? '').trim();
+  if (!name) return { error: 'Назовите токен — например, «Claude»' };
+  const { token } = createApiToken(getDb(), name);
+  revalidatePath('/settings/security');
+  return { token };
+}
+
+export async function revokeApiTokenAction(form: FormData) {
+  await requireSession();
+  const id = Number(form.get('id'));
+  if (Number.isInteger(id) && id > 0) revokeApiToken(getDb(), id);
   revalidatePath('/settings/security');
 }

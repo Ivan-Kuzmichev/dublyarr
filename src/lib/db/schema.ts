@@ -520,3 +520,14 @@ export const layaVersions = sqliteTable('laya_versions', {
   adapters: json<LayaAdapterSet>('adapters').notNull(),
   metrics: json<Record<string, { accuracy: number; logLoss: number; auto: number; n: number }>>('metrics').notNull(),
 });
+
+/** Токены API (в базе — только sha256), «Настройки → Безопасность». */
+export const apiTokens = sqliteTable('api_tokens', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  name: text('name').notNull(),
+  hash: text('hash').notNull().unique(),
+  prefix: text('prefix').notNull(), // первые символы — узнать токен в списке
+  createdAt: ts('created_at').notNull(),
+  lastUsedAt: ts('last_used_at'),
+  lastIp: text('last_ip'),
+});
