@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 // Быстрый фильтр без БД: нет cookie сеанса — на вход. Настоящая проверка сеанса — в requireSession().
-const PUBLIC = [/^\/login/, /^\/setup/, /^\/_next\//, /^\/favicon/, /^\/api\/health$/];
+const PUBLIC = [/^\/login/, /^\/setup/, /^\/_next\//, /^\/favicon/, /^\/api\/health$/, /^\/api\/v1\//]; // API — свой доступ по токену
 
 export function proxy(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
