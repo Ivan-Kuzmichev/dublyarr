@@ -10,8 +10,17 @@ export function formatAirDate(date: string | null, today: string): string {
   if (diff === 0) return 'сегодня';
   if (diff === 1) return 'завтра';
   if (diff > 1 && diff <= 7) return `через ${diff} дн`;
+  return formatShortDate(date, today);
+}
+
+/** «3 окт», другой год — «5 янв 2027». */
+export function formatShortDate(date: string, today: string): string {
   const [y, m, d] = date.split('-').map(Number);
   return `${d} ${MONTHS[m - 1]}${y !== Number(today.slice(0, 4)) ? ` ${y}` : ''}`;
+}
+
+export function addDays(date: string, days: number): string {
+  return new Date(Date.parse(date) + days * DAY).toISOString().slice(0, 10);
 }
 
 /** Последний вышедший обычный сезон; если ни один не вышел — первый; спецвыпуски — только если больше ничего нет. */
