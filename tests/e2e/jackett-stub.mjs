@@ -35,7 +35,9 @@ http
     if (t === 'indexers') return send(read('indexers-jackett.xml'));
     if (t === 'search') {
       const q = (url.searchParams.get('q') ?? '').toLowerCase();
-      return send(/game|thrones|игра|престол|got/.test(q) ? read('search-jackett.xml').replace('</channel>', `${EXTRA}</channel>`) : EMPTY);
+      // ссылки на .torrent — на эту же заглушку, а не на настоящий Jackett из фикстуры
+      const body = read('search-jackett.xml').replace('</channel>', `${EXTRA}</channel>`).replaceAll('http://127.0.0.1:9117/', `http://127.0.0.1:${port}/`);
+      return send(/game|thrones|игра|престол|got/.test(q) ? body : EMPTY);
     }
     res.writeHead(404);
     res.end();

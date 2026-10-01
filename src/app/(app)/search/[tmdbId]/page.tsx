@@ -12,6 +12,7 @@ import { pickDefaultSeason, todayIso } from '@/lib/dates';
 import { formatSize, qualityLabel } from '@/lib/format';
 import type { Verdict } from '@/lib/evaluate';
 import { AssignStudio } from './AssignStudio';
+import { DownloadButton } from './DownloadButton';
 import { answerMatchAction } from './actions';
 
 export const metadata = { title: 'Ручной поиск · Dublyarr' };
@@ -24,7 +25,7 @@ const GENERIC = /^(?:DUB|MVO|DVO|VO|AVO)$/;
 // Как распознана озвучка раздачи: по самому надёжному из способов.
 const recognizedBy = (dubs: ManualRow['dubs']) => (['tracker', 'title', 'tag'] as const).find((b) => dubs.some((d) => d.by === b && (d.studioName || b === 'tag'))) ?? 'none';
 
-function Row({ row, tmdbId, studios }: { row: ManualRow; tmdbId: number; studios: { id: number; name: string }[] }) {
+function Row({ row, tmdbId, studios, season, episode }: { row: ManualRow; tmdbId: number; studios: { id: number; name: string }[]; season: number; episode?: number }) {
   const { release: r, verdict: v, dubs } = row;
   const unknown = dubs.find((d) => !d.studioName && d.by !== 'tag' && !GENERIC.test(d.label));
   const dim = v.tone === 'reject' ? 'opacity-60' : '';
@@ -54,6 +55,7 @@ function Row({ row, tmdbId, studios }: { row: ManualRow; tmdbId: number; studios
       </div>
       <span className={`text-[13px] ${TONE[v.tone]}`}>{v.reason}</span>
       <div className="flex flex-wrap items-center gap-2">
+        {(v.tone === 'best' || v.tone === 'ok') && <DownloadButton tmdbId={tmdbId} releaseId={r.id} season={season} episode={episode} />}
         {unknown && <AssignStudio tmdbId={tmdbId} label={unknown.label} studios={studios} />}
         {(canConfirm || canReject) && (
           <form action={answerMatchAction} className="flex gap-1">
@@ -154,11 +156,10 @@ export default async function ManualSearchPage({ params, searchParams }: { param
                 <span />
               </div>
               {result.rows.map((row) => (
-                <Row key={row.release.id} row={row} tmdbId={tmdbId} studios={studios} />
+                <Row key={row.release.id} row={row} tmdbId={tmdbId} studios={studios} season={season} episode={episode} />
               ))}
             </div>
           )}
-          <p className="m-0 text-[13px] text-faint">Скачивание из ручного поиска появится в следующем обновлении.</p>
         </>
       )}
     </div>

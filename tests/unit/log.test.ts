@@ -29,3 +29,7 @@ test('redactUrl прячет ключи и логин:пароль', () => {
   expect(redactUrl('http://user:pass@host/x')).toBe('http://***:***@host/x');
   expect(redactUrl('не url')).toBe('не url');
 });
+
+test('ключ Jackett в ссылке на .torrent маскируется', () => {
+  expect(redactUrl('http://j:9117/dl/rutracker/?jackett_apikey=SECRET&path=abc')).toBe('http://j:9117/dl/rutracker/?jackett_apikey=***&path=abc');
+});

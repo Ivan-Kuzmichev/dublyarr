@@ -75,7 +75,9 @@ http
     if (p === '/api/v2/torrents/createCategory') return res.end('');
     if (p === '/api/v2/torrents/add') {
       const parts = multipart(body, req.headers['content-type']);
-      const meta = readTorrent(parts.torrents);
+      const meta = parts.torrents
+        ? readTorrent(parts.torrents)
+        : { hash: /btih:([0-9a-f]{40})/i.exec(parts.urls.toString())[1].toLowerCase(), name: 'magnet', files: [{ name: 'magnet.mkv', size: 1024 }] };
       const paused = parts.paused?.toString() === 'true';
       torrents.set(meta.hash, {
         hash: meta.hash, name: meta.name, category: parts.category.toString(), save_path: parts.savepath.toString(),

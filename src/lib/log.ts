@@ -12,7 +12,7 @@ export function createLogger(opts: { level?: string; destination?: pino.Destinat
 
 export const log = createLogger({ name: process.env.DUBLYARR_PROCESS ?? 'web' });
 
-const SECRET_PARAMS = /^(apikey|api_key|token|passkey|password)$/i;
+const SECRET_PARAMS = /^(apikey|api_key|jackett_apikey|token|passkey|password)$/i;
 
 /** Маскирует ключи в query и логин:пароль в адресе — для логов. */
 export function redactUrl(raw: string): string {
