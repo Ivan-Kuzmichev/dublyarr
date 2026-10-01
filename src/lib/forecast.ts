@@ -1,3 +1,4 @@
+import { isMovieProfile } from './movie-profile';
 import { and, eq } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { episodes, studioSightings, subscriptions, wantedState } from './db/schema';
@@ -140,7 +141,7 @@ export function eagerTitles(db: Db, today: string): Set<number> {
     .all();
   const cache = new Map<number, Map<number, StudioDelay>>();
   for (const { w, profile, airDate } of rows) {
-    if (!airDate || out.has(w.titleId)) continue;
+    if (!airDate || out.has(w.titleId) || isMovieProfile(profile)) continue;
     if (!cache.has(w.titleId)) cache.set(w.titleId, studioDelays(db, w.titleId));
     const f = forecastEpisode(profile, { season: w.season, number: w.number, airDate }, cache.get(w.titleId)!, [], () => undefined, today);
     if (f.eta && f.eta <= today) out.add(w.titleId);

@@ -1,3 +1,4 @@
+import { isMovieProfile } from './movie-profile';
 import { eq } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { releases, type Release } from './db/schema';
@@ -23,7 +24,7 @@ export async function runManualSearch(db: Db, tmdbId: number, target: Target, op
   if (!title) throw new Error('Сериал не найден');
   const { releases: found, sources } = await searchTitle(db, title.id, opts);
   const sub = getSubscription(db, title.id);
-  const profile = sub?.profile ?? getDefaultProfile(db, title.kind);
+  const profile = sub && !isMovieProfile(sub.profile) ? sub.profile : getDefaultProfile(db, title.kind);
   const names = new Map(listStudios(db).map((s) => [s.id, s.name]));
   const episodes = listSeasons(db, title.id).flatMap((s) => listEpisodes(db, title.id, s.number));
   const verdicts = evaluateReleases(found, { profile, episodes, studioName: (id) => names.get(id), today: opts.today ?? todayIso() }, target);

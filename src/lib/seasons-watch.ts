@@ -1,3 +1,4 @@
+import { isMovieProfile } from './movie-profile';
 import { and, eq, max } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { notices, seasons, subscriptions } from './db/schema';
@@ -16,7 +17,7 @@ export function extendSeasons(db: Db, titleId: number, now = Date.now()): 'exten
   const sub = db.select().from(subscriptions).where(eq(subscriptions.titleId, titleId)).get();
   const last = lastSeason(db, titleId);
   if (!sub || sub.maxSeason === null || last === null || last <= sub.maxSeason) return 'none';
-  if (sub.profile.autoNextSeason) {
+  if (!isMovieProfile(sub.profile) && sub.profile.autoNextSeason) {
     db.update(subscriptions).set({ maxSeason: last }).where(eq(subscriptions.id, sub.id)).run();
     addNotice(db, titleId, 'season-subscribed', `Подписался на ${last}-й сезон`, now);
     return 'extended';

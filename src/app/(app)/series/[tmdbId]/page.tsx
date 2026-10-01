@@ -18,6 +18,7 @@ import { RefreshButton } from './RefreshButton';
 import { SubscribeButton } from './SubscribeButton';
 import { SubscriptionPanel } from './SubscriptionPanel';
 import { seriesKind } from '@/lib/profile';
+import { isMovieProfile } from '@/lib/movie-profile';
 import { RetentionToggles } from './RetentionToggles';
 import { DeleteSeriesDialog } from '@/app/(app)/storage/DeleteSeriesDialog';
 import { getRetention } from '@/lib/retention-settings';
@@ -139,7 +140,7 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
               subtitle={[t.nameOriginal !== t.nameRu ? t.nameOriginal : null, t.year, `${regular} ${plural(regular, 'сезон', 'сезона', 'сезонов')}, ${episodeTotal} ${plural(episodeTotal, 'серия', 'серии', 'серий')}`, STATUS[t.status]].filter(Boolean).join(' · ')}
               studios={studios}
               names={studioNames}
-              profile={sub?.profile ?? getDefaultProfile(db, t.kind)}
+              profile={sub && !isMovieProfile(sub.profile) ? sub.profile : getDefaultProfile(db, t.kind)}
               basis={basis}
             />
             <Link href={`/search/${t.tmdbId}?s=${current}`} className={buttonClass('secondary', 'md', 'no-underline hover:text-text')}>
@@ -157,7 +158,7 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
       <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_340px]">
       {sub && (
         <div className="lg:order-2">
-          <SubscriptionPanel profile={sub.profile} studioNames={studioNames} />
+          {!isMovieProfile(sub.profile) && <SubscriptionPanel profile={sub.profile} studioNames={studioNames} />}
           <section className="mt-5 flex flex-col gap-2 rounded-2xl border border-line bg-surface p-5">
             <h3 className="m-0 text-base font-semibold">Хранение</h3>
             <RetentionToggles tmdbId={t.tmdbId} keepAll={sub.keepAll} autoDelete={sub.autoDelete} days={getRetention(db).age.days} />

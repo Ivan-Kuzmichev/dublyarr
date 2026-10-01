@@ -1,3 +1,4 @@
+import { isMovieProfile } from './movie-profile';
 import { and, eq, gte, inArray, lte } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { downloads, episodeFiles, episodes, studios, subscriptions, titles, wantedState, type Download } from './db/schema';
@@ -170,7 +171,7 @@ function waitingWithForecast(db: Db, today: string) {
     .all()
     .map(({ wanted_state: w, subscriptions: sub }) => {
       const aired = air.get(`${w.titleId}:${key(w.season, w.number)}`) ?? null;
-      return { w, aired, f: aired ? fc(w.titleId, sub.profile, w.season, w.number, aired) : null };
+      return { w, aired, f: aired && !isMovieProfile(sub.profile) ? fc(w.titleId, sub.profile, w.season, w.number, aired) : null };
     });
 }
 
@@ -303,7 +304,7 @@ function expectedText(date: string, today: string) {
 export function seriesDubColumns(db: Db, titleId: number, season: number, today: string): { columns: string[]; cells: Map<number, DubCell[]> } {
   const sub = db.select().from(subscriptions).where(eq(subscriptions.titleId, titleId)).get();
   const cells = new Map<number, DubCell[]>();
-  if (!sub) return { columns: [], cells };
+  if (!sub || isMovieProfile(sub.profile)) return { columns: [], cells };
   const name = studioNames(db);
   const dubs = sub.profile.dubs.filter((d) => d.kind !== 'original').slice(0, 3);
   const delays = studioDelays(db, titleId);

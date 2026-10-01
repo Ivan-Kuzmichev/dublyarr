@@ -1,3 +1,4 @@
+import { isMovieProfile } from './movie-profile';
 import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { downloads, episodeFiles, retiredEpisodes, subscriptions, titles, wantedState, type EpisodeRef, type Release } from './db/schema';
@@ -61,8 +62,9 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   const res = { started: 0, waiting: 0, missing: 0 };
   const now = deps.now ?? Date.now();
   const today = deps.today ?? todayIso();
-  const sub = db.select().from(subscriptions).where(eq(subscriptions.titleId, titleId)).get();
-  if (!sub) return res;
+  const row = db.select().from(subscriptions).where(eq(subscriptions.titleId, titleId)).get();
+  if (!row || isMovieProfile(row.profile)) return res; // фильмы ищет searchMovie
+  const sub = { ...row, profile: row.profile };
   const profile = sub.profile;
   const seasons = listSeasons(db, titleId);
   const eps = seasons.flatMap((s) => listEpisodes(db, titleId, s.number));

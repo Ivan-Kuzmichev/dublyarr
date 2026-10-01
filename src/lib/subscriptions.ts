@@ -1,3 +1,4 @@
+import { isMovieProfile, type MovieProfile } from './movie-profile';
 import { and, eq, gte, gt, max, min } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { episodes, retiredEpisodes, seasons, subscriptions, titles, type Episode, type Subscription, type Title } from './db/schema';
@@ -7,8 +8,10 @@ export class SubscriptionError extends Error {}
 
 export const getSubscription = (db: Db, titleId: number) => db.select().from(subscriptions).where(eq(subscriptions.titleId, titleId)).get();
 
-export function subscribe(db: Db, titleId: number, profile: Profile, now = Date.now()): Subscription {
-  if (!db.select({ id: titles.id }).from(titles).where(eq(titles.id, titleId)).get()) throw new SubscriptionError('Сериал не найден');
+export function subscribe(db: Db, titleId: number, profile: Profile | MovieProfile, now = Date.now()): Subscription {
+  const t = db.select({ id: titles.id, kind: titles.kind }).from(titles).where(eq(titles.id, titleId)).get();
+  if (!t) throw new SubscriptionError('Сериал не найден');
+  if ((t.kind === 'movie') !== isMovieProfile(profile)) throw new SubscriptionError('Профиль не подходит к этому виду');
   if (getSubscription(db, titleId)) throw new SubscriptionError('Уже есть подписка');
   const maxSeason = db.select({ n: max(seasons.number) }).from(seasons).where(eq(seasons.titleId, titleId)).get()?.n ?? null;
   // новая подписка — заново: удалённые раньше серии снова нужны
@@ -16,7 +19,9 @@ export function subscribe(db: Db, titleId: number, profile: Profile, now = Date.
   return db.insert(subscriptions).values({ titleId, profile, maxSeason, subscribedAt: now, updatedAt: now }).returning().get();
 }
 
-export function updateSubscription(db: Db, titleId: number, profile: Profile, now = Date.now()): Subscription {
+export function updateSubscription(db: Db, titleId: number, profile: Profile | MovieProfile, now = Date.now()): Subscription {
+  const t = db.select({ kind: titles.kind }).from(titles).where(eq(titles.id, titleId)).get();
+  if (t && (t.kind === 'movie') !== isMovieProfile(profile)) throw new SubscriptionError('Профиль не подходит к этому виду');
   // правка подписки, как и подписка, включает все известные сезоны (иначе новый сезон не включить)
   const maxSeason = db.select({ n: max(seasons.number) }).from(seasons).where(eq(seasons.titleId, titleId)).get()?.n ?? null;
   const row = db.update(subscriptions).set({ profile, maxSeason, updatedAt: now }).where(eq(subscriptions.titleId, titleId)).returning().get();
@@ -29,7 +34,8 @@ export const unsubscribe = (db: Db, titleId: number) => db.delete(subscriptions)
 type Ep = Pick<Episode, 'season' | 'number' | 'airDate'>;
 
 /** Какие вышедшие серии нужны по подписке (без спецвыпусков и серий без даты). Сегодняшняя — уже нужна. */
-export function wantedEpisodes(sub: Pick<Subscription, 'profile' | 'subscribedAt'> & { maxSeason?: number | null }, eps: Ep[], today: string) {
+export function wantedEpisodes(sub: Pick<Subscription, 'subscribedAt' | 'profile'> & { maxSeason?: number | null }, eps: Ep[], today: string) {
+  if (isMovieProfile(sub.profile)) return []; // у фильма нет серий
   const since = new Date(sub.subscribedAt).toLocaleDateString('sv-SE');
   const s = sub.profile.scope;
   return eps
@@ -47,7 +53,7 @@ export function wantedEpisodes(sub: Pick<Subscription, 'profile' | 'subscribedAt
 }
 
 export type LibraryFilter = 'all' | 'airing' | 'ended';
-export type LibraryItem = { title: Title; profile: Profile; next: { season: number; number: number; airDate: string } | null };
+export type LibraryItem = { title: Title; profile: Profile | MovieProfile; next: { season: number; number: number; airDate: string } | null };
 
 const isEnded = (t: Title) => t.status === 'ended' || t.status === 'canceled';
 

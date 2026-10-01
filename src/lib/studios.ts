@@ -1,3 +1,4 @@
+import { isMovieProfile, type MovieProfile } from './movie-profile';
 import { eq } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { studios, subscriptions, type Studio } from './db/schema';
@@ -64,7 +65,7 @@ export function updateStudio(db: Db, id: number, input: StudioInput): Studio {
 
 /** Где используется студия: подписки и сохранённые профили по умолчанию. */
 export function studioUsage(db: Db, id: number) {
-  const uses = (p?: Profile) => !!p?.dubs.some((d) => d.kind === 'studio' && d.studioId === id);
+  const uses = (p?: Profile | MovieProfile) => !!p && !isMovieProfile(p) && p.dubs.some((d) => d.kind === 'studio' && d.studioId === id);
   const subs = db
     .select({ profile: subscriptions.profile })
     .from(subscriptions)

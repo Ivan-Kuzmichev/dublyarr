@@ -3,6 +3,7 @@ import type { Db } from './db/client';
 import { getSetting, setSetting } from './settings';
 import { findStudioByAlias, listStudios } from './studios';
 import { validateProfile, type DubPosition, type Profile } from './profile-core';
+import { DEFAULT_MOVIE_PROFILE, validateMovieProfile, type MovieProfile } from './movie-profile';
 
 export * from './profile-core';
 
@@ -61,3 +62,9 @@ export function subscribeDialogStudios(db: Db, k: Title['kind']) {
 
 /** Вид для сериальных профилей и словаря студий: фильм считается сериалом. */
 export const seriesKind = (k: Title['kind']): 'series' | 'anime' => (k === 'anime' ? 'anime' : 'series');
+
+/** Профиль фильма по умолчанию: «Настройки → Фильмы», испорченный или пустой — встроенный. */
+export function getMovieDefault(db: Db): MovieProfile {
+  const r = validateMovieProfile(getSetting<unknown>(db, 'profile.movie'));
+  return r.ok ? r.profile : DEFAULT_MOVIE_PROFILE;
+}

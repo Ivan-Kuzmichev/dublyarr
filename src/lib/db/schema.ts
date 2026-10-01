@@ -1,6 +1,7 @@
 import type { ParsedRelease } from '../parse/types';
 import type { MatchResult } from '../match-types';
 import type { Profile } from '../profile';
+import type { MovieProfile } from '../movie-profile';
 import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey, type AnySQLiteColumn } from 'drizzle-orm/sqlite-core';
 
 /** Время — миллисекунды unix. */
@@ -193,7 +194,7 @@ export const subscriptions = sqliteTable('subscriptions', {
     .notNull()
     .unique()
     .references(() => titles.id, { onDelete: 'cascade' }),
-  profile: json<Profile>('profile').notNull(),
+  profile: json<Profile | MovieProfile>('profile').notNull(), // фильм — MovieProfile (type: 'movie')
   maxSeason: integer('max_season'),
   lastSearchedAt: ts('last_searched_at'),
   keepAll: integer('keep_all', { mode: 'boolean' }).notNull().default(false), // исключение: хранить все сезоны

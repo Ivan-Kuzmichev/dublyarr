@@ -1,4 +1,5 @@
-import type { Episode, EpisodeFile, Release, Subscription } from './db/schema';
+import { isMovieProfile, type MovieProfile } from './movie-profile';
+import type { Episode, EpisodeFile, Release } from './db/schema';
 import type { Verdict } from './evaluate';
 import { dubLabel, type Profile } from './profile-core';
 
@@ -9,8 +10,9 @@ const DAY = 86_400_000;
 const daysSince = (date: string, today: string) => Math.round((Date.parse(`${today}T00:00:00Z`) - Date.parse(`${date}T00:00:00Z`)) / DAY);
 
 /** Скачанные серии, которые ещё стоит улучшать: не старше 30 дней после эфира, взяты не по первой позиции или ниже целевого качества. */
-export function upgradeCandidates(sub: Pick<Subscription, 'profile'>, files: EpisodeFile[], episodes: Pick<Episode, 'season' | 'number' | 'airDate'>[], today: string): EpisodeFile[] {
+export function upgradeCandidates(sub: { profile: Profile | MovieProfile }, files: EpisodeFile[], episodes: Pick<Episode, 'season' | 'number' | 'airDate'>[], today: string): EpisodeFile[] {
   const p = sub.profile;
+  if (isMovieProfile(p)) return []; // фильмы — movieUpgrade
   return files.filter((f) => {
     const e = episodes.find((x) => x.season === f.season && x.number === f.number);
     if (!e?.airDate || daysSince(e.airDate, today) > UPGRADE_DAYS) return false;
