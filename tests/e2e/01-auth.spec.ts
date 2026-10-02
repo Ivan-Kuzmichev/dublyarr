@@ -6,6 +6,11 @@ import { totpAt, currentStep } from '../../src/lib/auth/totp';
 test('первый запуск → 2FA → выход → вход с кодом → доверенное устройство', async ({ page, context }) => {
   await page.goto('/');
   await expect(page).toHaveURL(/\/setup$/);
+  // фавиконка — без входа, ссылка на неё в странице
+  const icon = await page.request.get('/icon.svg');
+  expect(icon.status()).toBe(200);
+  expect(icon.headers()['content-type']).toContain('svg');
+  await expect(page.locator('link[rel="icon"]')).toHaveAttribute('href', /icon\.svg/);
   await page.getByLabel('Логин').fill('admin');
   await page.getByLabel('Пароль', { exact: true }).fill('очень-длинный-пароль');
   await page.getByLabel('Повторите пароль').fill('очень-длинный-пароль');
