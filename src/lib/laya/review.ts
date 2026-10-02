@@ -36,7 +36,8 @@ export function applyMatchDecision(m: MatchResult, d: Decision<boolean> | null):
   if (!d || d.by !== 'laya' || m.level !== 'doubt' || m.rule) return m;
   const laya = { p: d.p, answer: d.answer };
   if (d.sure && d.answer) return { ...m, level: 'match', reasons: [`Laya: тот же · ${pct(d.p)}`], laya };
-  if (d.sure) return { ...m, level: 'reject', reasons: [`Laya: не тот · ${pct(1 - d.p)}`], laya };
+  // «нет» не отклоняет молча: раздача остаётся вопросом пользователю с мнением Laya (её уверенное «нет» уже ошибалось)
+  if (d.sure) return { ...m, reasons: [...m.reasons, `Laya думает, что не тот · ${pct(1 - d.p)}`], laya };
   return { ...m, reasons: [...m.reasons, `Laya не уверена · ${pct(Math.max(d.p, 1 - d.p))}`], laya };
 }
 
