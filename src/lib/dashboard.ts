@@ -180,31 +180,6 @@ function waitingWithForecast(db: Db, today: string) {
     });
 }
 
-/** Одна карточка на сериал: главная — качающаяся (иначе последняя скачанная), код — все серии вместе. */
-function groupFresh(items: (FreshItem & { at: number; eps: { season: number; number: number }[] })[]): FreshItem[] {
-  const groups = new Map<string, typeof items>();
-  for (const it of items) {
-    const k = `${it.movie ? 'm' : 's'}${it.tmdbId}`;
-    groups.set(k, [...(groups.get(k) ?? []), it]);
-  }
-  return [...groups.values()].map((g) => {
-    const { at: _a, eps: _e, ...head } = g[0]; // список уже отсортирован: качающиеся, затем свежие
-    if (g.length === 1 || head.movie) return head;
-    const eps = [...new Map(g.flatMap((x) => x.eps).map((e) => [`${e.season}:${e.number}`, e])).values()].sort((a, b) => a.season - b.season || a.number - b.number);
-    return { ...head, code: rangeCode(eps) };
-  });
-}
-
-/** «S01E03», «S01E01–E05» (подряд), «S01 · 4 сер.», «12 сер.» (несколько сезонов). */
-function rangeCode(eps: { season: number; number: number }[]): string {
-  if (eps.length === 1) return code(eps[0].season, eps[0].number);
-  const seasons = new Set(eps.map((e) => e.season));
-  if (seasons.size > 1) return `${eps.length} сер.`;
-  const s = eps[0].season;
-  const contiguous = eps.every((e, i) => i === 0 || e.number === eps[i - 1].number + 1);
-  return contiguous ? `${code(s, eps[0].number)}–E${pad(eps.at(-1)!.number)}` : `S${pad(s)} · ${eps.length} сер.`;
-}
-
 export function todayData(db: Db, today: string, now = Date.now()) {
   const meta = new Map(
     db
@@ -213,7 +188,7 @@ export function todayData(db: Db, today: string, now = Date.now()) {
       .all()
       .map((t) => [t.id, { ...t, movie: t.kind === 'movie' }]),
   );
-  const fresh: (FreshItem & { at: number; eps: { season: number; number: number }[] })[] = [];
+  const fresh: (FreshItem & { at: number })[] = [];
   const image = (t: { id: number; posterPath: string | null; backdropPath: string | null; movie: boolean }, ep?: { season: number; number: number }): FreshImage => {
     const still =
       ep && !t.movie
@@ -227,7 +202,7 @@ export function todayData(db: Db, today: string, now = Date.now()) {
     const t = meta.get(d.titleId)!;
     const pct = Math.round(d.progress * 100);
     const c = d.episodes.length === 1 ? code(d.episodes[0].season, d.episodes[0].number) : `S${pad(d.season)} · ${d.episodes.length} сер.`;
-    fresh.push({ tmdbId: t.tmdbId, movie: t.movie, title: t.title, image: image(t, d.episodes[0]), code: d.kind === 'movie' ? 'фильм' : c, quality: quality(d.resolution), state: downloadingText(d), loading: true, pct, at: Number.MAX_SAFE_INTEGER - d.addedAt, eps: d.episodes });
+    fresh.push({ tmdbId: t.tmdbId, movie: t.movie, title: t.title, image: image(t, d.episodes[0]), code: d.kind === 'movie' ? 'фильм' : c, quality: quality(d.resolution), state: downloadingText(d), loading: true, pct, at: Number.MAX_SAFE_INTEGER - d.addedAt });
   }
   for (const f of db.select().from(episodeFiles).where(gte(episodeFiles.importedAt, now - 72 * HOUR)).all().sort((a, b) => b.importedAt - a.importedAt)) {
     const t = meta.get(f.titleId)!;
@@ -242,11 +217,9 @@ export function todayData(db: Db, today: string, now = Date.now()) {
       loading: false,
       pct: 100,
       at: f.importedAt,
-      eps: [{ season: f.season, number: f.number }],
     });
   }
   fresh.sort((a, b) => Number(b.loading) - Number(a.loading) || b.at - a.at);
-  const freshCards = groupFresh(fresh);
 
   const waiting: WaitingItem[] = waitingWithForecast(db, today)
     .map(({ w, aired, f }) => {
@@ -320,7 +293,7 @@ export function todayData(db: Db, today: string, now = Date.now()) {
 
   const downloadsList: QueueRow[] = activityQueue(db, now).filter((r) => r.active);
   return {
-    fresh: freshCards,
+    fresh: fresh.map(({ at: _a, ...rest }) => rest),
     waiting,
     attention,
     news: recentNotices(db, now),

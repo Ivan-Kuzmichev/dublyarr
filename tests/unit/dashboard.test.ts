@@ -53,8 +53,10 @@ test('без подписки статусов «ищем» нет', () => {
 test('«Сегодня»', () => {
   const { db } = setup();
   const d = todayData(db, today, NOW);
-  // одна карточка на сериал: качается S01E02, скачана S01E01
-  expect(d.fresh).toEqual([expect.objectContaining({ tmdbId: 7, title: 'Дэдлок', code: 'S01E01–E02', state: 'Качается · 64 %', loading: true })]);
+  expect(d.fresh).toEqual([
+    expect.objectContaining({ tmdbId: 7, title: 'Дэдлок', code: 'S01E02', state: 'Качается · 64 %', loading: true }),
+    expect.objectContaining({ code: 'S01E01', state: 'HDrezka Studio · скачано 1 ч назад', loading: false, quality: '1080p' }),
+  ]);
   expect(d.waiting).toEqual([expect.objectContaining({ code: 'S01E03', aired: '23 сент', until: '3 окт', reason: 'Рано: ждём HDrezka Studio до 3 окт' })]);
   expect(d.downloads).toHaveLength(1);
   expect(d.week.map((w) => [w.day, w.code, w.kind])).toEqual([
@@ -164,23 +166,10 @@ test('«Новые серии»: кадр серии → фон сериала �
   const { db, t } = setup();
   db.update(titles).set({ posterPath: '/poster.jpg', backdropPath: '/backdrop.jpg' }).run();
   db.update(episodes).set({ stillPath: '/still.jpg' }).where(eq(episodes.number, 1)).run();
-  // карточка загрузки S01E02: кадра нет — фон
-  expect(todayData(db, today, NOW).fresh[0].image).toEqual({ path: '/backdrop.jpg', wide: true });
-  db.delete(downloads).run();
-  // осталась скачанная S01E01 — её кадр
-  expect(todayData(db, today, NOW).fresh[0].image).toEqual({ path: '/still.jpg', wide: true });
-  db.update(episodes).set({ stillPath: null }).run();
+  expect(todayData(db, today, NOW).fresh.map((f) => [f.code, f.image])).toEqual([
+    ['S01E02', { path: '/backdrop.jpg', wide: true }],
+    ['S01E01', { path: '/still.jpg', wide: true }],
+  ]);
   db.update(titles).set({ backdropPath: null }).where(eq(titles.id, t.id)).run();
   expect(todayData(db, today, NOW).fresh[0].image).toEqual({ path: '/poster.jpg', wide: false });
-});
-
-test('«Новые серии»: одна карточка на сериал — диапазон серий, качающаяся главнее', () => {
-  const { db, t } = setup();
-  for (const n of [3, 4, 5]) db.insert(episodeFiles).values({ titleId: t.id, season: 1, number: n, path: `D/S01E0${n}.mkv`, size: 1, studioLabel: 'HDrezka Studio', resolution: 1080, method: 'hardlink', importedAt: NOW - HOUR + n }).run();
-  const d = todayData(db, today, NOW);
-  expect(d.fresh).toHaveLength(1);
-  // качается S01E02, скачаны 1, 3, 4, 5 — карточка загрузки с общим диапазоном
-  expect(d.fresh[0]).toMatchObject({ tmdbId: 7, code: 'S01E01–E05', loading: true, state: 'Качается · 64 %' });
-  db.delete(downloads).run();
-  expect(todayData(db, today, NOW).fresh[0]).toMatchObject({ code: 'S01 · 4 сер.', loading: false, state: 'HDrezka Studio · скачано 1 ч назад' });
 });

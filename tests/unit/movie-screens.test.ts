@@ -61,7 +61,7 @@ describe('«Сегодня», календарь, активность, увед
     const d = db.insert(downloads).values({ hash: 'a'.repeat(40), titleId: m.id, season: 0, kind: 'movie', episodes: [{ season: 0, number: 0 }], state: 'downloading', progress: 0.3, name: 'x', size: 1, addedAt: 1, studioLabel: 'Дубляж', resolution: 1080 }).returning().get();
     expect(activityQueue(db, 1)[0]).toMatchObject({ code: 'фильм', movie: true });
     db.insert(episodeFiles).values({ titleId: m.id, season: 0, number: 0, path: 'x.mkv', size: 1, method: 'hardlink', importedAt: Date.now(), resolution: 1080, studioLabel: 'Дубляж' }).run();
-    expect(todayData(db, TODAY).fresh.find((f) => f.movie)).toMatchObject({ code: 'фильм', movie: true }); // загрузка и файл фильма — одна карточка
+    expect(todayData(db, TODAY).fresh.find((f) => !f.loading)).toMatchObject({ code: 'фильм', movie: true });
     notifyImported(db, d, [{ season: 0, number: 0 }]);
     expect(db.select().from(notifications).get()!.text).toBe('📥 Матрица — Дубляж 1080p');
   });
