@@ -5,6 +5,14 @@ const LEADING_MARKER = /^(?::\s*[\d\s-]+|S\d{1,2}(?:-\d{1,2})?E[\d-]+(?:\s+of\s+
 // Где кончается название внутри части.
 const NAME_END = /(\s*\[|\s+-\s+|\s*\(\s*(?:HD|S\d|\d{3,4}p)|\s*\b[Ss]\d{1,2}(?:-\d{1,2})?[Ee]\d|\s+[Ss]\d{1,2}\b|\s+(?:19|20)\d{2}\b)/;
 
+/** «Dogulwang (Toukutsu Ou, Tomb Raider King)» — три варианта; «Shameless (US)» — одно название (в скобках не названия). */
+function variants(name: string): string[] {
+  const m = /^(.+?)\s*\(([^()]+)\)$/.exec(name);
+  if (!m) return [name];
+  const inner = m[2].split(/\s*[,;]\s*/).filter((x) => /\p{L}{3,}/u.test(x) && !/^(?:19|20)\d{2}$/.test(x));
+  return inner.length ? [m[1].trim(), ...inner] : [name];
+}
+
 /** Названия и год из заголовка раздачи. */
 export function parseNames(title: string): { names: string[]; year: number | null } {
   const t = title.replace(/^\(S\d+\)\s*\/\s*/i, '').trim();
@@ -15,7 +23,7 @@ export function parseNames(title: string): { names: string[]; year: number | nul
     for (const part of t.split(' / ')) {
       const rest = part.trim().replace(LEADING_MARKER, '');
       const name = rest.split(NAME_END)[0].trim();
-      if (name) names.push(name);
+      if (name) names.push(...variants(name));
     }
   const seen = new Set<string>();
   const unique = names.filter((n) => {

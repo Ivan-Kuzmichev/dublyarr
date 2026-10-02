@@ -62,3 +62,9 @@ test.each([
   ['Сериал / Show / Сезон: 2 / Серии: 1 из 8 [WEB-DL 1080p]', { seasons: [2], episodes: { from: 1, to: 1 }, totalInSeason: 8, pack: false }],
   ['Сериал / Show / Сезон: 2 / Серия: 5 [WEB-DL 1080p]', { seasons: [2], episodes: { from: 5, to: 5 }, pack: false }],
 ])('одна серия в русском формате: %s', (t, exp) => expect(parseEpisodes(t)).toMatchObject(exp));
+
+test('названия в скобках через запятую — отдельные варианты', () => {
+  expect(parseNames('Dogulwang (Toukutsu Ou, Tomb Raider King) - E1-12 - 2026  DUB (IVI), Sub WEBDL 1080p - RUSSIAN').names).toEqual(['Dogulwang', 'Toukutsu Ou', 'Tomb Raider King']);
+  // пометка страны или года в скобках — не название
+  expect(parseNames('Shameless (US) / S01E01 [2011, WEB-DL 1080p]').names).toEqual(['Shameless (US)']);
+});
