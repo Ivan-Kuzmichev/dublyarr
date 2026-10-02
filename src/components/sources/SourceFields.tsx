@@ -7,7 +7,7 @@ import { SOURCE_KIND_LABEL, type SourceKind } from '@/lib/source-kinds';
 
 const URL_FIELD: Record<SourceKind, { label: string; placeholder: string; hint: string }> = {
   jackett: { label: 'Адрес Jackett', placeholder: 'http://192.168.1.10:9117', hint: 'Без пути — путь Torznab Dublyarr допишет сам' },
-  jacred: { label: 'Адрес JacRed', placeholder: 'https://jac.red', hint: 'jac.red или своя установка' },
+  jacred: { label: 'Адрес JacRed', placeholder: 'http://jac.red', hint: 'jac.red (по http — https у него бывает недоступен) или своя установка' },
   torznab: { label: 'Адрес Torznab', placeholder: 'http://prowlarr:9696/1/api', hint: 'Полный адрес: Prowlarr и другие' },
 };
 
