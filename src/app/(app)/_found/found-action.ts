@@ -18,3 +18,13 @@ export async function foundAction(tmdbId: number, type: 'tv' | 'movie'): Promise
   requestTitleSearch(db, t.id);
   return { studios: foundStudios(db, t.id), kinds: type === 'movie' ? foundMovieKinds(db, t.id) : {}, searching: titleSearchPending(db, t.id) };
 }
+
+/** Ручной поиск: идёт ли фоновый поиск; force — поставить поиск сейчас («Обновить»). */
+export async function titleSearchAction(tmdbId: number, type: 'tv' | 'movie', force = false): Promise<{ pending: boolean }> {
+  await requireSession();
+  const db = getDb();
+  const t = getTitleByTmdbId(db, tmdbId, type);
+  if (!t) return { pending: false };
+  if (force) return requestTitleSearch(db, t.id, Date.now(), 0);
+  return { pending: titleSearchPending(db, t.id) };
+}

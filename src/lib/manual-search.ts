@@ -1,5 +1,5 @@
 import { isMovieProfile } from './movie-profile';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, gte } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { layaExamples, releases, titles, type Release } from './db/schema';
 import { matchInput, studioInput } from './laya/review';
@@ -18,54 +18,71 @@ import { todayIso } from './dates';
 import type { DubBy } from './parse/types';
 
 export type ManualRow = { release: Release; verdict: Verdict; dubs: { label: string; studioName?: string; by: DubBy }[] };
-export type ManualResult = { rows: ManualRow[]; sources: SourceStatus[]; profileSource: 'subscription' | 'default' };
+export type ManualResult = { rows: ManualRow[]; sources: SourceStatus[]; profileSource: 'subscription' | 'default'; searchedAt: number | null };
+/** cached — без запросов к источникам: раздачи и статусы последнего поиска (страница открывается сразу). */
+export type ManualOptions = SearchOptions & { today?: string; cached?: boolean };
 
 // ручной поиск — страница ждёт ответа: не больше 3 вопросов к Laya (остальное — из кэша или правила)
 const MANUAL_LAYA_BUDGET = 3;
 
 const TONE_ORDER: Verdict['tone'][] = ['best', 'ok', 'wait', 'ask', 'reject'];
 
+/** Раздачи, найденные последним поиском (не раньше его начала), и как тогда ответили источники. */
+function lastSearch(db: Db, titleId: number): { releases: Release[]; sources: SourceStatus[]; at: number | null } {
+  const t = db.select({ at: titles.releasesSearchedAt, sources: titles.lastSources }).from(titles).where(eq(titles.id, titleId)).get();
+  if (!t?.at) return { releases: [], sources: [], at: null };
+  const slack = Math.max(0, ...(t.sources ?? []).map((s) => s.ms)) + 60_000; // раздачи записываются по ходу поиска — до его отметки
+  return { releases: db.select().from(releases).where(and(eq(releases.titleId, titleId), gte(releases.lastSeenAt, t.at - slack))).all(), sources: t.sources ?? [], at: t.at };
+}
+
+async function found(db: Db, titleId: number, opts: ManualOptions) {
+  if (opts.cached) return lastSearch(db, titleId);
+  const now = opts.now ?? Date.now();
+  const r = await searchTitle(db, titleId, { ...opts, now, layaBudget: opts.layaBudget ?? MANUAL_LAYA_BUDGET });
+  return { releases: r.releases, sources: r.sources, at: now };
+}
+
 /** Ручной поиск: опросить источники и оценить раздачи для серии или сезона по профилю подписки (или профилю по умолчанию). */
-export async function runManualSearch(db: Db, tmdbId: number, target: Target, opts: SearchOptions & { today?: string } = {}): Promise<ManualResult> {
+export async function runManualSearch(db: Db, tmdbId: number, target: Target, opts: ManualOptions = {}): Promise<ManualResult> {
   const title = getTitleByTmdbId(db, tmdbId);
   if (!title) throw new Error('Сериал не найден');
-  const { releases: found, sources } = await searchTitle(db, title.id, { ...opts, layaBudget: opts.layaBudget ?? MANUAL_LAYA_BUDGET });
+  const { releases: list, sources, at } = await found(db, title.id, opts);
   const sub = getSubscription(db, title.id);
   const profile = sub && !isMovieProfile(sub.profile) ? sub.profile : getDefaultProfile(db, title.kind);
   const names = new Map(listStudios(db).map((s) => [s.id, s.name]));
   const episodes = listSeasons(db, title.id).flatMap((s) => listEpisodes(db, title.id, s.number));
-  const verdicts = evaluateReleases(found, { profile, episodes, studioName: (id) => names.get(id), today: opts.today ?? todayIso() }, target);
+  const verdicts = evaluateReleases(list, { profile, episodes, studioName: (id) => names.get(id), today: opts.today ?? todayIso() }, target);
   const byId = new Map(verdicts.map((v) => [v.releaseId, v]));
-  const rows = found
+  const rows = list
     .map((release) => ({
       release,
       verdict: byId.get(release.id)!,
       dubs: release.parsed.dubs.map((d) => ({ label: d.label, studioName: d.studioId !== null ? names.get(d.studioId) : undefined, by: d.by })),
     }))
     .sort((a, b) => TONE_ORDER.indexOf(a.verdict.tone) - TONE_ORDER.indexOf(b.verdict.tone) || (b.release.seeders ?? 0) - (a.release.seeders ?? 0));
-  return { rows, sources, profileSource: sub ? 'subscription' : 'default' };
+  return { rows, sources, profileSource: sub ? 'subscription' : 'default', searchedAt: at };
 }
 
 /** Ручной поиск фильма: те же строки, вердикты — по профилю фильма и дате цифрового релиза. */
-export async function runManualMovieSearch(db: Db, tmdbId: number, opts: SearchOptions & { today?: string } = {}): Promise<ManualResult> {
+export async function runManualMovieSearch(db: Db, tmdbId: number, opts: ManualOptions = {}): Promise<ManualResult> {
   const title = getTitleByTmdbId(db, tmdbId, 'movie');
   if (!title) throw new Error('Фильм не найден');
-  const { releases: found, sources } = await searchTitle(db, title.id, { ...opts, layaBudget: opts.layaBudget ?? MANUAL_LAYA_BUDGET });
+  const { releases: list, sources, at } = await found(db, title.id, opts);
   const fresh = db.select().from(titles).where(eq(titles.id, title.id)).get()!; // поиск мог отметить цифровой релиз
   const sub = getSubscription(db, title.id);
   const profile = sub && isMovieProfile(sub.profile) ? sub.profile : getMovieDefault(db);
   const today = opts.today ?? todayIso();
-  const verdicts = evaluateMovie(found, { profile, digital: digitalReleased(fresh, today), today });
+  const verdicts = evaluateMovie(list, { profile, digital: digitalReleased(fresh, today), today });
   const names = new Map(listStudios(db).map((s) => [s.id, s.name]));
   const byId = new Map(verdicts.map((v) => [v.releaseId, v]));
-  const rows = found
+  const rows = list
     .map((release) => ({
       release,
       verdict: byId.get(release.id)!,
       dubs: release.parsed.dubs.map((d) => ({ label: d.label, studioName: d.studioId !== null ? names.get(d.studioId) : undefined, by: d.by })),
     }))
     .sort((a, b) => TONE_ORDER.indexOf(a.verdict.tone) - TONE_ORDER.indexOf(b.verdict.tone) || (b.release.seeders ?? 0) - (a.release.seeders ?? 0));
-  return { rows, sources, profileSource: sub ? 'subscription' : 'default' };
+  return { rows, sources, profileSource: sub ? 'subscription' : 'default', searchedAt: at };
 }
 
 /** «Назначить студию»: подпись из заголовка становится вариантом написания студии (или новой студией). */

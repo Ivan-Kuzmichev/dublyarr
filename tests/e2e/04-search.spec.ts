@@ -22,7 +22,7 @@ test('источник → ручной поиск → вердикты → на
 
   await page.goto('/search/1399?s=1&e=3');
   const rows = page.locator('div.grid.border-t');
-  await expect(rows.first()).toContainText('Lord Snow');
+  await expect(rows.first()).toContainText('Lord Snow', { timeout: 30_000 }); // первый поиск идёт фоном — страница обновится сама
   await expect(rows.first()).toContainText('Лучший · 1-я по приоритету');
   await expect(page.locator('div.grid.border-t', { hasText: 'Kinozal' })).toContainText('Нет сидов');
 

@@ -4,7 +4,8 @@ import { readFileSync } from 'node:fs';
 import { testDb } from './helpers';
 import { saveSource } from '@/lib/source-save';
 import { sourcesForSearch } from '@/lib/sources';
-import { trackers } from '@/lib/db/schema';
+import { titles, trackers } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
 const indexers = readFileSync('tests/fixtures/torznab/indexers-jackett.xml', 'utf8');
@@ -32,4 +33,12 @@ test('JacRed: проверка пробным поиском, ключ не об
   const bad = (async () => new Response('<html>', { status: 200 })) as unknown as typeof fetch;
   expect(await saveSource(db, { ...input, apiKey: '', kind: 'jacred', url: 'https://jr2.example' }, null, bad)).toEqual({ error: 'Ответ не похож на JacRed' });
   expect(sourcesForSearch(db).map((s) => s.kind)).toEqual(['jacred']);
+});
+
+test('новый или изменённый источник — кэш поиска сбрасывается (найдётся и в нём)', async () => {
+  const db = testDb();
+  const t = db.insert(titles).values({ tmdbId: 1, kind: 'series', nameRu: 'A', nameOriginal: 'A', originalLanguage: 'en', status: 'returning', createdAt: 1, refreshedAt: 1, releasesSearchedAt: 5 }).returning().get();
+  const ok = (async () => new Response('[]')) as unknown as typeof fetch;
+  await saveSource(db, { ...input, apiKey: '', kind: 'jacred', url: 'https://jr.example' }, null, ok);
+  expect(db.select().from(titles).where(eq(titles.id, t.id)).get()!.releasesSearchedAt).toBeNull();
 });

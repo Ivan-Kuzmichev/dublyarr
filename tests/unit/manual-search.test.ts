@@ -74,3 +74,15 @@ test('«не тот сериал» и «это он» — правила для 
   const third = await runManualSearch(db, 1399, { season: 1 }, { fetchImpl, today: '2026-09-30' });
   expect(third.rows.find((x) => x.release.trackerName === 'Kinozal')!.verdict.reason).not.toBe('В чёрном списке');
 });
+
+test('из кэша: без запросов к источникам — раздачи последнего поиска и его статусы источников', async () => {
+  const { db } = await setup();
+  await runManualSearch(db, 1399, { season: 1, episode: 3 }, { fetchImpl, today: '2026-09-30', now: 1000 });
+  const noNet = (async () => {
+    throw new Error('сеть не нужна');
+  }) as unknown as typeof fetch;
+  const r = await runManualSearch(db, 1399, { season: 1, episode: 3 }, { fetchImpl: noNet, today: '2026-09-30', cached: true });
+  expect(r.rows[0].verdict).toMatchObject({ tone: 'best' });
+  expect(r.sources).toEqual([expect.objectContaining({ name: 'Jackett', ok: true })]);
+  expect(r.searchedAt).toBe(1000);
+});

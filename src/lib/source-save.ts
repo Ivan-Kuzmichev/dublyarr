@@ -5,6 +5,7 @@ import { jacredCheck } from './jacred';
 import { endpointFor, jackettBase } from './source-kinds';
 import { markSourceTrackers, syncTrackers } from './trackers';
 import type { SourceInput } from './source-form';
+import { titles } from './db/schema';
 
 /** Проверить источник по его типу и сохранить (новый или правка); общий путь для настроек, мастера и API. */
 export async function saveSource(
@@ -33,5 +34,7 @@ export async function saveSource(
   if (id) updateSource(db, id, { ...input, url });
   if (indexers) syncTrackers(db, sourceId, indexers);
   markSourceTrackers(db, sourceId, null);
+  // кэш «уже искали» — без нового источника; следующее открытие страницы ищет заново
+  db.update(titles).set({ releasesSearchedAt: null }).run();
   return { ok: true, id: sourceId, categories };
 }
