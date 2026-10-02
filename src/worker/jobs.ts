@@ -39,6 +39,10 @@ export function finish(db: Db, job: Job, error: string | undefined, now = Date.n
     .run();
 }
 
+let running: string | null = null;
+/** Тип задачи, которая выполняется сейчас (для отметки «занят: …»). */
+export const currentJobType = () => running;
+
 export async function runOnce(db: Db, handlers: Record<string, Handler>, now = Date.now()): Promise<boolean> {
   const job = claimNext(db, now);
   if (!job) return false;
@@ -54,6 +58,7 @@ export async function runOnce(db: Db, handlers: Record<string, Handler>, now = D
   const quiet = job.type === 'downloads.sync' || job.type.startsWith('telegram.');
   const started = Date.now();
   wlog.debug({ job: job.id, type: job.type }, 'job start');
+  running = job.type;
   try {
     await h(JSON.parse(job.payload));
     finish(db, job, undefined, now);
@@ -62,6 +67,8 @@ export async function runOnce(db: Db, handlers: Record<string, Handler>, now = D
     const msg = e instanceof Error ? e.message : String(e);
     wlog.warn({ job: job.id, type: job.type, ms: Date.now() - started, err: msg }, 'job failed');
     finish(db, job, msg, now);
+  } finally {
+    running = null;
   }
   return true;
 }
