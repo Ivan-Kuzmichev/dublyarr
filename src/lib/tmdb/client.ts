@@ -83,7 +83,7 @@ export function createTmdb(cfg: TmdbConfig, opts: TmdbOptions = {}): Tmdb {
       await get('/configuration', {}, 'en-US');
     },
     async details(id) {
-      const d = await get<TmdbTvDetails>(`/tv/${id}`, { append_to_response: 'alternative_titles,external_ids' });
+      const d = await get<TmdbTvDetails>(`/tv/${id}`, { append_to_response: 'alternative_titles,external_ids,translations' });
       if (!d.overview || !d.name) {
         const en = await get<TmdbTvDetails>(`/tv/${id}`, {}, 'en-US');
         d.overview ||= en.overview;
@@ -98,7 +98,7 @@ export function createTmdb(cfg: TmdbConfig, opts: TmdbOptions = {}): Tmdb {
     },
     trending: () => list('trending', '/trending/tv/week', {}),
     async movie(id) {
-      const d = await get<TmdbMovieDetails>(`/movie/${id}`, { append_to_response: 'alternative_titles,release_dates' });
+      const d = await get<TmdbMovieDetails>(`/movie/${id}`, { append_to_response: 'alternative_titles,release_dates,translations' });
       if (!d.overview || !d.title) {
         const en = await get<TmdbMovieDetails>(`/movie/${id}`, {}, 'en-US');
         d.overview ||= en.overview;

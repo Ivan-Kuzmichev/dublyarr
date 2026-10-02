@@ -28,13 +28,13 @@ function setup(n = 1) {
 }
 
 describe('«Тот ли сериал»', () => {
-  test('уверенное «да» — подходит, уверенное «нет» — отказ, неуверенная — сомнительно', async () => {
+  test('уверенное «да» — подходит; «нет» не отклоняет молча — остаётся вопросом пользователю с мнением Laya', async () => {
     const yes = setup();
     const [r1] = await reviewMatches(yes.db, yes.t, yes.rows, { client: client(0.92).client, budget: { left: 20 } });
     expect(r1.match).toMatchObject({ level: 'match', reasons: ['Laya: тот же · 92 %'], laya: { p: 0.92 } });
     expect(yes.db.select().from(releases).get()!.match.level).toBe('match');
     const no = setup();
-    expect((await reviewMatches(no.db, no.t, no.rows, { client: client(0.05).client, budget: { left: 20 } }))[0].match).toMatchObject({ level: 'reject', reasons: ['Laya: не тот · 95 %'] });
+    expect((await reviewMatches(no.db, no.t, no.rows, { client: client(0.05).client, budget: { left: 20 } }))[0].match).toMatchObject({ level: 'doubt', reasons: ['Название не похоже', 'Laya думает, что не тот · 95 %'], laya: { p: 0.05, answer: false } });
     const unsure = setup();
     expect((await reviewMatches(unsure.db, unsure.t, unsure.rows, { client: client(0.7).client, budget: { left: 20 } }))[0].match).toMatchObject({ level: 'doubt', reasons: ['Название не похоже', 'Laya не уверена · 70 %'] });
   });

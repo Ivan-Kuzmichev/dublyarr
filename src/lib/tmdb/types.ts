@@ -18,6 +18,7 @@ export type TmdbTvDetails = {
   next_episode_to_air: { air_date: string | null } | null;
   seasons: { season_number: number; name: string; air_date: string | null; episode_count: number; poster_path: string | null }[];
   alternative_titles?: { results: { iso_3166_1: string; title: string; type: string }[] };
+  translations?: { translations: { iso_639_1: string; data: { name?: string; title?: string } }[] };
 };
 
 export type TmdbSeason = {
@@ -54,6 +55,7 @@ export type TmdbMovieDetails = {
   poster_path: string | null;
   backdrop_path: string | null;
   alternative_titles?: { titles: { iso_3166_1: string; title: string }[] };
+  translations?: { translations: { iso_639_1: string; data: { name?: string; title?: string } }[] };
   release_dates?: TmdbReleaseDates;
 };
 

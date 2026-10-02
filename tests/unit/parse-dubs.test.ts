@@ -108,3 +108,16 @@ test('студия кириллицей без скобок', () => {
   const u = parseDubs('Show S01E01 MVO Паравозик', [], tracker('Kinozal'), find, studios);
   expect(u.dubs).toEqual([{ kind: 'mvo', studioId: null, label: 'Паравозик', by: 'none' }]);
 });
+
+test('RUS(int) — русская озвучка без названия студии', () => {
+  expect(parseRelease('Dogulwang / Tomb Raider King [TV] [E12 of 12] [RUS(int), KOR+Sub] [2026, WEB-DL] [1080p]', {}, { id: 'rutracker', name: 'RuTracker.org' }, studios).dubs).toEqual([
+    { kind: 'mvo', studioId: null, label: 'Русская озвучка', by: 'none' },
+  ]);
+});
+
+test('«свой трекер» не перекрывает студию, явно названную в заголовке', () => {
+  const r = parseRelease('Dogulwang (Toukutsu Ou, Tomb Raider King) - E1-12 - 2026  DUB (IVI), Sub WEBDL 1080p - RUSSIAN', {}, { id: 'anidub', name: 'AniDUB' }, studios);
+  expect(r.dubs).toEqual([{ kind: 'dub', studioId: null, label: 'IVI', by: 'title' }]);
+  // без явной студии — по трекеру, как раньше
+  expect(parseRelease('Dogulwang [01-12 из 12] [RUS(int)]', {}, { id: 'anidub', name: 'AniDUB' }, studios).dubs.map((d) => d.label)).toEqual(['AniDUB']);
+});

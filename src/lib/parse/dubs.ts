@@ -46,8 +46,6 @@ export function parseDubs(title: string, tags: string[], tracker: TrackerRef, fi
     if (!dup) out.push(d);
   };
 
-  for (const s of studios) if (trackerMatches(s, tracker)) add({ kind: 'mvo', studioId: s.id, label: s.name, by: 'tracker' });
-
   const seenNone = new Set<DubKind>();
   for (const m of title.matchAll(GROUP)) {
     const kind = KIND[m[1].toLowerCase()];
@@ -76,6 +74,18 @@ export function parseDubs(title: string, tags: string[], tracker: TrackerRef, fi
       const s = find(words.slice(i, i + size).join(''));
       if (s) add({ kind: 'mvo', studioId: s.id, label: s.name, by: 'title' });
     }
+
+  // «свой трекер» — если заголовок не называет другую студию (на AniDUB лежат и раздачи с дубляжом IVI)
+  const named = out.filter((d) => d.by === 'title');
+  for (const s of studios.filter((x) => trackerMatches(x, tracker)).reverse()) {
+    if (named.length && !named.some((d) => d.studioId === s.id)) continue;
+    const i = out.findIndex((d) => d.studioId === s.id);
+    if (i >= 0) out.splice(i, 1);
+    out.unshift({ kind: 'mvo', studioId: s.id, label: s.name, by: 'tracker' });
+  }
+
+  // RUS(int) — русская дорожка внутри файла, студия не названа
+  if (!out.length && /\bRUS\s*\(int\)/i.test(title)) out.push({ kind: 'mvo', studioId: null, label: 'Русская озвучка', by: 'none' });
 
   for (const tag of tags) {
     const kind = TAG_KIND[tag.toLowerCase()];
