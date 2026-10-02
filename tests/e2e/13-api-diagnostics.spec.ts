@@ -36,4 +36,13 @@ test('API: выключен → включить, токен, статус; «Д
   await expect(page.getByRole('heading', { name: 'Диагностика' })).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Сверка с qBittorrent' })).toBeVisible();
   await expect(page.locator('main')).toContainText('/status'); // запись API в журнале (подробности строки)
+
+  // окно подписки: что уже нашлось на трекерах (раздачи ищутся фоном при открытии страницы)
+  await page.goto('/series/1399');
+  await page.getByRole('button', { name: /^Подпис/ }).first().click();
+  await expect(page.getByText(/В жёлтой рамке|Ищем раздачи|пока не нашлось/)).toBeVisible(); // у «Игры престолов» прошлые сценарии отклонили все раздачи
+  await page.keyboard.press('Escape');
+  await page.goto('/movie/603');
+  await page.getByRole('button', { name: /^Подпис/ }).first().click();
+  await expect(page.getByText(/нашлось раздач: \d/).first()).toBeVisible({ timeout: 30_000 });
 });

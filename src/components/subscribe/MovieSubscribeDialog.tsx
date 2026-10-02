@@ -4,7 +4,7 @@ import { useActionState, useEffect, useId, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
-import { describeMovieProfile, type MovieProfile } from '@/lib/movie-profile';
+import { describeMovieProfile, type MovieDubKind, type MovieProfile } from '@/lib/movie-profile';
 import { MovieProfileEditor } from './MovieProfileEditor';
 import type { DialogState } from './SubscribeDialog';
 
@@ -16,10 +16,11 @@ type Props = {
   initial: MovieProfile;
   hidden: Record<string, string>;
   action: (prev: DialogState, form: FormData) => Promise<DialogState>;
+  found?: { kinds: Partial<Record<MovieDubKind, number>>; searching: boolean } | null;
 };
 
 /** Окно подписки на фильм (модалка на компьютере, шторка на телефоне). */
-export function MovieSubscribeDialog({ onClose, mode, title, subtitle, initial, hidden, action }: Props) {
+export function MovieSubscribeDialog({ onClose, mode, title, subtitle, initial, hidden, action, found }: Props) {
   const titleId = useId();
   const [profile, setProfile] = useState(initial);
   const [confirmUnsub, setConfirmUnsub] = useState(false);
@@ -46,7 +47,7 @@ export function MovieSubscribeDialog({ onClose, mode, title, subtitle, initial, 
           </button>
         </header>
         <div className="min-h-0 overflow-y-auto px-5 py-5 md:px-7">
-          <MovieProfileEditor value={profile} onChange={setProfile} />
+          <MovieProfileEditor value={profile} onChange={setProfile} found={found} />
         </div>
         <footer className="flex flex-col gap-3 border-t border-line px-5 py-4 md:px-7">
           <p className="m-0 text-[13px] leading-normal text-muted">{describeMovieProfile(profile).slice(0, 3).join('. ')}.</p>

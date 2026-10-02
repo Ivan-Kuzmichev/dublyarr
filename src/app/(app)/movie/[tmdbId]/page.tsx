@@ -8,6 +8,7 @@ import { getDb } from '@/lib/db/client';
 import { getTmdb } from '@/lib/tmdb';
 import { TmdbError } from '@/lib/tmdb/client';
 import { openMovie } from '@/lib/movies';
+import { requestTitleSearch } from '@/lib/title-search';
 import { movieCard, type MovieStep } from '@/lib/movie-card';
 import { imageUrl, posterColor } from '@/lib/image-url';
 import { todayIso } from '@/lib/dates';
@@ -62,6 +63,7 @@ export default async function MoviePage({ params }: { params: Promise<{ tmdbId: 
     );
 
   const t = loaded.r.title;
+  requestTitleSearch(getDb(), t.id); // раздачи ищутся фоном — окно подписки покажет найденные переводы
   const db = getDb();
   const today = todayIso();
   const sub = getSubscription(db, t.id);

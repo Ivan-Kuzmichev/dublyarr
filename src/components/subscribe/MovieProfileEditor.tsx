@@ -2,13 +2,13 @@
 
 import { Checkbox } from '@/components/ui/Checkbox';
 import { Stepper } from '@/components/ui/Stepper';
-import { MOVIE_DUB_LABEL, type MovieProfile } from '@/lib/movie-profile';
+import { MOVIE_DUB_LABEL, type MovieDubKind, type MovieProfile } from '@/lib/movie-profile';
 import { Choice } from './ProfileEditor';
 
-type Props = { value: MovieProfile; onChange: (p: MovieProfile) => void };
+type Props = { value: MovieProfile; onChange: (p: MovieProfile) => void; found?: { kinds: Partial<Record<MovieDubKind, number>>; searching: boolean } | null };
 
 /** Редактор профиля фильма: окно подписки и «Настройки → Фильмы». */
-export function MovieProfileEditor({ value: p, onChange }: Props) {
+export function MovieProfileEditor({ value: p, onChange, found }: Props) {
   const set = (patch: Partial<MovieProfile>) => onChange({ ...p, ...patch });
   const q = p.quality;
   const move = (i: number, by: -1 | 1) => {
@@ -22,6 +22,7 @@ export function MovieProfileEditor({ value: p, onChange }: Props) {
     <div className="flex flex-col gap-7">
       <section className="flex flex-col gap-3">
         <h3 className="m-0 text-base font-semibold">Перевод</h3>
+        {found?.searching && <span className="text-[13px] text-faint">Ищем раздачи на трекерах…</span>}
         <div className="flex flex-col gap-2">
           {p.dubs.map((d, i) => (
             <div key={d.kind} className={`flex min-h-12 items-center gap-2 rounded-[12px] border px-3 ${d.on ? 'border-accent bg-surface-2' : 'border-line'}`}>
@@ -33,7 +34,10 @@ export function MovieProfileEditor({ value: p, onChange }: Props) {
                   className="h-[18px] w-[18px] accent-accent"
                 />
                 <span className="flex flex-col">
-                  <span className={`text-[15px] font-medium ${d.on ? '' : 'text-muted'}`}>{MOVIE_DUB_LABEL[d.kind]}</span>
+                  <span className={`text-[15px] font-medium ${d.on ? '' : 'text-muted'}`}>
+                    {MOVIE_DUB_LABEL[d.kind]}
+                    {found?.kinds[d.kind] ? <span className="ml-2 text-xs font-normal text-accent">нашлось раздач: {found.kinds[d.kind]}</span> : null}
+                  </span>
                   {d.on && <span className="text-xs text-faint">{d.kind === 'dub' || i === firstOn ? 'сразу' : `через ${p.waitDubDays} дн после цифрового релиза`}</span>}
                 </span>
               </label>

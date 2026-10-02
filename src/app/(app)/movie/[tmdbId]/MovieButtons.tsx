@@ -4,6 +4,7 @@ import { useActionState, useCallback, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { MovieSubscribeDialog } from '@/components/subscribe/MovieSubscribeDialog';
 import type { MovieProfile } from '@/lib/movie-profile';
+import { useFound } from '@/components/subscribe/useFound';
 import { refreshMovieAction, saveMovieSubscriptionAction, type RefreshState } from './actions';
 
 export function MovieSubscribeButton({ tmdbId, subscribed, title, subtitle, profile }: { tmdbId: number; subscribed: boolean; title: string; subtitle: string; profile: MovieProfile }) {
@@ -21,19 +22,25 @@ export function MovieSubscribeButton({ tmdbId, subscribed, title, subtitle, prof
       >
         {subscribed ? 'Подписка' : 'Подписаться'}
       </Button>
-      {open && (
-        <MovieSubscribeDialog
-          key={session}
-          onClose={close}
-          mode={subscribed ? 'edit' : 'subscribe'}
-          title={title}
-          subtitle={subtitle}
-          initial={profile}
-          hidden={{ tmdbId: String(tmdbId) }}
-          action={saveMovieSubscriptionAction}
-        />
-      )}
+      {open && <MovieDialog key={session} tmdbId={tmdbId} subscribed={subscribed} title={title} subtitle={subtitle} profile={profile} onClose={close} />}
     </>
+  );
+}
+
+/** Окно с подсказкой «какие переводы нашлись на трекерах». */
+function MovieDialog({ tmdbId, subscribed, title, subtitle, profile, onClose }: { tmdbId: number; subscribed: boolean; title: string; subtitle: string; profile: MovieProfile; onClose: () => void }) {
+  const found = useFound(tmdbId, 'movie');
+  return (
+    <MovieSubscribeDialog
+      onClose={onClose}
+      mode={subscribed ? 'edit' : 'subscribe'}
+      title={title}
+      subtitle={subtitle}
+      initial={profile}
+      hidden={{ tmdbId: String(tmdbId) }}
+      action={saveMovieSubscriptionAction}
+      found={found}
+    />
   );
 }
 

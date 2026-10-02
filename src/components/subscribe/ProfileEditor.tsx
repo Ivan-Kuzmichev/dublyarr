@@ -7,7 +7,15 @@ import { dubKey, setWait, toggleDub, type DubPosition, type Profile } from '@/li
 
 export type StudioOption = { id: number; name: string };
 
-type Props = { studios: StudioOption[]; names: Record<number, string>; value: Profile; onChange: (p: Profile) => void; basis?: Record<number, string> };
+type Props = {
+  studios: StudioOption[];
+  names: Record<number, string>;
+  value: Profile;
+  onChange: (p: Profile) => void;
+  basis?: Record<number, string>;
+  /** Студии, чьи раздачи этого сериала уже нашлись (studioId → сколько), и идёт ли поиск. */
+  found?: { studios: Record<number, number>; searching: boolean } | null;
+};
 
 const H = ({ children, note }: { children: React.ReactNode; note?: string }) => (
   <div className="flex items-baseline justify-between gap-3">
@@ -38,7 +46,7 @@ export function Choice<T extends string | number>({ options, value, onChange, la
 type Item = { key: string; label: string; pos: DubPosition };
 
 /** Редактор профиля: окно подписки и профили по умолчанию. */
-export function ProfileEditor({ studios, names, value: p, onChange, basis }: Props) {
+export function ProfileEditor({ studios, names, value: p, onChange, basis, found }: Props) {
   const [filter, setFilter] = useState('');
   const set = (patch: Partial<Profile>) => onChange({ ...p, ...patch });
 
@@ -51,7 +59,13 @@ export function ProfileEditor({ studios, names, value: p, onChange, basis }: Pro
   const selectedKeys = p.dubs.map(keyOf);
   const labelOf = (d: DubPosition) => (d.kind === 'studio' ? (names[d.studioId] ?? 'Студия удалена') : d.kind === 'any' ? 'Любая' : 'Оригинал с субтитрами');
   const q = filter.trim().toLowerCase();
-  const rest = all.filter((i) => !selectedKeys.includes(i.key) && (!q || i.label.toLowerCase().includes(q)));
+  const countOf = (i: Item) => (i.pos.kind === 'studio' ? (found?.studios[i.pos.studioId] ?? 0) : 0);
+  // найденные на трекерах — первыми (больше раздач — раньше), остальные — как были
+  const rest = all
+    .filter((i) => !selectedKeys.includes(i.key) && (!q || i.label.toLowerCase().includes(q)))
+    .map((i, n) => ({ i, n, c: countOf(i) }))
+    .sort((a, b) => Number(b.c > 0) - Number(a.c > 0) || b.c - a.c || a.n - b.n)
+    .map((x) => x.i);
 
   const toggle = (item: Item) => set({ dubs: toggleDub(p.dubs, item.pos) });
 
@@ -101,17 +115,27 @@ export function ProfileEditor({ studios, names, value: p, onChange, basis }: Pro
             className="h-11 rounded-[10px] border border-field-line bg-bg px-3 text-sm text-text outline-none placeholder:text-dim focus:border-accent"
           />
         )}
+        {found && (
+          <span className="text-[13px] text-faint">
+            {found.searching ? 'Ищем раздачи на трекерах…' : Object.keys(found.studios).length ? 'В жёлтой рамке — студии, чьи раздачи уже нашлись' : 'Раздач с известными студиями пока не нашлось'}
+          </span>
+        )}
         <div className="flex max-h-[260px] flex-wrap gap-2 overflow-y-auto">
-          {rest.map((item) => (
-            <button
-              key={item.key}
-              type="button"
-              onClick={() => toggle(item)}
-              className="h-11 cursor-pointer rounded-[10px] border border-line px-3 text-sm text-text-2 hover:border-line-strong hover:text-text"
-            >
-              {item.label}
-            </button>
-          ))}
+          {rest.map((item) => {
+            const c = countOf(item);
+            return (
+              <button
+                key={item.key}
+                type="button"
+                onClick={() => toggle(item)}
+                title={c ? `Нашлось раздач: ${c}` : undefined}
+                className={`h-11 cursor-pointer rounded-[10px] border px-3 text-sm hover:text-text ${c ? 'border-accent text-text' : 'border-line text-text-2 hover:border-line-strong'}`}
+              >
+                {item.label}
+                {c > 0 && <span className="ml-1.5 font-mono text-xs text-accent">{c}</span>}
+              </button>
+            );
+          })}
         </div>
       </section>
 
