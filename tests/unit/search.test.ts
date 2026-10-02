@@ -8,7 +8,7 @@ import { seedStudios } from '@/lib/studios';
 import { addSource } from '@/lib/sources';
 import { syncTrackers } from '@/lib/trackers';
 import { searchTitle, queriesFor } from '@/lib/search';
-import { releases, sources } from '@/lib/db/schema';
+import { releases, sources, titles } from '@/lib/db/schema';
 import { decrypt } from '@/lib/crypto/secretbox';
 import type { TmdbSeason, TmdbTvDetails } from '@/lib/tmdb/types';
 
@@ -132,4 +132,11 @@ test('Jackett по адресу без пути: запрос идёт по пу
   const seen: string[] = [];
   await searchTitle(db, t.id, { fetchImpl: router({ 'jk:9117': (u) => (seen.push(u.pathname), new Response(xml)) }), now: 100 });
   expect(seen[0]).toBe('/api/v2.0/indexers/all/results/torznab/api');
+});
+
+test('поиск отмечает время у сериала (кэш для страницы)', async () => {
+  const { db, t } = await setup();
+  addSource(db, { name: 'A', url: 'http://a/api', apiKey: 'K' });
+  await searchTitle(db, t.id, { fetchImpl: router({ a: ok }), now: 4242 });
+  expect(db.select().from(titles).get()!.releasesSearchedAt).toBe(4242);
 });

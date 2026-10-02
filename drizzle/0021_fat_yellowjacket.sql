@@ -1,0 +1,1 @@
+ALTER TABLE `titles` ADD `releases_searched_at` integer;

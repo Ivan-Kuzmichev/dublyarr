@@ -148,6 +148,7 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
   const reviewed = await reviewAnime(db, title, named, { budget, client: opts.layaClient });
   const level = (l: string) => reviewed.filter((r) => r.match.level === l).length;
   logger('parse').debug({ titleId, title: title.nameRu, releases: reviewed.length, match: level('match'), doubt: level('doubt'), reject: level('reject') }, 'parsed');
+  db.update(titles).set({ releasesSearchedAt: now }).where(eq(titles.id, title.id)).run();
   if (title.kind === 'movie') noteDigital(db, title, reviewed, now);
   else recordSightings(db, titleId, reviewed);
   return { releases: reviewed, sources: statuses };

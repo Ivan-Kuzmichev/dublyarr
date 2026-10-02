@@ -16,6 +16,7 @@ import { createTelegram, getTelegramSettings, telegramProxy } from '../lib/teleg
 import { sendPending } from '../lib/notify';
 import { pollUpdates } from '../lib/telegram-updates';
 import { checkPacks } from '../lib/pack-watch';
+import { searchTitle } from '../lib/search';
 import { getSetting, setSetting } from '../lib/settings';
 import { runRetention } from '../lib/retention';
 import { getRetention, retentionDue } from '../lib/retention-settings';
@@ -89,6 +90,11 @@ function telegramFor(db: Db) {
 
 export const buildHandlers = (db: Db): Record<string, Handler> => ({
   'downloads.sync': () => syncJob(db),
+  // открыли страницу сериала/фильма — найти раздачи (окно подписки покажет найденные студии)
+  'title.search': async (payload) => {
+    const titleId = Number((payload as { titleId?: number }).titleId);
+    if (Number.isInteger(titleId) && titleId > 0) await searchTitle(db, titleId);
+  },
   'subscriptions.search': async () => {
     const paths = getSetting<Paths>(db, 'paths');
     if (!paths) return;
