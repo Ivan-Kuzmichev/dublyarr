@@ -5,6 +5,29 @@ export const ANIMATION_GENRE = 16;
 // Альтернативные названия, полезные для поиска раздач: русские, английские и японские (там романдзи).
 const ALT_COUNTRIES = new Set(['RU', 'US', 'GB', 'JP']);
 
+const LATIN = /^[\p{Script=Latin}\p{N}\p{P}\p{Zs}\p{S}]+$/u;
+
+/** Названия для поиска раздач и сравнения: английское (translations) первым, затем альтернативные —
+ *  русские/английские/японские (романдзи) и латиница из стран происхождения (корейские, китайские тайтлы на трекерах подписаны так). */
+function altNamesOf(main: string[], en: string | undefined, alts: { iso_3166_1: string; title: string }[], origin: string[]): string[] {
+  const norm = (s: string) => s.trim().toLowerCase();
+  const seen = new Set(main.map(norm));
+  const out: string[] = [];
+  const add = (t: string | undefined) => {
+    const v = t?.trim();
+    if (!v || seen.has(norm(v))) return;
+    seen.add(norm(v));
+    out.push(v);
+  };
+  add(en);
+  for (const a of alts) if (ALT_COUNTRIES.has(a.iso_3166_1) || (origin.includes(a.iso_3166_1) && LATIN.test(a.title.trim()))) add(a.title);
+  return out;
+}
+const enName = (t: { translations?: { translations: { iso_639_1: string; data: { name?: string; title?: string } }[] } }) => {
+  const e = t.translations?.translations.find((x) => x.iso_639_1 === 'en')?.data;
+  return e?.name || e?.title || undefined;
+};
+
 export const isAnime = (genreIds: number[], countries: string[]) => genreIds.includes(ANIMATION_GENRE) && countries.includes('JP');
 
 const STATUS: Record<string, Title['status']> = {
@@ -22,14 +45,7 @@ const date = (s: string | null | undefined) => (s ? s : null);
 export type TitleFields = Omit<typeof titles.$inferInsert, 'id' | 'createdAt' | 'refreshedAt' | 'kindManual'>;
 
 export function mapDetails(d: TmdbTvDetails): TitleFields {
-  const norm = (s: string) => s.trim().toLowerCase();
-  const seen = new Set([norm(d.name), norm(d.original_name)]);
-  const altNames: string[] = [];
-  for (const a of d.alternative_titles?.results ?? []) {
-    if (!ALT_COUNTRIES.has(a.iso_3166_1) || !a.title.trim() || seen.has(norm(a.title))) continue;
-    seen.add(norm(a.title));
-    altNames.push(a.title.trim());
-  }
+  const altNames = altNamesOf([d.name, d.original_name], enName(d), d.alternative_titles?.results ?? [], d.origin_country);
   return {
     tmdbId: d.id,
     kind: isAnime(
@@ -95,14 +111,7 @@ export function pickReleaseDates(r: TmdbReleaseDates | undefined): ReleaseDates 
 }
 
 export function mapMovie(d: TmdbMovieDetails): TitleFields {
-  const norm = (s: string) => s.trim().toLowerCase();
-  const seen = new Set([norm(d.title), norm(d.original_title)]);
-  const altNames: string[] = [];
-  for (const a of d.alternative_titles?.titles ?? []) {
-    if (!ALT_COUNTRIES.has(a.iso_3166_1) || !a.title.trim() || seen.has(norm(a.title))) continue;
-    seen.add(norm(a.title));
-    altNames.push(a.title.trim());
-  }
+  const altNames = altNamesOf([d.title, d.original_title], enName(d), d.alternative_titles?.titles ?? [], d.production_countries?.map((c) => c.iso_3166_1) ?? []);
   return {
     tmdbId: d.id,
     tmdbType: 'movie',

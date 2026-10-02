@@ -51,3 +51,22 @@ test('сезоны и серии; пустая дата эфира → null', ()
   expect(eps[0]).toEqual({ season: 1, number: 1, name: 'Зима близко', airDate: '2011-04-17', runtime: 62, stillPath: null });
   expect(eps[2].airDate).toBeNull();
 });
+
+test('английское название (translations) и латиница из страны происхождения — в альтернативные названия', () => {
+  const d = fx<TmdbTvDetails>('tv-1399');
+  Object.assign(d, {
+    name: 'Великий расхититель гробниц',
+    original_name: '도굴왕',
+    origin_country: ['KR'],
+    alternative_titles: {
+      results: [
+        { iso_3166_1: 'JP', title: 'Toukutsu Ou', type: '' },
+        { iso_3166_1: 'KR', title: 'Dogulwang', type: '' },
+        { iso_3166_1: 'KR', title: '도굴 왕', type: '' }, // не латиница — трекеры не найдут
+        { iso_3166_1: 'DE', title: 'Grabräuberkönig', type: '' }, // чужая страна — не нужна
+      ],
+    },
+    translations: { translations: [{ iso_639_1: 'en', data: { name: 'Tomb Raider King' } }, { iso_639_1: 'de', data: { name: 'X' } }] },
+  });
+  expect(mapDetails(d).altNames).toEqual(['Tomb Raider King', 'Toukutsu Ou', 'Dogulwang']);
+});
