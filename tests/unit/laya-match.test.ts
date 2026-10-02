@@ -72,3 +72,12 @@ describe('«Тот ли сериал»', () => {
     expect(s.db.select().from(releases).get()!.match.level).not.toBe('doubt');
   });
 });
+
+test('уверенное «нет» Laya при несовпавшем годе или сезоне — отказ; если не похоже только название — вопрос', async () => {
+  const year = setup();
+  year.db.update(releases).set({ match: { score: 0.6, level: 'doubt', reasons: ['Название не похоже', 'Год не совпадает'] } }).run();
+  const rows = year.db.select().from(releases).all();
+  expect((await reviewMatches(year.db, year.t, rows.slice(0, 1), { client: client(0.04).client, budget: { left: 20 } }))[0].match).toMatchObject({ level: 'reject', reasons: ['Laya: не тот · 96 %'] });
+  const name = setup();
+  expect((await reviewMatches(name.db, name.t, name.rows, { client: client(0.04).client, budget: { left: 20 } }))[0].match).toMatchObject({ level: 'doubt', reasons: ['Название не похоже', 'Laya думает, что не тот · 96 %'] });
+});
