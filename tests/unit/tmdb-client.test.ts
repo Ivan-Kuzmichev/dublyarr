@@ -76,7 +76,7 @@ test('пустое описание дополняется из en-US', async ()
   const d = await createTmdb({ apiKey: 'k' }, { fetchImpl: f.fetchImpl, baseUrl: base }).details(1);
   expect(d.name).toBe('Дэдлок');
   expect(d.overview).toBe('English overview');
-  expect(f.calls[0].url.searchParams.get('append_to_response')).toBe('alternative_titles,external_ids');
+  expect(f.calls[0].url.searchParams.get('append_to_response')).toBe('alternative_titles,external_ids,translations');
 });
 
 test('поиск и тренды кэшируются на час', async () => {
