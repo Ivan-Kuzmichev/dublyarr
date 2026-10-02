@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { testDb } from './helpers';
-import { beat, serviceStatuses } from '@/lib/heartbeat';
+import { beat, serviceStatuses, startWorkerHeartbeat } from '@/lib/heartbeat';
 
 test('статусы сервисов', () => {
   const db = testDb();
@@ -24,4 +24,16 @@ test('статусы сервисов', () => {
   beat(db, 'qbit', false, 'qBittorrent не отвечает: fetch failed', t);
   expect(serviceStatuses(db, t)[0]).toEqual({ name: 'qBittorrent', state: 'warn', note: 'не отвечает' });
   expect(serviceStatuses(db, t + 10 * 60_000)[0]).toEqual({ name: 'qBittorrent', state: 'off', note: 'нет данных' });
+});
+
+test('воркер отмечается по таймеру и во время долгой задачи — «занят: …», а не «не отвечает»', async () => {
+  const db = testDb();
+  let current: string | null = 'title.search';
+  const stop = startWorkerHeartbeat(db, () => current, 20);
+  await new Promise((r) => setTimeout(r, 60));
+  expect(serviceStatuses(db).find((s) => s.name === 'Воркер')).toEqual({ name: 'Воркер', state: 'ok', note: 'занят: поиск раздач' });
+  current = null;
+  await new Promise((r) => setTimeout(r, 60));
+  stop();
+  expect(serviceStatuses(db).find((s) => s.name === 'Воркер')).toEqual({ name: 'Воркер', state: 'ok', note: 'работает' });
 });

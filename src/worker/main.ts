@@ -1,8 +1,8 @@
 import { getDb } from '../lib/db/client';
 import { getConfig } from '../lib/config';
 import { logger } from '../lib/log';
-import { beat } from '../lib/heartbeat';
-import { runOnce, requeueStale, pruneJobs } from './jobs';
+import { beat, startWorkerHeartbeat } from '../lib/heartbeat';
+import { runOnce, requeueStale, pruneJobs, currentJobType } from './jobs';
 import { buildHandlers } from './handlers';
 import { getSchedule } from '../lib/schedule';
 
@@ -48,8 +48,8 @@ async function loop() {
     log.warn({ err: e instanceof Error ? e.message : String(e) }, 'sightings backfill failed');
   }
   log.info('worker started');
+  startWorkerHeartbeat(db, currentJobType); // по таймеру: долгая задача не делает воркер «не отвечающим»
   while (!stopping) {
-    beat(db, 'worker', true);
     // Пока Laya не отвечает (например, ещё стартует) — проверяем чаще.
     if (Date.now() - lastLaya > (layaOk ? 60_000 : 10_000)) {
       lastLaya = Date.now();
