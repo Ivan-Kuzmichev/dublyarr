@@ -2,12 +2,11 @@ import { and, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { layaAnswers, releases as releasesT, studios as studiosT, titles as titlesT, type Release, type Studio, type Title } from '../db/schema';
 import { listStudios, normalizeStudio, StudioError, updateStudio } from '../studios';
-import { absoluteCandidates, dice, toTitleInfo, type AbsoluteCandidate, type TitleInfo } from '../match';
-import { listSeasons } from '../catalog';
+import { absoluteCandidates, dice, type AbsoluteCandidate, type TitleInfo } from '../match';
 import { parseRelease } from '../parse/dubs';
 import type { ParsedRelease } from '../parse/types';
 import { seriesKind } from '../profile';
-import { reparseReleases } from '../search';
+import { reparseReleases, titleInfoOf } from '../search';
 import { addExample } from './examples';
 import type { MatchResult } from '../match-types';
 import { formatSize } from '../format';
@@ -163,7 +162,7 @@ export function applyAnimeDecision(cands: AbsoluteCandidate[], d: Decision<strin
 /** Сквозная нумерация, которую нельзя разложить однозначно: Laya выбирает сезон и серию. */
 export async function reviewAnime(db: Db, t: Title, rows: Release[], o: { budget: Budget; client?: LayaClient }): Promise<Release[]> {
   if (t.kind !== 'anime') return rows;
-  const info = toTitleInfo(t, listSeasons(db, t.id));
+  const info = titleInfoOf(db, t);
   const out: Release[] = [];
   for (const r of rows) {
     const cands = absoluteCandidates(parseRelease(r.title, r.attrs, { id: r.trackerName.toLowerCase(), name: r.trackerName }, []), info);
@@ -187,7 +186,7 @@ export async function reviewAnime(db: Db, t: Title, rows: Release[], o: { budget
 /** Варианты нумерации раздачи и текущий выбор (для исправления вручную); null — раскладка однозначна. */
 export function animeChoices(db: Db, t: Title, r: Release): { current: string; options: string[] } | null {
   if (t.kind !== 'anime') return null;
-  const info = toTitleInfo(t, listSeasons(db, t.id));
+  const info = titleInfoOf(db, t);
   const cands = absoluteCandidates(parseRelease(r.title, r.attrs, { id: r.trackerName.toLowerCase(), name: r.trackerName }, []), info);
   if (cands.length < 2) return null;
   const cur = cands.find((c) => c.parsed.seasons[0] === r.parsed.seasons[0] && c.parsed.episodes?.from === r.parsed.episodes?.from && c.parsed.episodes?.to === r.parsed.episodes?.to);
@@ -199,7 +198,7 @@ export function correctAnime(db: Db, titleId: number, releaseId: number, label: 
   const t = db.select().from(titlesT).where(eq(titlesT.id, titleId)).get();
   const r = db.select().from(releasesT).where(eq(releasesT.id, releaseId)).get();
   if (!t || !r || r.titleId !== titleId) throw new Error('Раздача не найдена');
-  const info = toTitleInfo(t, listSeasons(db, t.id));
+  const info = titleInfoOf(db, t);
   const cands = absoluteCandidates(parseRelease(r.title, r.attrs, { id: r.trackerName.toLowerCase(), name: r.trackerName }, []), info);
   if (!cands.some((c) => c.label === label)) throw new Error('Нет такого варианта');
   const { key, ...input } = animeInput(t, r, cands, info);

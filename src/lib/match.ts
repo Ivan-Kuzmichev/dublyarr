@@ -10,14 +10,47 @@ export type TitleInfo = {
   year: number | null;
   kind: Title['kind'];
   seasons: { number: number; episodeCount: number; year: number | null }[];
+  /** Год последнего эфира: раздачи новых сезонов датированы им, а не годом начала. */
+  lastYear?: number | null;
+  /** Аниме с одним сезоном в TMDB: размеры «сезонов трекеров» (блоки эфира между перерывами). */
+  cours?: number[];
 };
 
-export const toTitleInfo = (t: Title, seasons: Season[]): TitleInfo => ({
+export const toTitleInfo = (t: Title, seasons: Season[], firstSeasonAirDates: (string | null)[] = []): TitleInfo => ({
   names: [t.nameRu, t.nameOriginal, ...t.altNames],
   year: t.year,
+  lastYear: t.lastAirDate ? Number(t.lastAirDate.slice(0, 4)) : null,
+  cours: t.kind === 'anime' ? coursOf(firstSeasonAirDates) : undefined,
   kind: t.kind,
   seasons: seasons.map((s) => ({ number: s.number, episodeCount: s.episodeCount, year: s.airDate ? Number(s.airDate.slice(0, 4)) : null })),
 });
+
+const COUR_GAP_DAYS = 45;
+
+/** Блоки эфира внутри сезона: перерыв больше 45 дней — новый «сезон трекера». Серии без даты — в последний блок. */
+export function coursOf(airDates: (string | null)[]): number[] {
+  const out: number[] = [];
+  let prev: number | null = null;
+  for (const d of airDates) {
+    const at = d ? Date.parse(d) : null;
+    if (!out.length || (at !== null && prev !== null && at - prev > COUR_GAP_DAYS * 86_400_000)) out.push(0);
+    out[out.length - 1]++;
+    if (at !== null) prev = at;
+  }
+  return out;
+}
+
+/** Аниме: у трекера «S2/S3», в TMDB один длинный сезон — S{n}E{k} → S1E(серии прошлых блоков + k). */
+export function resolveCours(p: ParsedRelease, t: TitleInfo): ParsedRelease {
+  const cours = t.cours ?? [];
+  const regular = t.seasons.filter((s) => s.number > 0);
+  if (t.kind !== 'anime' || cours.length < 2 || regular.length !== 1 || regular[0].number !== 1) return p;
+  if (p.seasons.length !== 1 || p.seasons[0] < 2 || p.seasons[0] > cours.length) return p;
+  const n = p.seasons[0];
+  const off = cours.slice(0, n - 1).reduce((a, b) => a + b, 0);
+  const episodes = p.episodes ? { from: off + p.episodes.from, to: off + p.episodes.to } : { from: off + 1, to: off + cours[n - 1] };
+  return { ...p, seasons: [1], episodes, totalInSeason: null };
+}
 
 export const MATCH_AT = 0.8;
 export const DOUBT_AT = 0.5;
@@ -116,7 +149,8 @@ export function matchRelease(p: ParsedRelease, size: number, t: TitleInfo, rule?
   if (nameScore < MATCH_AT) reasons.push('Название не похоже');
 
   const years = [t.year, ...t.seasons.map((s) => s.year)].filter((y): y is number => y !== null);
-  const yearScore = p.year === null ? 0.5 : years.some((y) => Math.abs(y - p.year!) <= 1) ? 1 : 0;
+  const inRun = t.year !== null && p.year !== null && p.year >= t.year - 1 && p.year <= Math.max(t.year, t.lastYear ?? t.year) + 1;
+  const yearScore = p.year === null ? 0.5 : inRun || years.some((y) => Math.abs(y - p.year!) <= 1) ? 1 : 0;
   if (yearScore === 0) reasons.push('Год не совпадает');
 
   let seasonScore = 0.5;

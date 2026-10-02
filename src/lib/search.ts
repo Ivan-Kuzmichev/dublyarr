@@ -1,7 +1,7 @@
 import { and, eq, or } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { releases, sources, titles, trackers, type Release, type Title } from './db/schema';
-import { listSeasons } from './catalog';
+import { listEpisodes, listSeasons } from './catalog';
 import { listStudios } from './studios';
 import { sourcesForSearch } from './sources';
 import { ensureTracker, markSourceTrackers } from './trackers';
@@ -10,7 +10,7 @@ import { jacredSearch } from './jacred';
 import { endpointFor } from './source-kinds';
 import { parseRelease } from './parse/dubs';
 import { normalizeTitle } from './parse/normalize';
-import { absoluteCandidates, matchRelease, resolveAbsolute, toTitleInfo } from './match';
+import { absoluteCandidates, matchRelease, resolveAbsolute, resolveCours, toTitleInfo } from './match';
 import { isDigital, matchMovie, movieSource } from './movie-evaluate';
 import { ruleFor } from './release-rules';
 import { encrypt } from './crypto/secretbox';
@@ -114,8 +114,7 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
     if (!unique.has(key)) unique.set(key, k);
   }
 
-  const seasons = listSeasons(db, title.id);
-  const info = toTitleInfo(title, seasons);
+  const info = titleInfoOf(db, title);
   const studios = studioRefs(db);
   const saved: Release[] = [];
   for (const k of unique.values()) {
@@ -154,6 +153,13 @@ export async function searchTitle(db: Db, titleId: number, opts: SearchOptions =
   return { releases: reviewed, sources: statuses };
 }
 
+/** Сведения о сериале для сравнения раздач: сезоны, годы эфира, у аниме — блоки эфира первого сезона. */
+export function titleInfoOf(db: Db, title: Title) {
+  const seasons = listSeasons(db, title.id);
+  const dates = title.kind === 'anime' ? listEpisodes(db, title.id, 1).map((e) => e.airDate) : [];
+  return toTitleInfo(title, seasons, dates);
+}
+
 type StudioRefs = ReturnType<typeof studioRefs>;
 const studioRefs = (db: Db) => listStudios(db).map((s) => ({ id: s.id, name: s.name, aliases: s.aliases, trackers: s.trackers }));
 
@@ -166,7 +172,8 @@ function analyze(
   r: { title: string; attrs: Record<string, string | string[]>; size: number; indexerId: string; trackerName: string },
 ) {
   const rule = ruleFor(db, title.id, r.trackerName, r.title);
-  const raw = parseRelease(r.title, r.attrs, { id: r.indexerId, name: r.trackerName }, studios);
+  // аниме: «S2/S3» трекера → серии единственного сезона TMDB
+  const raw = resolveCours(parseRelease(r.title, r.attrs, { id: r.indexerId, name: r.trackerName }, studios), info);
   // сквозная нумерация: уже выбранная Laya раскладка (переразбор её не теряет), иначе эвристика
   const cands = title.kind === 'anime' ? absoluteCandidates(raw, info) : [];
   const parsed = title.kind === 'movie' ? raw : ((cands.length > 1 && applyAnimeDecision(cands, cachedDecision<string>(db, 'anime', animeKey(title, r)))) || resolveAbsolute(raw, info));
@@ -186,7 +193,7 @@ function noteDigital(db: Db, title: Title, saved: Release[], now: number) {
 export function reparseReleases(db: Db, titleId: number) {
   const title = db.select().from(titles).where(eq(titles.id, titleId)).get();
   if (!title) return;
-  const info = toTitleInfo(title, listSeasons(db, titleId));
+  const info = titleInfoOf(db, title);
   const studios = studioRefs(db);
   const ixById = new Map(db.select().from(trackers).all().map((t) => [t.id, t.indexerId]));
   db.transaction(() => {
