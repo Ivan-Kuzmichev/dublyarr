@@ -7,6 +7,11 @@ import { getDb } from '@/lib/db/client';
 import { getTmdb } from '@/lib/tmdb';
 import { listSeasons, openTitle } from '@/lib/catalog';
 import { runManualMovieSearch, runManualSearch, type ManualResult, type ManualRow } from '@/lib/manual-search';
+import { requestTitleSearch } from '@/lib/title-search';
+import { SearchRefresh } from './SearchRefresh';
+
+// ручной поиск открывается сразу из последнего поиска; старше 15 мин — свежий поиск фоном
+const FRESH_MS = 15 * 60_000;
 import { openMovie } from '@/lib/movies';
 import { listStudios } from '@/lib/studios';
 import { pickDefaultSeason, todayIso } from '@/lib/dates';
@@ -112,7 +117,9 @@ export default async function ManualSearchPage({ params, searchParams }: { param
   const sp = await searchParams;
   const season = seasons.some((s) => String(s.number) === sp.s) ? Number(sp.s) : pickDefaultSeason(seasons, today);
   const episode = sp.e && /^\d+$/.test(sp.e) ? Number(sp.e) : undefined;
-  const result = await runManualSearch(db, tmdbId, { season, episode }, { today });
+  // сразу — из последнего поиска; старше 15 мин — свежий поиск фоном (страница обновится сама)
+  const { pending } = requestTitleSearch(db, title.id, undefined, FRESH_MS);
+  const result = await runManualSearch(db, tmdbId, { season, episode }, { today, cached: true });
   const studios = listStudios(db).map((s) => ({ id: s.id, name: s.name }));
   const regular = seasons.filter((s) => s.number > 0);
 
@@ -148,18 +155,19 @@ export default async function ManualSearchPage({ params, searchParams }: { param
           ))}
         </nav>
       )}
-      <Results result={result} tmdbId={tmdbId} studios={studios} season={season} episode={episode} numberingOf={(r) => animeChoices(db, title, r)} />
+      <SearchRefresh key={`${pending}:${result.searchedAt}`} tmdbId={tmdbId} type="tv" pending={pending} searchedAt={result.searchedAt} />
+      <Results result={result} pending={pending} tmdbId={tmdbId} studios={studios} season={season} episode={episode} numberingOf={(r) => animeChoices(db, title, r)} />
     </div>
   );
 }
 
-function Results({ result, tmdbId, studios, season, episode, movie = false, numberingOf }: { result: ManualResult; tmdbId: number; studios: { id: number; name: string }[]; season: number; episode?: number; movie?: boolean; numberingOf?: (r: ManualRow['release']) => { current: string; options: string[] } | null }) {
+function Results({ result, pending = false, tmdbId, studios, season, episode, movie = false, numberingOf }: { result: ManualResult; pending?: boolean; tmdbId: number; studios: { id: number; name: string }[]; season: number; episode?: number; movie?: boolean; numberingOf?: (r: ManualRow['release']) => { current: string; options: string[] } | null }) {
   return (
     <>
       {result.sources.length === 0 ? (
         <Card>
           <p className="m-0 text-[15px] text-muted">
-            Источников нет. <Link href="/settings/sources">Добавьте Jackett или Prowlarr</Link> в настройках.
+            {pending ? 'Ищем раздачи…' : <>Источников нет. <Link href="/settings/sources">Добавьте Jackett или JacRed</Link> в настройках.</>}
           </p>
         </Card>
       ) : (
@@ -200,7 +208,8 @@ function Results({ result, tmdbId, studios, season, episode, movie = false, numb
 async function MovieSearch({ tmdbId }: { tmdbId: number }) {
   const db = getDb();
   const { title } = await openMovie(db, getTmdb(db), tmdbId);
-  const result = await runManualMovieSearch(db, tmdbId, { today: todayIso() });
+  const { pending } = requestTitleSearch(db, title.id, undefined, FRESH_MS);
+  const result = await runManualMovieSearch(db, tmdbId, { today: todayIso(), cached: true });
   return (
     <div className="flex flex-col gap-6">
       <Link href={`/movie/${tmdbId}`} className="flex min-h-11 items-center gap-1 self-start text-sm text-muted no-underline hover:text-text-2">
@@ -215,7 +224,8 @@ async function MovieSearch({ tmdbId }: { tmdbId: number }) {
           {result.profileSource === 'default' && ' · без подписки — оценка по профилю фильмов по умолчанию'}
         </span>
       </div>
-      <Results result={result} tmdbId={tmdbId} studios={[]} season={0} movie />
+      <SearchRefresh key={`${pending}:${result.searchedAt}`} tmdbId={tmdbId} type="movie" pending={pending} searchedAt={result.searchedAt} />
+      <Results result={result} pending={pending} tmdbId={tmdbId} studios={[]} season={0} movie />
     </div>
   );
 }

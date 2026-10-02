@@ -1,0 +1,1 @@
+ALTER TABLE `titles` ADD `last_sources` text;

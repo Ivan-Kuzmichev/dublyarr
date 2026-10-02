@@ -20,10 +20,10 @@ export function titleSearchPending(db: Db, titleId: number): boolean {
 }
 
 /** Поставить поиск, если давно не искали и он ещё не идёт. pending — поиск идёт (или поставлен). */
-export function requestTitleSearch(db: Db, titleId: number, now = Date.now()): { pending: boolean } {
+export function requestTitleSearch(db: Db, titleId: number, now = Date.now(), ttl = SEARCH_TTL): { pending: boolean } {
   if (titleSearchPending(db, titleId)) return { pending: true };
   const t = db.select({ at: titles.releasesSearchedAt }).from(titles).where(eq(titles.id, titleId)).get();
-  if (!t || (t.at && now - t.at < SEARCH_TTL)) return { pending: false };
+  if (!t || (t.at && now - t.at < ttl)) return { pending: false };
   enqueue(db, TITLE_SEARCH, { titleId }, now);
   return { pending: true };
 }

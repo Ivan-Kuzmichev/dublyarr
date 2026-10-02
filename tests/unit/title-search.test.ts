@@ -32,3 +32,10 @@ test('искали недавно (меньше 6 ч) — не ищем; дав�
   expect(db.select().from(jobs).all()).toEqual([]);
   expect(requestTitleSearch(db, t.id, NOW + 120_000)).toEqual({ pending: true });
 });
+
+test('ручной поиск — свой срок свежести (15 мин)', () => {
+  const { db, t } = setup();
+  db.update(titles).set({ releasesSearchedAt: NOW - 20 * 60_000 }).where(eq(titles.id, t.id)).run();
+  expect(requestTitleSearch(db, t.id, NOW)).toEqual({ pending: false }); // для окна подписки свежо (6 ч)
+  expect(requestTitleSearch(db, t.id, NOW, 15 * 60_000)).toEqual({ pending: true });
+});

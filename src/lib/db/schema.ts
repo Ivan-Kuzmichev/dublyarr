@@ -135,6 +135,7 @@ export const titles = sqliteTable(
   releaseDates: json<{ theatrical: string | null; digital: string | null; physical: string | null }>('release_dates'), // фильм: TMDB release_dates
   digitalSeenAt: text('digital_seen_at'), // фильм: первая цифровая раздача на трекерах
   releasesSearchedAt: ts('releases_searched_at'), // последний поиск раздач (кэш: открытие страницы не ищет чаще раза в 6 ч)
+  lastSources: json<{ sourceId: number; name: string; ok: boolean; found: number; ms: number; error?: string }[]>('last_sources'), // как ответили источники в последнем поиске
   refreshedAt: ts('refreshed_at').notNull(),
   createdAt: ts('created_at').notNull(),
   },
