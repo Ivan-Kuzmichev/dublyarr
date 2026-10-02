@@ -16,6 +16,9 @@ export function studioMatcher(studios: StudioRef[]): Finder {
   return (text) => index.get(normalizeStudio(text)) ?? null;
 }
 
+/** Подпись озвучки, которая не студия: «DUB», «MVO», «Русская озвучка» (RUS(int)). */
+export const GENERIC_DUB = /^(?:DUB|MVO|DVO|VO|AVO|Русская озвучка)$/;
+
 const KIND: Record<string, DubKind> = { dub: 'dub', mvo: 'mvo', dvo: 'dvo', vo: 'vo', avo: 'avo' };
 const TAG_KIND: Record<string, DubKind> = { дубляж: 'dub', многоголосый: 'mvo', двухголосый: 'dvo', одноголосый: 'vo', авторский: 'avo' };
 const LANGUAGE = /^(?:ukr|укр|украинский|eng|english|англ|rus|рус|jap|jpn|ger|fr)$/i;

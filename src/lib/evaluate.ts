@@ -2,6 +2,7 @@ import type { Episode, Release } from './db/schema';
 import { dubLabel, type DubPosition, type Profile } from './profile-core';
 import { addDays, formatShortDate } from './dates';
 import type { ParsedRelease } from './parse/types';
+import { GENERIC_DUB } from './parse/dubs';
 
 // Оценка раздач для подписки: почему раздача не подходит, и какая из подходящих лучшая.
 
@@ -18,7 +19,7 @@ export type Verdict = {
 type Ctx = { profile: Profile; episodes: Pick<Episode, 'season' | 'number' | 'airDate'>[]; studioName: (id: number) => string | undefined; today: string };
 
 const GB = 1024 ** 3;
-const GENERIC = /^(?:DUB|MVO|DVO|VO|AVO)$/;
+const GENERIC = GENERIC_DUB;
 const MIN_ALLOWED = 720;
 
 /** Место для финальной проверки Laya (фаза 4): «это серия N сезона S в озвучке Y?». Пока — всегда «да». */

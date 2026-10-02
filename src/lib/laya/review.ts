@@ -13,6 +13,7 @@ import type { MatchResult } from '../match-types';
 import { formatSize } from '../format';
 import type { LayaClient } from './client';
 import { decide, type Budget, type Decision, type DecideInput } from './decide';
+import { GENERIC_DUB } from '../parse/dubs';
 
 // Laya в разборе раздач: «тот ли сериал» для сомнительных совпадений.
 
@@ -32,11 +33,16 @@ export function matchInput(t: Title, r: Pick<Release, 'trackerName' | 'title' | 
 }
 
 /** Применить ответ Laya к сомнительному совпадению: уверенно — «подходит» / «отказ», иначе остаётся вопросом. */
+/** Причины правил, которые подтверждают уверенное «нет» Laya. */
+const CONTRADICTS = ['Год не совпадает', 'Такого сезона нет', 'Серий больше, чем в сезоне'];
+
 export function applyMatchDecision(m: MatchResult, d: Decision<boolean> | null): MatchResult {
   if (!d || d.by !== 'laya' || m.level !== 'doubt' || m.rule) return m;
   const laya = { p: d.p, answer: d.answer };
   if (d.sure && d.answer) return { ...m, level: 'match', reasons: [`Laya: тот же · ${pct(d.p)}`], laya };
-  // «нет» не отклоняет молча: раздача остаётся вопросом пользователю с мнением Laya (её уверенное «нет» уже ошибалось)
+  // уверенное «нет» + правила тоже против (год, сезон, число серий) — отказ;
+  // не похоже только название — вопрос пользователю с мнением Laya (так она ошиблась на «Dogulwang (Toukutsu Ou, …)»)
+  if (d.sure && m.reasons.some((r) => CONTRADICTS.includes(r))) return { ...m, level: 'reject', reasons: [`Laya: не тот · ${pct(1 - d.p)}`], laya };
   if (d.sure) return { ...m, reasons: [...m.reasons, `Laya думает, что не тот · ${pct(1 - d.p)}`], laya };
   return { ...m, reasons: [...m.reasons, `Laya не уверена · ${pct(Math.max(d.p, 1 - d.p))}`], laya };
 }
@@ -59,7 +65,7 @@ export async function reviewMatches(db: Db, t: Title, rows: Release[], o: { budg
 
 // --- «Какая студия» ---
 
-const GENERIC = /^(?:DUB|MVO|DVO|VO|AVO)$/;
+const GENERIC = GENERIC_DUB;
 const MAX_STUDIOS = 19; // модель рекомендует < 20 вариантов в одном вопросе
 const MIN_LABEL = 3;
 const MAX_NEW_ALIASES = 3;

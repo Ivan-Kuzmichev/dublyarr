@@ -67,6 +67,8 @@ test('озвучка: не в профиле и неизвестная студ�
   const noAny: Profile = { ...profile, dubs: profile.dubs.slice(0, 2) };
   expect(one(rel({ dubs: [dub(TVS)] }), '2026-10-30', noAny)).toMatchObject({ tone: 'reject', reason: 'Не в профиле озвучки' });
   expect(one(rel({ dubs: [dub(null, 'Paravozik', 'none')] }), '2026-10-30', noAny)).toMatchObject({ tone: 'ask', reason: 'Неизвестная студия' });
+  // RUS(int) — русская дорожка без названия студии: не вопрос «какая студия», а просто не в профиле
+  expect(one(rel({ dubs: [dub(null, 'Русская озвучка', 'none')] }), '2026-10-30', noAny)).toMatchObject({ tone: 'reject', reason: 'Не в профиле озвучки' });
   expect(one(rel({ dubs: [dub(null, 'MVO', 'none')] }), '2026-10-30', noAny)).toMatchObject({ reason: 'Не в профиле озвучки' });
   // «Любая» принимает и неизвестную студию
   expect(one(rel({ dubs: [dub(null, 'Paravozik', 'none')] }), '2026-10-30')).toMatchObject({ ok: true, position: 2 });
