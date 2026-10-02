@@ -65,11 +65,19 @@ def load_model():
             time.sleep(RETRY_AFTER_ERROR)
 
 
-def ask(st, questions):
+class Busy(Exception):
+    """Вопрос простоял в очереди дольше, чем клиент готов ждать: считать незачем."""
+
+
+def ask(st, questions, max_wait):
     if STUB:
         return stub_answers(st, questions)
-    with ask_lock:
+    if not ask_lock.acquire(timeout=max(0.0, max_wait)):
+        raise Busy()
+    try:
         r = agent.system_one(st, questions)
+    finally:
+        ask_lock.release()
     out = {}
     for qid, a in r["answers"].items():
         if a.get("type") == "choice":
@@ -84,11 +92,15 @@ def ask(st, questions):
 class Handler(BaseHTTPRequestHandler):
     def send(self, code, body):
         data = json.dumps(body, ensure_ascii=False).encode()
-        self.send_response(code)
-        self.send_header("Content-Type", "application/json; charset=utf-8")
-        self.send_header("Content-Length", str(len(data)))
-        self.end_headers()
-        self.wfile.write(data)
+        try:
+            self.send_response(code)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+        except (BrokenPipeError, ConnectionResetError):
+            # клиент перестал ждать — одна строка в журнал вместо трассировки
+            print(json.dumps({"level": 30, "area": "laya", "msg": "клиент не дождался ответа"}, ensure_ascii=False), flush=True)
 
     def do_GET(self):
         if self.path == "/health":
@@ -102,9 +114,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.send(503, {"error": state["status"]})
         try:
             body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
+            max_wait = float(body.get("maxWaitMs", 20000)) / 1000
             t = time.time()
-            answers = ask(body["state"], body["questions"])
+            answers = ask(body["state"], body["questions"], max_wait)
             self.send(200, {"answers": answers, "ms": round((time.time() - t) * 1000)})
+        except Busy:
+            self.send(503, {"error": "busy"})
         except Exception as e:
             self.send(400, {"error": str(e)[:300]})
 

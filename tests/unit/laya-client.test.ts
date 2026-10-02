@@ -72,4 +72,18 @@ describe('статус и настройки', () => {
     expect(f({ studio: 'on', final: 'on', threshold: '90' })).toEqual({ tasks: { studio: true, match: false, anime: false, final: true }, threshold: 0.9 });
     expect(f({ threshold: '40' })).toEqual({ error: 'Порог — от 50 до 99 %' });
   });
+  test('очередь: Laya знает, сколько вопрос может ждать; «занята» — не зависание (без паузы на 10 мин)', async () => {
+    const bodies: { maxWaitMs?: number }[] = [];
+    let busy = true;
+    const f = (async (_u: string, init?: RequestInit) => {
+      bodies.push(JSON.parse(String(init?.body ?? '{}')));
+      return busy ? Response.json({ error: 'busy' }, { status: 503 }) : Response.json({ answers: { m: { noul: 0.9 } }, ms: 900 });
+    }) as typeof fetch;
+    const c = createLayaClient({ port: 1, fetchImpl: f, timeoutMs: 30_000 });
+    for (let i = 0; i < 4; i++) expect(await c.ask({}, Q)).toBeNull();
+    busy = false;
+    expect(await c.ask({}, Q)).toMatchObject({ ms: 900 }); // паузы нет — спросили снова
+    expect(bodies[0].maxWaitMs).toBe(20_000);
+  });
 });
+

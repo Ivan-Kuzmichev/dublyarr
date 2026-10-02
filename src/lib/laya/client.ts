@@ -8,7 +8,9 @@ export type Question = { type: 'choice'; instructions: string; criteria: Record<
 export type Answer = { choice?: string; probabilities?: Record<string, number>; noul?: number };
 export type AskResult = { answers: Record<string, Answer>; ms: number };
 
-const TIMEOUT_MS = 10_000;
+// всего ждём ответ 30 с: до 20 с в очереди laya-serve (вопросы — по одному) + до 10 с на сам ответ
+const TIMEOUT_MS = 30_000;
+const ANSWER_MS = 10_000;
 const PAUSE_AFTER = 3; // таймаутов подряд
 const PAUSE_MS = 10 * 60_000;
 
@@ -31,7 +33,8 @@ export function createLayaClient(o: { port: number; fetchImpl?: typeof fetch; ti
     async ask(state: unknown, questions: Record<string, Question>): Promise<AskResult | null> {
       if (now() < pausedUntil) return null;
       try {
-        const r = await f(`${base}/ask`, { method: 'POST', body: JSON.stringify({ state, questions }), signal: AbortSignal.timeout(o.timeoutMs ?? TIMEOUT_MS) });
+        const r = await f(`${base}/ask`, { method: 'POST', body: JSON.stringify({ state, questions, maxWaitMs: Math.max(0, (o.timeoutMs ?? TIMEOUT_MS) - ANSWER_MS) }), signal: AbortSignal.timeout(o.timeoutMs ?? TIMEOUT_MS) });
+        // 503 «занята» (долго в очереди) или «загружает модель» — не зависание: паузы не будет
         timeouts = 0;
         if (!r.ok) return null;
         const body = (await r.json()) as AskResult;

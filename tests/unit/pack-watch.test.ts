@@ -104,3 +104,15 @@ test('ошибка одной проверки не мешает остальн�
   const res = await checkPacks(db, { ...deps, fetchTorrent: async (x: Release) => (x.titleId === t.id ? Promise.reject(new Error('сеть')) : current.torrent) });
   expect(res).toEqual({ checked: 2, switched: 1, errors: 1 });
 });
+
+test('.torrent не скачивается — следующая проверка этого пака через 6 ч, а не через 30 мин', async () => {
+  const { db, deps } = await setup();
+  let calls = 0;
+  const failing = { ...deps, fetchTorrent: async () => (calls++, Promise.reject(new Error('timeout'))) };
+  const T0 = 1_800_000_000_000;
+  expect(await checkPacks(db, { ...failing, now: T0 })).toMatchObject({ errors: 1 });
+  expect(await checkPacks(db, { ...failing, now: T0 + 30 * 60_000 })).toMatchObject({ checked: 0, errors: 0 });
+  expect(calls).toBe(1);
+  expect(await checkPacks(db, { ...failing, now: T0 + 6 * 3_600_000 + 1 })).toMatchObject({ errors: 1 });
+  expect(calls).toBe(2);
+});
