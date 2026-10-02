@@ -1,0 +1,2 @@
+-- JacRed называет AniLibria «aniliberty», Jackett — «anilibria»: это один трекер (запасной у JacRed, если есть основной)
+UPDATE `trackers` SET `indexer_id` = 'anilibria', `role` = CASE WHEN EXISTS (SELECT 1 FROM `trackers` `t2` WHERE `t2`.`indexer_id` = 'anilibria' AND `t2`.`source_id` != `trackers`.`source_id`) THEN 'backup' ELSE `role` END WHERE `indexer_id` = 'aniliberty' AND NOT EXISTS (SELECT 1 FROM `trackers` `t3` WHERE `t3`.`indexer_id` = 'anilibria' AND `t3`.`source_id` = `trackers`.`source_id`);

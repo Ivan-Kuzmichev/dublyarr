@@ -64,6 +64,10 @@ async function get(src: Src, query: string, o: Opts): Promise<unknown> {
   throw new TorznabError('JacRed не ответил: слишком много запросов', 'http');
 }
 
+/** Имена трекеров JacRed, которые у Jackett называются иначе: иначе один трекер — два «основных» и дубли раздач. */
+const SAME_AS_JACKETT: Record<string, string> = { aniliberty: 'anilibria' };
+const trackerId = (t: string | undefined) => (t ? (SAME_AS_JACKETT[t.toLowerCase()] ?? t) : null);
+
 const btih = (m: string) => /xt=urn:btih:([0-9a-f]{40})/i.exec(m)?.[1]?.toLowerCase() ?? null;
 
 export async function jacredSearch(src: Src, q: string, kind: 'series' | 'anime' | 'movie', o: Opts = {}): Promise<TorznabItem[]> {
@@ -87,7 +91,7 @@ export async function jacredSearch(src: Src, q: string, kind: 'series' | 'anime'
         seeders: r.sid ?? null,
         peers: r.pir ?? null,
         infohash: hash,
-        indexerId: r.tracker ?? null,
+        indexerId: trackerId(r.tracker),
         indexerName: r.tracker ?? null,
         categories: [],
         attrs: {},

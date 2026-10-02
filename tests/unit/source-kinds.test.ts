@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 import { readdirSync, readFileSync } from 'node:fs';
 import { jackettEndpoint, jackettBase, endpointFor } from '@/lib/source-kinds';
 import { testDb } from './helpers';
-import { sources } from '@/lib/db/schema';
+import { sources, trackers } from '@/lib/db/schema';
 
 test('адрес Jackett: база, со слэшем, полный путь — один и тот же endpoint', () => {
   const e = 'http://192.168.1.10:9117/api/v2.0/indexers/all/results/torznab/api';
@@ -32,5 +32,21 @@ test('миграция: старые источники Jackett (все трек
     { kind: 'jackett', url: 'http://j:9117' },
     { kind: 'torznab', url: 'http://j:9117/api/v2.0/indexers/rutracker/results/torznab/' },
     { kind: 'torznab', url: 'http://prowlarr:9696/1/api' },
+  ]);
+});
+
+test('миграция: трекер JacRed «aniliberty» становится запасным к «anilibria» из Jackett', () => {
+  const db = testDb();
+  const file = readdirSync('drizzle').find((f) => f.startsWith('0023_'))!;
+  const sql = readFileSync(`drizzle/${file}`, 'utf8');
+  const [j, r] = [1, 2].map((n) => db.insert(sources).values({ name: `S${n}`, url: `http://s${n}`, createdAt: 1 }).returning().get());
+  db.insert(trackers).values([
+    { sourceId: j.id, indexerId: 'anilibria', name: 'Anilibria', kind: 'both', role: 'primary' },
+    { sourceId: r.id, indexerId: 'aniliberty', name: 'aniliberty', kind: 'unknown', role: 'primary' },
+  ]).run();
+  db.$client.exec(sql);
+  expect(db.select({ s: trackers.sourceId, i: trackers.indexerId, role: trackers.role }).from(trackers).all()).toEqual([
+    { s: j.id, i: 'anilibria', role: 'primary' },
+    { s: r.id, i: 'anilibria', role: 'backup' },
   ]);
 });
