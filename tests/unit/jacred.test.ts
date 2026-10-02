@@ -58,3 +58,9 @@ test('запросы к одному JacRed — по одному с паузо�
   await Promise.all([jacredSearch(s, 'a', 'series', { fetchImpl, sleep }), jacredSearch(s, 'b', 'series', { fetchImpl, sleep })]);
   expect(log).toEqual(['start:1', 'sleep:1000', 'start:1', 'sleep:1000']);
 });
+
+test('трекер JacRed с другим именем — тот же, что в Jackett (aniliberty → anilibria)', async () => {
+  const fetchImpl = (async () => json([item({ tracker: 'aniliberty' })])) as unknown as typeof fetch;
+  const [r] = await jacredSearch(src(), 'x', 'series', { fetchImpl, sleep: nosleep });
+  expect(r).toMatchObject({ indexerId: 'anilibria', indexerName: 'aniliberty' });
+});

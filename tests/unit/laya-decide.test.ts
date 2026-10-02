@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { testDb } from './helpers';
-import { decide, type Budget } from '@/lib/laya/decide';
+import { decide, decideMany, type Budget } from '@/lib/laya/decide';
 import { applyAdapter, currentAdapters } from '@/lib/laya/adapter';
 import { setSetting } from '@/lib/settings';
 import { beat } from '@/lib/heartbeat';
@@ -71,5 +71,40 @@ describe('адаптер', () => {
     // та же модель — ответ из кэша, но уже без адаптера
     expect(await decide(db, 'match', input('v', noul, [1]), { budget: budget(), client: f.client })).toMatchObject({ raw: 0.5, sure: false });
     expect(f.calls).toHaveLength(1);
+  });
+});
+
+describe('очередь Laya', () => {
+  test('веб-процесс Laya не спрашивает: кэш и ответы пользователя — да, новый вопрос — позже (воркер)', async () => {
+    const db = testDb();
+    const f = fake({ noul: 0.9 });
+    process.env.DUBLYARR_PROCESS = 'web';
+    try {
+      expect(await decide(db, 'match', input('w'), { budget: budget(), client: f.client })).toEqual({ by: 'budget' });
+      expect(f.calls).toEqual([]);
+    } finally {
+      delete process.env.DUBLYARR_PROCESS;
+    }
+  });
+
+  test('пачка: вопросы одного прохода — одним запросом; бюджет и кэш учитываются', async () => {
+    const db = testDb();
+    const asked: string[][] = [];
+    const client = {
+      ask: async (_s: unknown, qs: Record<string, unknown>) => (asked.push(Object.keys(qs)), { answers: Object.fromEntries(Object.keys(qs).map((k) => [k, { noul: 0.95 }])), ms: 5 }),
+      health: async () => null,
+      last: () => 5,
+    } as unknown as LayaClient;
+    await decide(db, 'match', input('cached'), { budget: budget(), client }); // в кэше
+    asked.length = 0;
+    const b = budget(2);
+    const same = (key: string) => ({ ...input(key), state: { сериал: 'X', раздача: 'Y' } }); // одно «состояние» — разные вопросы
+    const r = await decideMany(db, 'match', [input('cached'), same('n1'), same('n2'), same('n3')], { budget: b, client });
+    expect(asked).toEqual([['q0', 'q1']]); // один запрос, два новых вопроса (бюджет 2)
+    expect(r.map((d) => d.by)).toEqual(['laya', 'laya', 'laya', 'budget']);
+    expect(b.left).toBe(0);
+    asked.length = 0;
+    await decideMany(db, 'match', [input('d1'), input('d2')], { budget: budget(), client });
+    expect(asked).toEqual([['q'], ['q']]); // разные раздачи — по очереди
   });
 });
