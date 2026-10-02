@@ -45,11 +45,14 @@ export function resolveCours(p: ParsedRelease, t: TitleInfo): ParsedRelease {
   const cours = t.cours ?? [];
   const regular = t.seasons.filter((s) => s.number > 0);
   if (t.kind !== 'anime' || cours.length < 2 || regular.length !== 1 || regular[0].number !== 1) return p;
-  if (p.seasons.length !== 1 || p.seasons[0] < 2 || p.seasons[0] > cours.length) return p;
-  const n = p.seasons[0];
-  const off = cours.slice(0, n - 1).reduce((a, b) => a + b, 0);
-  const episodes = p.episodes ? { from: off + p.episodes.from, to: off + p.episodes.to } : { from: off + 1, to: off + cours[n - 1] };
-  return { ...p, seasons: [1], episodes, totalInSeason: null };
+  if (!p.seasons.length || p.seasons.some((s) => s < 1 || s > cours.length)) return p;
+  const offset = (n: number) => cours.slice(0, n - 1).reduce((a, b) => a + b, 0);
+  const lo = Math.min(...p.seasons);
+  const hi = Math.max(...p.seasons);
+  // серии внутри одного сезона трекера — сдвигаем; пак сезона(ов) — все серии этих блоков
+  if (p.episodes && p.seasons.length === 1) return lo === 1 ? p : { ...p, seasons: [1], episodes: { from: offset(lo) + p.episodes.from, to: offset(lo) + p.episodes.to }, totalInSeason: null };
+  if (p.episodes) return p;
+  return { ...p, seasons: [1], episodes: { from: offset(lo) + 1, to: offset(hi) + cours[hi - 1] }, totalInSeason: null };
 }
 
 export const MATCH_AT = 0.8;

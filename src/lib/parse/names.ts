@@ -20,7 +20,7 @@ export function parseNames(title: string): { names: string[]; year: number | nul
   const rudub = /^(.+?)\s*\(([^()]+)\)\s*S\d/i.exec(t); // «Рус (Eng)S2E01-10»
   if (rudub) names.push(rudub[1].trim(), rudub[2].trim());
   else
-    for (const part of t.split(' / ')) {
+    for (const part of t.split(/ \/ | \| /)) {
       const rest = part.trim().replace(LEADING_MARKER, '');
       const name = rest.split(NAME_END)[0].trim();
       if (name) names.push(...variants(name));

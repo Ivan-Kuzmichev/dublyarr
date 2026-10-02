@@ -30,7 +30,9 @@ export function parseEpisodes(raw: string): Eps {
   }
   if (!seasons.length) {
     // признаки сезона без серий
-    const range5 = /\/\s*(?:Сезоны?)?\s*:\s*(\d{1,2})\s*-\s*(\d{1,2})\s*\//i.exec(t); // «/ : 1-5 /»
+    const range5 =
+      /\/\s*(?:Сезоны?)?\s*:\s*(\d{1,2})\s*-\s*(\d{1,2})\s*\//i.exec(t) ?? // «/ : 1-5 /»
+      /\[S(\d{1,2})-(\d{1,2})\b/i.exec(t); // «[S01-02 + Specials]»
     const single =
       /\(S(\d{1,2})\)/i.exec(t) ??
       /(\d{1,2})(?:st|nd|rd|th)\s+Season/i.exec(t) ??
@@ -38,7 +40,7 @@ export function parseEpisodes(raw: string): Eps {
       /\bSeason\s+(\d{1,2})\b/i.exec(t) ??
       /Полный\s+S(\d{1,2})/i.exec(t) ??
       / - S(\d{1,2}) - /i.exec(t) ??
-      /(?:^|[\s.])S(\d{1,2})(?=[\s.\]]|$)/i.exec(t);
+      /(?:^|[\s.[])S(\d{1,2})(?=[\s.\]]|$)/i.exec(t); // «S01», «[S01 + Specials]»
     if (range5) seasons = range(Number(range5[1]), Number(range5[2]));
     else if (single) seasons = [Number(single[1])];
   }
