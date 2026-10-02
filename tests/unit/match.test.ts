@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { absoluteToSeason, dice, matchRelease, resolveAbsolute, type TitleInfo } from '@/lib/match';
+import { absoluteToSeason, coursOf, dice, matchRelease, resolveAbsolute, resolveCours, type TitleInfo } from '@/lib/match';
 import { parseEpisodes, parseNames, normalizeTitle } from '@/lib/parse/index';
 import type { ParsedRelease } from '@/lib/parse/types';
 
@@ -70,4 +70,28 @@ test('правила пользователя', () => {
 test('сквозные серии дальше, чем знает TMDB, — в сезон, где начинаются', () => {
   const t: TitleInfo = { names: ['X'], year: 2024, kind: 'anime', seasons: [{ number: 1, episodeCount: 12, year: 2024 }, { number: 2, episodeCount: 12, year: 2025 }] };
   expect(resolveAbsolute(parsed('X / E13-E25 X'), t)).toMatchObject({ seasons: [2], episodes: { from: 1, to: 13 }, absolute: false });
+});
+
+test('«S3E1 - 2025» — одна серия, «- 2025» — год', () => {
+  expect(parseEpisodes('Kusuriya no Hitorigoto - S3E1 - 2025  DUB (DEEP), Sub HEVC WEBRip 1080p - RUSSIAN')).toMatchObject({ seasons: [3], episodes: { from: 1, to: 1 } });
+  expect(parseEpisodes('Show - S2E1-24 - 2025  2 x DUB')).toMatchObject({ seasons: [2], episodes: { from: 1, to: 24 } });
+});
+
+test('год раздачи — любой из лет выхода сериала, не только год начала', () => {
+  const t: TitleInfo = { names: ['Kusuriya no Hitorigoto'], year: 2023, lastYear: 2025, kind: 'anime', seasons: [{ number: 1, episodeCount: 60, year: 2023 }] };
+  expect(matchRelease(parsed('Kusuriya no Hitorigoto [2025, WEBRip 1080p]'), 5 * GB, t).reasons).not.toContain('Год не совпадает');
+  expect(matchRelease(parsed('Kusuriya no Hitorigoto [2019, WEBRip 1080p]'), 5 * GB, t).reasons).toContain('Год не совпадает');
+});
+
+test('аниме: один длинный сезон в TMDB делится на сезоны трекеров по перерывам в эфире', () => {
+  const air = (from: string, n: number) => Array.from({ length: n }, (_, i) => new Date(Date.parse(from) + i * 7 * 86_400_000).toISOString().slice(0, 10));
+  const dates = [...air('2023-10-22', 24), ...air('2025-01-10', 24), ...air('2025-10-03', 12)];
+  expect(coursOf(dates)).toEqual([24, 24, 12]);
+  const t: TitleInfo = { names: ['X'], year: 2023, kind: 'anime', seasons: [{ number: 1, episodeCount: 60, year: 2023 }], cours: [24, 24, 12] };
+  expect(resolveCours(parsed('X - S3E1 - 2025 DUB'), t)).toMatchObject({ seasons: [1], episodes: { from: 49, to: 49 } });
+  expect(resolveCours(parsed('X - S2E1-24 - 2025 DUB'), t)).toMatchObject({ seasons: [1], episodes: { from: 25, to: 48 } });
+  expect(resolveCours(parsed('X 2nd Season / Season 2 [WEBRip 1080p]'), t)).toMatchObject({ seasons: [1], episodes: { from: 25, to: 48 } });
+  // сезон есть в TMDB или это не аниме — без изменений
+  const p = parsed('X - S1E5 DUB');
+  expect(resolveCours(p, t)).toBe(p);
 });

@@ -20,11 +20,12 @@ export function parseEpisodes(raw: string): Eps {
   }
   // S02E05, S2E1-10 of 10, S02E01-E10, S5E00-08
   if (!m) {
-    m = /S(\d{1,2})E(\d{1,4})(?:\s*-\s*E?(\d{1,4}))?(?:\s+of\s+(\d+|\?+))?/i.exec(t);
+    // «S3E1 - 2025» — серия и год (через « - » диапазон только с E: «S1E01 - E10»)
+    m = /S(\d{1,2})E(\d{1,4})(?:\s*-\s*E(\d{1,4})|-(\d{1,4}))?(?:\s+of\s+(\d+|\?+))?/i.exec(t);
     if (m) {
       seasons = [Number(m[1])];
-      episodes = { from: Number(m[2]), to: Number(m[3] ?? m[2]) };
-      totalInSeason = total(m[4]);
+      episodes = { from: Number(m[2]), to: Number(m[3] ?? m[4] ?? m[2]) };
+      totalInSeason = total(m[5]);
     }
   }
   if (!seasons.length) {
