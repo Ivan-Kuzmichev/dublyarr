@@ -1,6 +1,6 @@
 import { expect, test } from 'vitest';
 import { testDb } from './helpers';
-import { foundStudios } from '@/lib/found-studios';
+import { foundMovieKinds, foundStudios } from '@/lib/found-studios';
 import { releases, sources, titles } from '@/lib/db/schema';
 import type { ParsedRelease } from '@/lib/parse/types';
 
@@ -21,4 +21,16 @@ test('студии из раздач сериала: сколько раздач
   rel(a.id, 'r4', [{ kind: 'mvo', studioId: 11, label: 'Z', by: 'title' }], 'reject');
   rel(b.id, 'r5', [{ kind: 'mvo', studioId: 13, label: 'W', by: 'title' }]);
   expect(foundStudios(db, a.id)).toEqual({ 5: 2, 7: 1, 9: 1 });
+});
+
+test('фильм: найденные типы перевода (дубляж, многоголосый, оригинал)', () => {
+  const db = testDb();
+  const m = db.insert(titles).values({ tmdbId: 603, kind: 'movie', tmdbType: 'movie', nameRu: 'М', nameOriginal: 'M', originalLanguage: 'en', status: 'released', createdAt: 1, refreshedAt: 1 }).returning().get();
+  const s = db.insert(sources).values({ name: 'J', url: 'http://j', createdAt: 1 }).returning().get();
+  const rel = (title: string, p: Partial<ParsedRelease>, level: 'match' | 'reject' = 'match') =>
+    db.insert(releases).values({ titleId: m.id, sourceId: s.id, trackerName: 'X', title, size: 1, firstSeenAt: 1, lastSeenAt: 1, parsed: { ...parsed([]), ...p }, match: { score: 1, level, reasons: [] } }).run();
+  rel('a', { dubs: [{ kind: 'dub', studioId: null, label: 'DUB', by: 'none' }] });
+  rel('b', { dubs: [{ kind: 'mvo', studioId: null, label: 'MVO', by: 'none' }], original: true });
+  rel('c', { dubs: [{ kind: 'dub', studioId: null, label: 'DUB', by: 'none' }] }, 'reject');
+  expect(foundMovieKinds(db, m.id)).toEqual({ dub: 1, mvo: 1, original: 1 });
 });

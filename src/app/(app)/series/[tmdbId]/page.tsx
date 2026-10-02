@@ -9,6 +9,7 @@ import { getDb } from '@/lib/db/client';
 import { getTmdb } from '@/lib/tmdb';
 import { TmdbError } from '@/lib/tmdb/client';
 import { listEpisodes, listSeasons, openTitle, type OpenResult } from '@/lib/catalog';
+import { requestTitleSearch } from '@/lib/title-search';
 import { imageUrl, posterColor } from '@/lib/image-url';
 import { formatAirDate, pickDefaultSeason, todayIso } from '@/lib/dates';
 import type { Title } from '@/lib/db/schema';
@@ -84,6 +85,7 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
 
   const { title: t } = loaded.r;
   const db = getDb();
+  requestTitleSearch(db, t.id); // раздачи ищутся фоном — окно подписки покажет найденные студии
   const today = todayIso();
   const seasons = listSeasons(db, t.id);
   const { season: seasonParam } = await searchParams;
