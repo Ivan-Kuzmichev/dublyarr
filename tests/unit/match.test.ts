@@ -95,3 +95,19 @@ test('аниме: один длинный сезон в TMDB делится на
   const p = parsed('X - S1E5 DUB');
   expect(resolveCours(p, t)).toBe(p);
 });
+
+test('сезон в скобках: «[S01 + Specials]», «[S01-02 + Specials]»', () => {
+  expect(parseEpisodes('Монолог фармацевта / Kusuriya no Hitorigoto [S01 + Specials] (2023-2024) BDRip-HEVC 1080p').seasons).toEqual([1]);
+  expect(parseEpisodes('Монолог фармацевта / Kusuriya no Hitorigoto [S01-02 + Specials] (2023-2025) BDRip-HEVC 1080p').seasons).toEqual([1, 2]);
+});
+
+test('аниме с одним сезоном в TMDB: пак сезона трекера — только его серии', () => {
+  const t: TitleInfo = { names: ['X'], year: 2023, kind: 'anime', seasons: [{ number: 1, episodeCount: 60, year: 2023 }], cours: [24, 24, 12] };
+  expect(resolveCours(parsed('X [S01 + Specials] (2023-2024) BDRip'), t)).toMatchObject({ seasons: [1], episodes: { from: 1, to: 24 } });
+  expect(resolveCours(parsed('X [S01-02 + Specials] (2023-2025) BDRip'), t)).toMatchObject({ seasons: [1], episodes: { from: 1, to: 48 } });
+  expect(resolveCours(parsed('X - S1E5 DUB'), t)).toMatchObject({ seasons: [1], episodes: { from: 5, to: 5 } });
+});
+
+test('названия через «|» — отдельные варианты', () => {
+  expect(parseNames('Kusuriya no Hitorigoto | The Apothecary Diaries | Записки аптекаря [2023, TV, 24 из 24]').names).toEqual(['Kusuriya no Hitorigoto', 'The Apothecary Diaries', 'Записки аптекаря']);
+});
