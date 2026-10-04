@@ -54,7 +54,7 @@ Dublyarr сам находит опенинг и эндинг по общему 
 ## 4. Данные
 
 `episode_files` += `intro_state` (`marked` | `none` | `skipped` | `waiting` | `error`, null — не проверено), `intro_note` (причина: «свои главы», «не mkv», «мало серий», текст ошибки),
-`intro_start`, `intro_end`, `credits_start`, `credits_end` (мс; для API и журнала). Импорт пишет все эти поля как null (upsert заменяет и их).
+`intro_start`, `intro_end`, `credits_start`, `credits_end` (мс; для API и журнала). `intro_checked_at` — когда проверяли (`waiting` — не чаще раза в час, чтобы не загораживать другие сезоны). Импорт пишет все эти поля как null (upsert заменяет и их).
 Настройка `app_settings['intros']` = `{ on: true, introName: 'Intro', creditsName: 'Credits' }`.
 
 ## 5. Интерфейс
