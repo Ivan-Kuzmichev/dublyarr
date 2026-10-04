@@ -26,7 +26,7 @@ export default async function NotificationsPage() {
     <>
       <SectionHeader title="Уведомления" description="Сообщения в Telegram о новых сериях, проблемах и вопросах." />
       {admin && <TelegramCard hasToken={!!s?.token} proxy={s?.proxy ?? ''} baseUrl={s?.baseUrl ?? ''} tmdbProxy={!!getTmdbSettings(db)?.proxy} />}
-      <MyChatCard linked={!!user.telegramChatId} bot={!!s?.token} />
+      <MyChatCard linked={!!user.telegramChatId} chatId={user.telegramChatId} bot={!!s?.token} />
       <EventsCard value={eventsOf(user)} />
       {admin && recent.length > 0 && (
         <Card className="flex min-w-0 flex-col gap-3">

@@ -17,6 +17,15 @@ const log = logger('telegram');
 const PAIR_TTL = 10 * 60_000;
 
 /** Одноразовый код из 6 цифр: пользователь отправляет его боту, и чат привязывается. */
+/** Чат учётки (привязка кодом или Telegram ID вручную). Один чат — одна учётка: у прежнего владельца отвязывается. */
+export function setUserChat(db: Db, userId: number, raw: string): { ok: true } | { error: string } {
+  const chat = raw.trim();
+  if (!/^-?\d{1,20}$/.test(chat)) return { error: 'Telegram ID — число' };
+  db.update(users).set({ telegramChatId: null }).where(eq(users.telegramChatId, chat)).run();
+  db.update(users).set({ telegramChatId: chat }).where(eq(users.id, userId)).run();
+  return { ok: true };
+}
+
 /** Код привязки чата к учётке (у каждого свой чат). */
 export function startPairing(db: Db, userId: number, now = Date.now()): string {
   const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
@@ -55,9 +64,7 @@ async function onMessage(db: Db, tg: Telegram, chat: number, text: string, now: 
     setSetting(db, 'telegram.pairing', wrong >= MAX_WRONG ? null : { ...pairing, wrong });
     return;
   }
-  // один чат — одна учётка: у прежнего владельца чат отвязывается
-  db.update(users).set({ telegramChatId: null }).where(eq(users.telegramChatId, String(chat))).run();
-  db.update(users).set({ telegramChatId: String(chat) }).where(eq(users.id, pairing.userId)).run();
+  setUserChat(db, pairing.userId, String(chat));
   setSetting(db, 'telegram.pairing', null);
   await tg.sendMessage(String(chat), 'Чат привязан — сюда будут приходить уведомления Dublyarr');
 }

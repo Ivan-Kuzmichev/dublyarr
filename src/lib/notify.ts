@@ -32,7 +32,11 @@ export function recipients(db: Db, kind: NotifyKind, need?: Permission | null) {
 }
 
 /** Записать событие в очередь с доставкой каждому получателю; false — никто не ждёт или такое уже было (ключ). */
-export function notify(db: Db, n: { key: string; kind: NotifyKind; text: string; buttons?: InlineButton[][]; ref?: Record<string, unknown>; need?: Permission }, now = Date.now()): boolean {
+export function notify(
+  db: Db,
+  n: { key: string; kind: NotifyKind; text: string; buttons?: InlineButton[][]; ref?: Record<string, unknown>; need?: Permission; delayMs?: number },
+  now = Date.now(),
+): boolean {
   const to = recipients(db, n.kind, n.need);
   if (!to.length) return false;
   return db.transaction((tx) => {
@@ -43,7 +47,7 @@ export function notify(db: Db, n: { key: string; kind: NotifyKind; text: string;
       .returning()
       .get();
     if (!row) return false;
-    for (const u of to) tx.insert(notificationDeliveries).values({ notificationId: row.id, userId: u.id, chatId: u.telegramChatId!, nextAt: now }).run();
+    for (const u of to) tx.insert(notificationDeliveries).values({ notificationId: row.id, userId: u.id, chatId: u.telegramChatId!, nextAt: now + (n.delayMs ?? 0) }).run();
     return true;
   });
 }

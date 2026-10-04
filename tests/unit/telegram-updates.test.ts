@@ -116,3 +116,14 @@ test('привязка: старые сообщения и подбор кода
   await pollUpdates(db, tg, 102 * MIN);
   expect(chatOf(admin.id)).toBeNull(); // после 5 неверных код сгорел
 });
+
+test('Telegram ID вручную: число (группа — с минусом), один чат — одна учётка', async () => {
+  const { setUserChat } = await import('@/lib/telegram-updates');
+  const { db, admin, anya, chatOf } = setup();
+  expect(setUserChat(db, admin.id, ' 123456 ')).toEqual({ ok: true });
+  expect(setUserChat(db, anya.id, '-100777')).toEqual({ ok: true });
+  expect(setUserChat(db, anya.id, 'abc')).toEqual({ error: 'Telegram ID — число' });
+  expect([chatOf(admin.id), chatOf(anya.id)]).toEqual(['123456', '-100777']);
+  setUserChat(db, anya.id, '123456');
+  expect([chatOf(admin.id), chatOf(anya.id)]).toEqual([null, '123456']);
+});

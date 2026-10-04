@@ -6,7 +6,7 @@ import { requireSession, DENIED, guard } from '@/lib/auth/current';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getTelegramSettings, applyTelegramForm, createTelegram, telegramProxy, TelegramError } from '@/lib/telegram';
-import { startPairing } from '@/lib/telegram-updates';
+import { setUserChat, startPairing } from '@/lib/telegram-updates';
 import { parseEventsForm } from '@/lib/notify';
 import { formValues } from '@/lib/form-values';
 
@@ -38,6 +38,12 @@ export async function myChatAction(_prev: TgState, form: FormData): Promise<TgSt
   const s = getTelegramSettings(db);
   if (!s?.token) return { error: 'Бот ещё не настроен — попросите администратора' };
   const intent = form.get('intent');
+  if (intent === 'set') {
+    const r = setUserChat(db, user.id, String(form.get('chatId') ?? ''));
+    if ('error' in r) return { error: r.error };
+    revalidatePath('/settings/notifications');
+    return { ok: 'Сохранено — нажмите «Отправить тестовое», чтобы проверить' };
+  }
   if (intent === 'unpair') {
     db.update(users).set({ telegramChatId: null }).where(eq(users.id, user.id)).run();
     revalidatePath('/settings/notifications');

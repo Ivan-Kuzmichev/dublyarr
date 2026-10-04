@@ -67,3 +67,29 @@ test('заметка о новом сезоне уходит в Telegram', () =>
   addNotice(db, t.id, 'season-subscribed', 'Подписался на 2-й сезон', 5);
   expect(all().map((n) => n.text)).toEqual(['🗓 Игра престолов: Подписался на 2-й сезон']);
 });
+
+test('скачанные серии одного сериала — одним сообщением после затишья; улучшения — отдельно', async () => {
+  const { notifyImported } = await import('@/lib/notify-events');
+  const { sendPending } = await import('@/lib/notify');
+  const { downloads } = await import('@/lib/db/schema');
+  const db = testDbWithChat();
+  const t = db.insert(titles).values({ tmdbId: 73223, kind: 'anime', nameRu: 'Чёрный клевер', nameOriginal: 'Black Clover', originalLanguage: 'ja', status: 'returning', createdAt: 1, refreshedAt: 1 }).returning().get();
+  const dl = (hash: string, note: string | null = null) =>
+    db.insert(downloads).values({ hash, titleId: t.id, season: 1, kind: 'pack', episodes: [], state: 'imported', name: hash, size: 1, addedAt: 1, studioLabel: 'AniLibria', resolution: 1080, note }).returning().get();
+  const eps = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => ({ season: 1, number: a + i }));
+  const T0 = 1_800_000_000_000;
+  const d1 = dl('a');
+  notifyImported(db, d1, eps(1, 10), T0);
+  notifyImported(db, d1, eps(11, 30), T0 + 60_000); // следующий проход пересборки
+  notifyImported(db, dl('b'), eps(31, 72), T0 + 120_000); // другой пак того же сериала
+  notifyImported(db, dl('c', 'Улучшение: 720p → 1080p'), eps(1, 2), T0 + 130_000);
+  expect(db.select().from(notifications).all().map((n) => n.text)).toEqual(['📥 Чёрный клевер · S01E01–E72 — AniLibria 1080p', '📥 Чёрный клевер · S01E01–E02 — Улучшено: 720p → 1080p']);
+  const sent: string[] = [];
+  const tg = { sendMessage: async (_c: string, text: string) => (sent.push(text), { messageId: sent.length }) } as never;
+  await sendPending(db, tg, T0 + 3 * 60_000); // импорт ещё идёт — ждём
+  expect(sent).toEqual([]);
+  await sendPending(db, tg, T0 + 130_000 + 5 * 60_000);
+  expect(sent).toHaveLength(2);
+  notifyImported(db, d1, eps(73, 74), T0 + 20 * 60_000); // после отправки — новое сообщение
+  expect(db.select().from(notifications).all()).toHaveLength(3);
+});
