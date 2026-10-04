@@ -32,8 +32,12 @@ export function buildChapters(o: { intro: Seg | null; credits: Seg | null; durat
 
 export type WriteMode = 'inplace' | 'copy' | 'wait';
 
-/** Своя копия (пересобран или единственная ссылка) — на месте; жёсткая ссылка на раздачу — копией, если диск не переполнен. */
-export function decideWrite(o: { processed: boolean; nlink: number; diskPct: number | null; warnPct: number }): WriteMode {
+const MARGIN = 1024 ** 3; // запас свободного места сверх размера копии
+
+/** Своя копия (пересобран или единственная ссылка) — на месте; жёсткая ссылка на раздачу — копией,
+ *  только если диск прочитан сейчас, ниже порога и места хватает с запасом. */
+export function decideWrite(o: { processed: boolean; nlink: number; disk: { pct: number; free: number } | null; size: number; warnPct: number }): WriteMode {
   if (o.processed || o.nlink <= 1) return 'inplace';
-  return o.diskPct !== null && o.diskPct >= o.warnPct ? 'wait' : 'copy';
+  if (!o.disk || o.disk.pct >= o.warnPct || o.disk.free < o.size * 1.1 + MARGIN) return 'wait';
+  return 'copy';
 }

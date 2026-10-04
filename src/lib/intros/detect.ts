@@ -20,9 +20,11 @@ const median = (xs: number[]) => {
 export function agree(segs: Seg[], usable: number): Seg | null {
   if (usable === 2 && segs.length === 1) return segs[0][1] - segs[0][0] >= PAIR_MIN ? segs[0] : null;
   let best: Seg[] = [];
+  const len = (g: Seg[]) => median(g.map((s) => s[1] - s[0]));
   for (const s of segs) {
     const group = segs.filter((o) => Math.abs(o[0] - s[0]) <= TOL && Math.abs(o[1] - s[1]) <= TOL);
-    if (group.length > best.length) best = group;
+    // ничья — более длинный: голос другой студии режет опенинг на согласные между собой куски
+    if (group.length > best.length || (group.length === best.length && len(group) > len(best))) best = group;
   }
   if (best.length < 2) return null;
   return [median(best.map((s) => s[0])), median(best.map((s) => s[1]))];

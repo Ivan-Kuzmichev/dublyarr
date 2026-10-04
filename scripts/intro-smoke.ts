@@ -31,6 +31,7 @@ async function main() {
   });
   const ch = execFileSync('ffprobe', ['-v', 'error', '-show_chapters', '-of', 'compact=p=0', path.join(media, rows[0].path)]).toString();
   if (!ch.includes('title=Intro')) fail(`главы не вписаны: ${ch}`);
+  if (!ch.includes('title=Серия')) fail(`кириллица в главах побита: ${ch}`);
   console.log('intro smoke: OK');
 }
 

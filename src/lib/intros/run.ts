@@ -1,11 +1,12 @@
 import { and, asc, eq, isNull, lte, ne, or } from 'drizzle-orm';
+import { constants } from 'node:fs';
 import { copyFile, mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { randomBytes } from 'node:crypto';
 import path from 'node:path';
 import type { Db } from '../db/client';
 import { episodeFiles, titles, type EpisodeFile } from '../db/schema';
 import { logger } from '../log';
-import { storageState } from '../storage';
+import { diskUsage } from '../storage';
 import { getRetention } from '../retention-settings';
 import { TMP_DIR } from '../media/process';
 import { LAG, commonSegment } from './fingerprint';
@@ -69,7 +70,25 @@ async function printsOf(f: EpisodeFile, abs: string, tools: IntroTools, cacheDir
 
 const ms = (s: Seg | null) => (s ? [Math.round(s[0] * 1000), Math.round(s[1] * 1000)] : [null, null]);
 
-export async function processSeason(db: Db, tools: IntroTools, o: { media: string; cacheDir: string; now: number }) {
+/** Один проход не держит воркер дольше: остальные серии сезона — в следующий раз (nextSeason выберет его снова). */
+export const INTRO_BUDGET = 4 * 60_000;
+
+export async function processSeason(
+  db: Db,
+  tools: IntroTools,
+  o: {
+    media: string;
+    cacheDir: string;
+    now: number;
+    /** место на диске медиатеки — читается заново перед каждой копией (сохранённое состояние за проход не обновляется) */
+    disk?: () => Promise<{ pct: number; free: number } | null>;
+    budgetMs?: number;
+    clock?: () => number;
+  },
+) {
+  const clock = o.clock ?? Date.now;
+  const started = clock();
+  const disk = o.disk ?? (() => diskUsage(o.media).catch(() => null));
   const next = nextSeason(db, o.now);
   if (!next) return null;
   const files = db.select().from(episodeFiles).where(and(eq(episodeFiles.titleId, next.titleId), eq(episodeFiles.season, next.season))).orderBy(asc(episodeFiles.number)).all();
@@ -106,6 +125,7 @@ export async function processSeason(db: Db, tools: IntroTools, o: { media: strin
   const warnPct = getRetention(db).overflow.warn;
   let marked = 0;
   for (const f of usable.filter((x) => todo.includes(x))) {
+    if (clock() - started > (o.budgetMs ?? INTRO_BUDGET)) break;
     try {
       const mine = await printOf(f);
       if (!mine) {
@@ -132,7 +152,8 @@ export async function processSeason(db: Db, tools: IntroTools, o: { media: strin
       const now = db.select().from(episodeFiles).where(eq(episodeFiles.id, f.id)).get();
       if (!now || now.path !== f.path || now.size !== f.size || now.importedAt !== f.importedAt) continue;
       const abs = absOf(f);
-      const mode = decideWrite({ processed: f.processed, nlink: (await stat(abs)).nlink, diskPct: storageState(db)?.pct ?? null, warnPct });
+      const before = await stat(abs);
+      const mode = decideWrite({ processed: f.processed, nlink: before.nlink, disk: before.nlink > 1 && !f.processed ? await disk() : null, size: before.size, warnPct });
       if (mode === 'wait') {
         set(f.id, { introState: 'waiting', introNote: 'мало места на диске' });
         continue;
@@ -146,8 +167,13 @@ export async function processSeason(db: Db, tools: IntroTools, o: { media: strin
         else {
           const copy = path.join(tmpDir, `.dy-${randomBytes(4).toString('hex')}.tmp.mkv`);
           try {
-            await copyFile(abs, copy);
+            // на Btrfs (Synology) — мгновенная копия без лишнего места, иначе обычная
+            await copyFile(abs, copy, constants.COPYFILE_FICLONE);
             await tools.setChapters(copy, chFile);
+            // пока копировали, серию могли удалить или заменить из веба — тогда копию выбрасываем
+            const still = db.select().from(episodeFiles).where(eq(episodeFiles.id, f.id)).get();
+            const ino = await stat(abs).then((s) => s.ino, () => null);
+            if (!still || still.path !== f.path || still.importedAt !== f.importedAt || ino !== before.ino) continue;
             await rename(copy, abs); // в медиатеке — своя копия, раздача остаётся на исходнике
           } finally {
             await rm(copy, { force: true });

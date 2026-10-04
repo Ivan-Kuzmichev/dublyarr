@@ -49,7 +49,8 @@ export const systemIntroTools: IntroTools = {
     return (JSON.parse(r.stdout.toString()) as { chapters?: unknown[] }).chapters?.length ?? 0;
   },
   async setChapters(file, chaptersFile) {
-    const r = await run('mkvpropedit', [file, '--chapters', chaptersFile], 5 * 60_000);
+    // кодировка явно: в образе локаль POSIX, без неё кириллица в названиях глав пропадает
+    const r = await run('mkvpropedit', [file, '--chapter-charset', 'UTF-8', '--chapters', chaptersFile], 5 * 60_000);
     if (r.code >= 2 || r.code < 0) throw new Error(`mkvpropedit: ${r.stdout.toString().split('\n').filter(Boolean).at(-1) ?? 'ошибка'}`);
   },
 };

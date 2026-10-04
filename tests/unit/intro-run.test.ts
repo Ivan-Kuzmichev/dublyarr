@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { testDb } from './helpers';
 import { episodeFiles, titles } from '@/lib/db/schema';
 import { nextSeason, processSeason, resetIntroMarks } from '@/lib/intros/run';
-import { mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync, linkSync, existsSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync, linkSync, existsSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { IntroTools } from '@/lib/intros/tools';
@@ -117,8 +117,7 @@ test('жёсткая ссылка: при свободном диске — ко
   const db = testDb();
   const m = mediaWith(db, 3, () => 100, { processed: false, link: true });
   const { tools } = fakeTools({ opAt: m.at });
-  setSetting(db, 'storage.state', { pct: 50, level: 'ok' });
-  await processSeason(db, tools, { media: m.media, cacheDir: m.cacheDir, now: 1 });
+  await processSeason(db, tools, { media: m.media, cacheDir: m.cacheDir, now: 1, disk: async () => ({ pct: 50, free: 1e12 }) });
   const f = db.select().from(episodeFiles).get()!;
   expect(f).toMatchObject({ introState: 'marked', method: 'copy' });
   expect(statSync(path.join(m.media, f.path)).nlink).toBe(1);
@@ -126,8 +125,7 @@ test('жёсткая ссылка: при свободном диске — ко
 
   const db2 = testDb();
   const m2 = mediaWith(db2, 3, () => 100, { processed: false, link: true });
-  setSetting(db2, 'storage.state', { pct: 95, level: 'warn' });
-  await processSeason(db2, fakeTools({ opAt: m2.at }).tools, { media: m2.media, cacheDir: m2.cacheDir, now: 1 });
+  await processSeason(db2, fakeTools({ opAt: m2.at }).tools, { media: m2.media, cacheDir: m2.cacheDir, now: 1, disk: async () => ({ pct: 95, free: 1e12 }) });
   expect(db2.select().from(episodeFiles).all().map((x) => x.introState)).toEqual(['waiting', 'waiting', 'waiting']);
 });
 
@@ -175,4 +173,44 @@ test('кэш отпечатков: повторный проход не счит
   await processSeason(db, tools, { media: m.media, cacheDir: m.cacheDir, now: 3 });
   expect(fpCalls.length).toBe(first + 2); // E1: начало и конец
   expect(existsSync(m.cacheDir)).toBe(true);
+});
+
+test('место на диске читается заново перед каждой копией (сохранённое значение за проход не обновляется)', async () => {
+  const db = testDb();
+  const m = mediaWith(db, 3, () => 100, { processed: false, link: true });
+  setSetting(db, 'storage.state', { pct: 10, level: 'ok' }); // устаревшее — не должно использоваться
+  let pct = 80;
+  const disk = async () => ({ pct: (pct += 5), free: 1e12 }); // каждая копия «съедает» место
+  await processSeason(db, fakeTools({ opAt: m.at }).tools, { media: m.media, cacheDir: m.cacheDir, now: 1, disk });
+  expect(db.select().from(episodeFiles).all().map((f) => f.introState)).toEqual(['marked', 'waiting', 'waiting']);
+});
+
+test('бюджет времени: проход останавливается, остальные серии сезона — в следующий раз', async () => {
+  const db = testDb();
+  const m = mediaWith(db, 5, (n) => [113, 68, 113, 144, 90][n - 1]);
+  let t = 0;
+  const clock = () => (t += 60_000); // каждая проверка — +1 мин
+  const r = await processSeason(db, fakeTools({ opAt: m.at }).tools, { media: m.media, cacheDir: m.cacheDir, now: 1, budgetMs: 150_000, clock });
+  expect(r!.marked).toBeLessThan(5);
+  expect(db.select().from(episodeFiles).all().some((f) => f.introState === null)).toBe(true);
+  expect(nextSeason(db, 1)).toEqual({ titleId: m.t.id, season: 1 });
+});
+
+test('серию удалили из веба, пока шла копия, — файл не возвращается в медиатеку', async () => {
+  const db = testDb();
+  const m = mediaWith(db, 3, () => 100, { processed: false, link: true });
+  const { tools } = fakeTools({ opAt: m.at });
+  const target = path.join(m.media, 'Клевер/Season 01/E2.mkv');
+  const real = tools.setChapters;
+  let calls = 0;
+  tools.setChapters = async (file, ch) => {
+    if (++calls === 2) {
+      // пишем главы в копию E2, а в вебе тем временем удалили сериал/серию: строка и файл E2 пропали
+      db.delete(episodeFiles).where(eq(episodeFiles.number, 2)).run();
+      rmSync(target);
+    }
+    return real(file, ch);
+  };
+  await processSeason(db, tools, { media: m.media, cacheDir: m.cacheDir, now: 1, disk: async () => ({ pct: 10, free: 1e12 }) });
+  expect(existsSync(target)).toBe(false);
 });

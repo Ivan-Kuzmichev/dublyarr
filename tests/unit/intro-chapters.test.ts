@@ -31,9 +31,13 @@ test('только титры', () => {
 });
 
 test('как писать: своя копия — на месте; ссылка — копией при свободном диске; диск полон — ждать', () => {
-  expect(decideWrite({ processed: true, nlink: 2, diskPct: 95, warnPct: 90 })).toBe('inplace');
-  expect(decideWrite({ processed: false, nlink: 1, diskPct: 95, warnPct: 90 })).toBe('inplace');
-  expect(decideWrite({ processed: false, nlink: 2, diskPct: 50, warnPct: 90 })).toBe('copy');
-  expect(decideWrite({ processed: false, nlink: 2, diskPct: 90, warnPct: 90 })).toBe('wait');
-  expect(decideWrite({ processed: false, nlink: 2, diskPct: null, warnPct: 90 })).toBe('copy');
+  const GB = 1024 ** 3;
+  const disk = (pct: number, freeGb: number) => ({ pct, free: freeGb * GB });
+  expect(decideWrite({ processed: true, nlink: 2, disk: disk(95, 1), size: GB, warnPct: 90 })).toBe('inplace');
+  expect(decideWrite({ processed: false, nlink: 1, disk: null, size: GB, warnPct: 90 })).toBe('inplace');
+  expect(decideWrite({ processed: false, nlink: 2, disk: disk(50, 500), size: GB, warnPct: 90 })).toBe('copy');
+  expect(decideWrite({ processed: false, nlink: 2, disk: disk(90, 500), size: GB, warnPct: 90 })).toBe('wait');
+  // диск не прочитался — не рискуем; места меньше файла с запасом — ждём
+  expect(decideWrite({ processed: false, nlink: 2, disk: null, size: GB, warnPct: 90 })).toBe('wait');
+  expect(decideWrite({ processed: false, nlink: 2, disk: disk(50, 2), size: 1.5 * GB, warnPct: 90 })).toBe('wait');
 });
