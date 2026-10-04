@@ -128,3 +128,30 @@ test('повтор у одного получателя не дублирует 
   await sendPending(db, failOnce, 3 * MIN);
   expect(sent.map((x) => x.chatId)).toEqual(['1', '2']);
 });
+
+test('подтверждения удаления — тем, у кого «Хранилище», а не «Ответы»', () => {
+  const db = testDb();
+  person(db, 'admin', '1');
+  const answerer = person(db, 'anya', '2', { role: 'user', permissions: { answer: true } });
+  const keeper = person(db, 'boris', '3', { role: 'user', permissions: { storage: true } });
+  notify(db, { key: 'confirm', kind: 'ask', text: 'Подтвердите удаление', need: 'storage' }, 1);
+  const to = deliveries(db).map((d) => d.userId);
+  expect(to).toContain(keeper.id);
+  expect(to).not.toContain(answerer.id);
+});
+
+test('доставка проверяет получателя заново: выключен, отвязал чат, лишился права — не отправлять', async () => {
+  const db = testDb();
+  const off = person(db, 'off', '1', { role: 'user', permissions: { answer: true } });
+  const moved = person(db, 'moved', '2', { role: 'user', permissions: { answer: true } });
+  const demoted = person(db, 'demoted', '3', { role: 'user', permissions: { answer: true } });
+  const ok = person(db, 'ok', '4', { role: 'user', permissions: { answer: true } });
+  notify(db, { key: 'q', kind: 'ask', text: 'вопрос' }, 0);
+  db.update(users).set({ disabled: true }).where(eq(users.id, off.id)).run();
+  db.update(users).set({ telegramChatId: '22' }).where(eq(users.id, moved.id)).run();
+  db.update(users).set({ permissions: {} }).where(eq(users.id, demoted.id)).run();
+  const { tg, sent } = fakeTg(() => null);
+  await sendPending(db, tg, 1);
+  expect(sent.map((s) => s.chatId)).toEqual(['4']);
+  expect(deliveries(db).filter((d) => d.userId !== ok.id).every((d) => d.error !== null && d.sentAt === null)).toBe(true);
+});

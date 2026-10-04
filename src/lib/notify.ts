@@ -1,7 +1,7 @@
 import { and, asc, eq, isNotNull, isNull, lte } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { notificationDeliveries, notifications, users } from './db/schema';
-import { can } from './auth/permissions';
+import { can, type Permission } from './auth/permissions';
 import { TelegramError, type InlineButton, type Telegram } from './telegram';
 import { logger } from './log';
 
@@ -18,23 +18,27 @@ const MIN = 60_000;
 const GIVE_UP = 24 * 60 * MIN;
 
 /** Кому слать: привязан чат, учётка включена, событие включено; вопросы с кнопками — только с правом отвечать. */
-export function recipients(db: Db, kind: NotifyKind) {
+/** Какое право нужно получателю: вопросы о раздачах — «Ответы», подтверждения удаления — «Хранилище» (need). */
+const needOf = (kind: NotifyKind, need?: Permission | null): Permission | null => need ?? (kind === 'ask' ? 'answer' : null);
+
+export function recipients(db: Db, kind: NotifyKind, need?: Permission | null) {
+  const p = needOf(kind, need);
   return db
     .select()
     .from(users)
     .where(and(isNotNull(users.telegramChatId), eq(users.disabled, false)))
     .all()
-    .filter((u) => eventsOf(u)[kind] && (kind !== 'ask' || can(u, 'answer')));
+    .filter((u) => eventsOf(u)[kind] && (!p || can(u, p)));
 }
 
 /** Записать событие в очередь с доставкой каждому получателю; false — никто не ждёт или такое уже было (ключ). */
-export function notify(db: Db, n: { key: string; kind: NotifyKind; text: string; buttons?: InlineButton[][]; ref?: Record<string, unknown> }, now = Date.now()): boolean {
-  const to = recipients(db, n.kind);
+export function notify(db: Db, n: { key: string; kind: NotifyKind; text: string; buttons?: InlineButton[][]; ref?: Record<string, unknown>; need?: Permission }, now = Date.now()): boolean {
+  const to = recipients(db, n.kind, n.need);
   if (!to.length) return false;
   return db.transaction((tx) => {
     const row = tx
       .insert(notifications)
-      .values({ key: n.key, kind: n.kind, text: n.text, buttons: n.buttons ?? null, ref: n.ref ?? null, createdAt: now, nextAt: now })
+      .values({ key: n.key, kind: n.kind, text: n.text, buttons: n.buttons ?? null, ref: n.need ? { ...n.ref, need: n.need } : (n.ref ?? null), createdAt: now, nextAt: now })
       .onConflictDoNothing()
       .returning()
       .get();
@@ -48,14 +52,22 @@ export function notify(db: Db, n: { key: string; kind: NotifyKind; text: string;
 export async function sendPending(db: Db, tg: Telegram, now = Date.now()) {
   const res = { sent: 0, failed: 0 };
   const due = db
-    .select({ d: notificationDeliveries, n: notifications })
+    .select({ d: notificationDeliveries, n: notifications, u: users })
     .from(notificationDeliveries)
     .innerJoin(notifications, eq(notifications.id, notificationDeliveries.notificationId))
+    .innerJoin(users, eq(users.id, notificationDeliveries.userId))
     .where(and(isNull(notificationDeliveries.sentAt), isNull(notificationDeliveries.error), lte(notificationDeliveries.nextAt, now)))
     .orderBy(asc(notificationDeliveries.id))
     .limit(20)
     .all();
-  for (const { d, n } of due) {
+  for (const { d, n, u } of due) {
+    // получатель мог измениться с момента события: выключен, сменил чат, лишился права
+    const need = needOf(n.kind, (n.ref as { need?: Permission } | null)?.need);
+    const stale = u.disabled ? 'учётка выключена' : u.telegramChatId !== d.chatId ? 'чат изменён' : need && !can(u, need) ? 'нет прав' : null;
+    if (stale) {
+      db.update(notificationDeliveries).set({ error: stale }).where(eq(notificationDeliveries.id, d.id)).run();
+      continue;
+    }
     if (now - n.createdAt > GIVE_UP) {
       db.update(notificationDeliveries).set({ error: 'не доставлено' }).where(eq(notificationDeliveries.id, d.id)).run();
       continue;

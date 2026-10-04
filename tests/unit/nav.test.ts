@@ -22,5 +22,10 @@ test('«Диагностика» — перед «Безопасностью»',
 
 test('разделы настроек: админ — все, пользователь — только «Уведомления» и «Безопасность»', () => {
   expect(settingsSectionsFor(true).map((s) => s.id)).toContain('users');
-  expect(settingsSectionsFor(false).map((s) => s.id)).toEqual(['notify', 'security']);
+  expect(settingsSectionsFor(false).map((s) => s.id)).toEqual(['notifications', 'security']);
+});
+
+test('у каждого раздела настроек есть своя страница (ссылка не ведёт в заглушку или 404)', async () => {
+  const { existsSync } = await import('node:fs');
+  for (const s of SETTINGS_SECTIONS) expect(existsSync(`src/app/(app)/settings/${s.id}/page.tsx`), s.id).toBe(true);
 });

@@ -120,5 +120,6 @@ export function notifyNotice(db: Db, noticeId: number, titleId: number, text: st
 export function notifyPendingConfirm(db: Db, what: 'old-copies' | 'cleanup' | 'retention', text: string, now = Date.now()) {
   const day = new Date(now).toISOString().slice(0, 10);
   const page = { 'old-copies': '/old-copies', cleanup: '/cleanup', retention: '/storage' }[what];
-  notify(db, { key: `${what}:${day}`, kind: 'ask', text, buttons: linkButton(db, page, 'Посмотреть список') }, now);
+  // подтвердить удаление может тот, у кого «Хранилище», а не «Ответы на вопросы»
+  notify(db, { key: `${what}:${day}`, kind: 'ask', text, buttons: linkButton(db, page, 'Посмотреть список'), need: 'storage' }, now);
 }

@@ -25,6 +25,9 @@ test('пользователи: админ создаёт учётку с пра
   await anya.goto('/settings/security');
   const nav = anya.getByRole('navigation', { name: 'Разделы настроек' });
   await expect(nav.getByRole('link')).toHaveText(['Уведомления', 'Безопасность']);
+  await nav.getByRole('link', { name: 'Уведомления' }).click();
+  await expect(anya.getByRole('heading', { name: 'Мой чат' })).toBeVisible(); // ссылка ведёт на настоящую страницу, а не в 404
+  await expect(anya.getByRole('heading', { name: 'Telegram-бот' })).toHaveCount(0);
   await expect(anya.getByText('API включён')).toHaveCount(0);
   expect((await anya.goto('/settings/sources'))!.status()).toBe(404);
 

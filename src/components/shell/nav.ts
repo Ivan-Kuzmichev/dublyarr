@@ -28,7 +28,7 @@ export const SETTINGS_SECTIONS = [
   { id: 'files', label: 'Обработка файлов', phase: 3 },
   { id: 'movies', label: 'Фильмы', phase: 3 }, // своя страница /settings/movies
   { id: 'storage', label: 'Хранение', phase: 3 },
-  { id: 'notify', label: 'Уведомления', phase: 2, forUsers: true },
+  { id: 'notifications', label: 'Уведомления', phase: 2, forUsers: true },
   { id: 'ai', label: 'AI', phase: 4 }, // своя страница /settings/ai
   { id: 'users', label: 'Пользователи', phase: 6 }, // своя страница /settings/users
   { id: 'diagnostics', label: 'Диагностика', phase: 5 }, // своя страница /settings/diagnostics
