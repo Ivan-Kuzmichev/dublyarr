@@ -316,6 +316,15 @@ describe('пересборка при импорте', () => {
   };
   const rel = 'Игра престолов (2011)/Season 01/Игра престолов S01E01 [LostFilm 1080p].mkv';
 
+  test('импорт (в том числе замена) обнуляет разметку заставки', async () => {
+    const s = setup();
+    await start(s);
+    s.db.insert(episodeFiles).values({ titleId: s.t.id, season: 1, number: 1, path: rel, size: 1, method: 'hardlink', importedAt: 1, introState: 'marked', introStart: 1000, introEnd: 9000 }).run();
+    const { runner } = fakeRunner();
+    await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: HOUR, runner });
+    expect(s.db.select().from(episodeFiles).get()).toMatchObject({ introState: null, introStart: null, introEnd: null });
+  });
+
   test('пересборка: в медиатеке новый файл, источник не тронут, сведения о файле', async () => {
     const s = setup();
     await start(s);

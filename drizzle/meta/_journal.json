@@ -183,6 +183,13 @@
       "when": 1791108275817,
       "tag": "0025_late_roland_deschain",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1791116501921,
+      "tag": "0026_pink_kronos",
+      "breakpoints": true
     }
   ]
 }
