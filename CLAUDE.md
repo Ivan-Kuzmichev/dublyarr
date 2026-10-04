@@ -236,6 +236,7 @@ Self-hosted сервис для дома (администратор + поль�
   Жёсткая ссылка на раздачу — копия в медиатеке (диск < `overflow.warn`), иначе `waiting`. Импорт обнуляет разметку файла и сбрасывает `none` в сезоне.
 - `episode_files.intro_*`; настройки — `app_settings['intros']` («Настройки → Файлы»); в интерфейсе — только «размечено».
 - Настоящая разметка проверяется в образе: `docker run --rm --entrypoint sh dublyarr:dev scripts/intro-smoke.sh` → «intro smoke: OK».
+- В образе `LANG/LC_ALL=C.UTF-8`: в локали POSIX MKVToolNix обрезает пути на кириллице (2.4.0 — «файл '/downloads/media/' не найден»); проверка в образе идёт по русскому пути.
 
 # This is NOT the Next.js you know
 

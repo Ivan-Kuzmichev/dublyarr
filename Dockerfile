@@ -28,6 +28,8 @@ WORKDIR /app
 # версия образа (тег из CI: 2.0.0 / edge / sha-…)
 ARG VERSION=dev
 ENV NODE_ENV=production DATA_DIR=/data PORT=3000 LAYA_PORT=8765 NEXT_TELEMETRY_DISABLED=1 DUBLYARR_VERSION=$VERSION
+# UTF-8 для программ: в локали POSIX MKVToolNix обрезает пути на первой не-ASCII букве («Чёрный клевер (2017)/…»)
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
 COPY --from=build /app/package.json ./
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/.next ./.next

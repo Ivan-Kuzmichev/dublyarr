@@ -17,7 +17,7 @@ async function main() {
   if (!(await systemIntroTools.available())) fail('нет ffmpeg chromaprint или mkvpropedit');
   const db = getDb();
   const t = db.insert(titles).values({ tmdbId: 1, kind: 'series', nameRu: 'Show', nameOriginal: 'Show', originalLanguage: 'en', status: 'returning', createdAt: 1, refreshedAt: 1 }).returning().get();
-  const dir = 'Show (2020)/Season 01';
+  const dir = 'Сериал (2020)/Season 01'; // кириллица в пути — как в настоящей медиатеке
   readdirSync(path.join(media, dir)).sort().forEach((f, i) =>
     db.insert(episodeFiles).values({ titleId: t.id, season: 1, number: i + 1, path: `${dir}/${f}`, size: 1, method: 'hardlink', importedAt: i, processed: true }).run(),
   );
