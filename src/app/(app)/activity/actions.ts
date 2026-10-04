@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { DENIED, guard } from '@/lib/auth/current';
 import { controlDownload } from '@/lib/activity';
 import { redirect } from 'next/navigation';
 import { getQbit } from '@/lib/qbit';
@@ -14,7 +14,7 @@ const idOf = (form: FormData) => {
 };
 
 async function control(form: FormData, action: 'pause' | 'resume' | 'remove') {
-  await requireSession();
+  if (!(await guard('downloads'))) redirect(`/activity?error=${encodeURIComponent(DENIED)}`);
   const db = getDb();
   const id = idOf(form);
   const r = id ? await controlDownload(db, getQbit(db), id, action) : { error: 'Загрузка не найдена' };
@@ -36,7 +36,7 @@ export async function removeAction(form: FormData) {
 }
 
 export async function searchNowAction() {
-  await requireSession();
+  if (!(await guard('downloads'))) return;
   enqueue(getDb(), 'subscriptions.search');
   revalidatePath('/activity');
 }

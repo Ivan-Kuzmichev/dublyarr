@@ -1,6 +1,6 @@
 import { existsSync } from 'node:fs';
 import { Card, CardTitle, SectionHeader } from '@/components/ui/Card';
-import { requireSession } from '@/lib/auth/current';
+import { requireAdmin } from '@/lib/auth/current';
 import { getDb } from '@/lib/db/client';
 import { getQbit } from '@/lib/qbit';
 import { getLogSettings } from '@/lib/log-settings';
@@ -30,7 +30,7 @@ async function reconcileRows() {
 }
 
 export default async function DiagnosticsPage({ searchParams }: { searchParams: Promise<{ level?: string; area?: string; q?: string }> }) {
-  await requireSession();
+  await requireAdmin();
   const db = getDb();
   const f = await searchParams;
   const level = (['debug', 'info', 'warn', 'error'] as const).find((l) => l === f.level);

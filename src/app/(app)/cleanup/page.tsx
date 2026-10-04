@@ -8,6 +8,7 @@ import { pendingCleanup } from '@/lib/cleanup';
 import type { Paths } from '@/lib/downloads';
 import { plural } from '@/lib/plural';
 import { CleanupForm } from './CleanupForm';
+import { requirePage } from '@/lib/auth/current';
 
 export const metadata = { title: 'Уборка загрузок · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -22,6 +23,7 @@ async function loadPending() {
 }
 
 export default async function CleanupPage() {
+  await requirePage('storage');
   const items = await loadPending();
   const rows = (items ?? []).map((i) =>
     i.kind === 'torrent'

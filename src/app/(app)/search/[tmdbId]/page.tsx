@@ -21,6 +21,8 @@ import { AssignStudio } from './AssignStudio';
 import { DownloadButton } from './DownloadButton';
 import { answerMatchAction, correctAnimeAction } from './actions';
 import { animeChoices } from '@/lib/laya/review';
+import { requirePage } from '@/lib/auth/current';
+import { can } from '@/lib/auth/permissions';
 
 export const metadata = { title: 'Ручной поиск · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -32,7 +34,9 @@ const GENERIC = /^(?:DUB|MVO|DVO|VO|AVO)$/;
 // Как распознана озвучка раздачи: по самому надёжному из способов.
 const recognizedBy = (dubs: ManualRow['dubs']) => (['tracker', 'title', 'tag'] as const).find((b) => dubs.some((d) => d.by === b && (d.studioName || b === 'tag'))) ?? 'none';
 
-function Row({ row, tmdbId, studios, season, episode, movie = false, numbering }: { row: ManualRow; tmdbId: number; studios: { id: number; name: string }[]; season: number; episode?: number; movie?: boolean; numbering?: { current: string; options: string[] } | null }) {
+type May = { search: boolean; answer: boolean };
+
+function Row({ row, tmdbId, studios, season, episode, movie = false, numbering, may }: { may: May; row: ManualRow; tmdbId: number; studios: { id: number; name: string }[]; season: number; episode?: number; movie?: boolean; numbering?: { current: string; options: string[] } | null }) {
   const { release: r, verdict: v, dubs } = row;
   const unknown = dubs.find((d) => !d.studioName && d.by !== 'tag' && !GENERIC.test(d.label));
   const dim = v.tone === 'reject' ? 'opacity-60' : '';
@@ -45,7 +49,7 @@ function Row({ row, tmdbId, studios, season, episode, movie = false, numbering }
       <div className={`flex min-w-0 flex-col gap-1 ${dim}`}>
         <span className="font-mono text-xs leading-snug break-words text-text">{r.title}</span>
         <span className="text-xs text-faint">{r.trackerName}</span>
-        {numbering && (
+        {numbering && may.answer && (
           <form action={correctAnimeAction} className="flex flex-wrap items-center gap-2">
             <input type="hidden" name="tmdbId" value={tmdbId} />
             <input type="hidden" name="releaseId" value={r.id} />
@@ -81,9 +85,9 @@ function Row({ row, tmdbId, studios, season, episode, movie = false, numbering }
       </div>
       <span className={`text-[13px] ${TONE[v.tone]}`}>{v.reason}</span>
       <div className="flex flex-wrap items-center gap-2">
-        {(v.tone === 'best' || v.tone === 'ok') && <DownloadButton tmdbId={tmdbId} releaseId={r.id} season={season} episode={episode} movie={movie} />}
-        {unknown && !movie && <AssignStudio tmdbId={tmdbId} label={unknown.label} studios={studios} />}
-        {(canConfirm || canReject) && (
+        {may.search && (v.tone === 'best' || v.tone === 'ok') && <DownloadButton tmdbId={tmdbId} releaseId={r.id} season={season} episode={episode} movie={movie} />}
+        {may.answer && unknown && !movie && <AssignStudio tmdbId={tmdbId} label={unknown.label} studios={studios} />}
+        {may.answer && (canConfirm || canReject) && (
           <form action={answerMatchAction} className="flex gap-1">
             <input type="hidden" name="tmdbId" value={tmdbId} />
             <input type="hidden" name="releaseId" value={r.id} />
@@ -106,10 +110,12 @@ function Row({ row, tmdbId, studios, season, episode, movie = false, numbering }
 }
 
 export default async function ManualSearchPage({ params, searchParams }: { params: Promise<{ tmdbId: string }>; searchParams: Promise<{ s?: string; e?: string; type?: string }> }) {
+  const { user } = await requirePage('search', 'answer');
+  const may = { search: can(user, 'search'), answer: can(user, 'answer') };
   const { tmdbId: raw } = await params;
   const tmdbId = Number(raw);
   if (!Number.isInteger(tmdbId) || tmdbId <= 0) notFound();
-  if ((await searchParams).type === 'movie') return <MovieSearch tmdbId={tmdbId} />;
+  if ((await searchParams).type === 'movie') return <MovieSearch tmdbId={tmdbId} may={may} />;
   const db = getDb();
   const { title } = await openTitle(db, getTmdb(db), tmdbId);
   const seasons = listSeasons(db, title.id);
@@ -156,12 +162,12 @@ export default async function ManualSearchPage({ params, searchParams }: { param
         </nav>
       )}
       <SearchRefresh key={`${pending}:${result.searchedAt}`} tmdbId={tmdbId} type="tv" pending={pending} searchedAt={result.searchedAt} />
-      <Results result={result} pending={pending} tmdbId={tmdbId} studios={studios} season={season} episode={episode} numberingOf={(r) => animeChoices(db, title, r)} />
+      <Results may={may} result={result} pending={pending} tmdbId={tmdbId} studios={studios} season={season} episode={episode} numberingOf={(r) => animeChoices(db, title, r)} />
     </div>
   );
 }
 
-function Results({ result, pending = false, tmdbId, studios, season, episode, movie = false, numberingOf }: { result: ManualResult; pending?: boolean; tmdbId: number; studios: { id: number; name: string }[]; season: number; episode?: number; movie?: boolean; numberingOf?: (r: ManualRow['release']) => { current: string; options: string[] } | null }) {
+function Results({ may, result, pending = false, tmdbId, studios, season, episode, movie = false, numberingOf }: { may: May; result: ManualResult; pending?: boolean; tmdbId: number; studios: { id: number; name: string }[]; season: number; episode?: number; movie?: boolean; numberingOf?: (r: ManualRow['release']) => { current: string; options: string[] } | null }) {
   return (
     <>
       {result.sources.length === 0 ? (
@@ -195,7 +201,7 @@ function Results({ result, pending = false, tmdbId, studios, season, episode, mo
                 <span />
               </div>
               {result.rows.map((row) => (
-                <Row key={row.release.id} row={row} tmdbId={tmdbId} studios={studios} season={season} episode={episode} movie={movie} numbering={numberingOf?.(row.release)} />
+                <Row key={row.release.id} may={may} row={row} tmdbId={tmdbId} studios={studios} season={season} episode={episode} movie={movie} numbering={numberingOf?.(row.release)} />
               ))}
             </div>
           )}
@@ -205,7 +211,7 @@ function Results({ result, pending = false, tmdbId, studios, season, episode, mo
   );
 }
 
-async function MovieSearch({ tmdbId }: { tmdbId: number }) {
+async function MovieSearch({ tmdbId, may }: { tmdbId: number; may: May }) {
   const db = getDb();
   const { title } = await openMovie(db, getTmdb(db), tmdbId);
   const { pending } = requestTitleSearch(db, title.id, undefined, FRESH_MS);
@@ -225,7 +231,7 @@ async function MovieSearch({ tmdbId }: { tmdbId: number }) {
         </span>
       </div>
       <SearchRefresh key={`${pending}:${result.searchedAt}`} tmdbId={tmdbId} type="movie" pending={pending} searchedAt={result.searchedAt} />
-      <Results result={result} pending={pending} tmdbId={tmdbId} studios={[]} season={0} movie />
+      <Results may={may} result={result} pending={pending} tmdbId={tmdbId} studios={[]} season={0} movie />
     </div>
   );
 }

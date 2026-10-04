@@ -2,14 +2,14 @@
 
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { DENIED, guard } from '@/lib/auth/current';
 import { parseRetentionForm, saveRetentionSettings } from '@/lib/retention-settings';
 import { enqueue } from '@/worker/jobs';
 
 export type SaveState = { ok?: string; error?: string };
 
 export async function saveRetentionAction(_prev: SaveState, form: FormData): Promise<SaveState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   const s = parseRetentionForm(form);
   if ('error' in s) return { error: s.error };
   saveRetentionSettings(getDb(), s);
@@ -20,7 +20,7 @@ export async function saveRetentionAction(_prev: SaveState, form: FormData): Pro
 
 /** «Запустить сейчас»: уборка медиатеки (неподтверждённые правила только покажут список). */
 export async function runNowAction(): Promise<SaveState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   enqueue(getDb(), 'retention.run');
   return { ok: 'Уборка запущена — результат появится в «Хранилище» через минуту' };
 }

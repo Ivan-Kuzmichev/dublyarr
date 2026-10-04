@@ -8,13 +8,15 @@ import type { Studio } from '@/lib/db/schema';
 import { DefaultProfileCard } from './DefaultProfileCard';
 import { StudioEditor } from './StudioEditor';
 import { confirmLayaAliasAction } from './actions';
+import { requirePage } from '@/lib/auth/current';
 
 export const metadata = { title: 'Подписки и студии · Dublyarr' };
 
 const KIND: Record<Studio['kind'], string> = { series: 'Сериалы', anime: 'Аниме', both: 'Оба' };
 const SOURCE: Record<Studio['source'], string> = { seed: 'Начальный набор', manual: 'Вручную', laya: 'Laya' };
 
-export default function StudiosSettingsPage() {
+export default async function StudiosSettingsPage() {
+  await requirePage('admin');
   const db = getDb();
   const all = listStudios(db);
   const names = Object.fromEntries(all.map((s) => [s.id, s.name]));

@@ -1,7 +1,7 @@
 'use server';
 
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { guard, requireSession } from '@/lib/auth/current';
 import { getTitleByTmdbId } from '@/lib/catalog';
 import { foundMovieKinds, foundStudios } from '@/lib/found-studios';
 import { requestTitleSearch, titleSearchPending } from '@/lib/title-search';
@@ -21,7 +21,8 @@ export async function foundAction(tmdbId: number, type: 'tv' | 'movie'): Promise
 
 /** Ручной поиск: идёт ли фоновый поиск; force — поставить поиск сейчас («Обновить»). */
 export async function titleSearchAction(tmdbId: number, type: 'tv' | 'movie', force = false): Promise<{ pending: boolean }> {
-  await requireSession();
+  // «Обновить» (поиск сейчас) — право «Ручной поиск»; узнать, идёт ли поиск, может любой
+  if (force ? !(await guard('search')) : !(await requireSession())) return { pending: false };
   const db = getDb();
   const t = getTitleByTmdbId(db, tmdbId, type);
   if (!t) return { pending: false };

@@ -5,8 +5,9 @@ import { Card } from '@/components/ui/Card';
 import { Poster } from '@/components/catalog/Poster';
 import { getDb } from '@/lib/db/client';
 import { todayIso } from '@/lib/dates';
-import { todayData } from '@/lib/dashboard';
+import { attentionFor, todayData } from '@/lib/dashboard';
 import { formatSpeed } from '@/lib/activity';
+import { requireSession } from '@/lib/auth/current';
 
 export const metadata = { title: 'Сегодня · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -38,9 +39,11 @@ const sectionHead = (title: string, link?: { href: string; text: string }, note?
   </div>
 );
 
-export default function TodayPage() {
+export default async function TodayPage() {
+  const { user } = await requireSession();
   const today = todayIso();
-  const d = todayData(getDb(), today);
+  const raw = todayData(getDb(), today);
+  const d = { ...raw, attention: attentionFor(user, raw.attention) }; // вопросы и уборка — только тем, у кого есть право
   const speed = d.downloads.reduce((n, r) => n + r.speedBps, 0);
   const empty = !d.fresh.length && !d.waiting.length && !d.downloads.length && !d.week.length && !d.attention.length && !d.news.length;
   return (

@@ -9,6 +9,8 @@ import { getQbit } from '@/lib/qbit';
 import { jobs } from '@/lib/db/schema';
 import { and, eq, inArray } from 'drizzle-orm';
 import { pauseAction, removeAction, resumeAction, searchNowAction } from './actions';
+import { requireSession } from '@/lib/auth/current';
+import { can } from '@/lib/auth/permissions';
 
 export const metadata = { title: 'Активность · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -16,7 +18,7 @@ export const dynamic = 'force-dynamic';
 const BAR: Record<QueueRow['tone'], string> = { progress: 'bg-progress', danger: 'bg-danger', ok: 'bg-text-2', muted: 'bg-dim' };
 const TEXT: Record<QueueRow['tone'], string> = { progress: 'text-progress', danger: 'text-danger', ok: 'text-muted', muted: 'text-muted' };
 
-function Row({ r }: { r: QueueRow }) {
+function Row({ r, control }: { r: QueueRow; control: boolean }) {
   const btn = 'h-11 cursor-pointer rounded-[10px] border border-line-strong px-3 text-[13px] text-text-2 hover:text-text';
   return (
     <div className="flex flex-col gap-2 border-t border-line-soft px-4 py-3.5 first:border-t-0 lg:px-[18px]">
@@ -32,6 +34,7 @@ function Row({ r }: { r: QueueRow }) {
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className={`text-[13px] ${TEXT[r.tone]}`}>{r.state}</span>
+        {control && (
         <form className="flex gap-2">
           <input type="hidden" name="id" value={r.id} />
           {r.canPause && (
@@ -50,6 +53,7 @@ function Row({ r }: { r: QueueRow }) {
             </button>
           )}
         </form>
+        )}
       </div>
     </div>
   );
@@ -66,6 +70,8 @@ function searchQueued() {
 
 export default async function ActivityPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
+  const { user } = await requireSession();
+  const control = can(user, 'downloads');
   const db = getDb();
   const queue = activityQueue(db);
   const qbit = !!getQbit(db);
@@ -74,11 +80,13 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
     <div className="flex flex-col gap-7">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <PageTitle>Активность</PageTitle>
+        {control && (
         <form action={searchNowAction}>
           <Button type="submit" variant="secondary" disabled={searching}>
             {searching ? 'Поиск идёт…' : 'Искать сейчас'}
           </Button>
         </form>
+        )}
       </div>
       {error && (
         <Card tone="danger">
@@ -103,7 +111,7 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
         ) : (
           <div className="overflow-hidden rounded-2xl border border-line bg-surface">
             {queue.map((r) => (
-              <Row key={r.id} r={r} />
+              <Row key={r.id} r={r} control={control} />
             ))}
           </div>
         )}

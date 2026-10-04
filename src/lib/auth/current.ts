@@ -38,3 +38,10 @@ export async function requireAdmin() {
   if (!isAdmin(s.user)) notFound();
   return s;
 }
+
+/** Страница по праву: хотя бы одно из прав (или админ), иначе 404. */
+export async function requirePage(...perms: (Permission | 'admin')[]) {
+  const s = await requireSession();
+  if (!perms.some((p) => (p === 'admin' ? isAdmin(s.user) : can(s.user, p)))) notFound();
+  return s;
+}

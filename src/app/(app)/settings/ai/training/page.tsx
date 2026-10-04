@@ -6,6 +6,7 @@ import { getLayaSettings } from '@/lib/laya/settings';
 import { trainingData } from '@/lib/laya/training-data';
 import { deleteExampleAction, rollbackAction } from '../actions';
 import { TrainNow } from './TrainNow';
+import { requirePage } from '@/lib/auth/current';
 
 export const metadata = { title: 'Дообучение Laya · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -17,6 +18,7 @@ const RULES = [
 ];
 
 export default async function TrainingPage({ searchParams }: { searchParams: Promise<{ wrong?: string }> }) {
+  await requirePage('admin');
   const { wrong } = await searchParams;
   const db = getDb();
   const d = trainingData(db);

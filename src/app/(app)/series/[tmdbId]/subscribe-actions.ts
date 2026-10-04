@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { DENIED, guard } from '@/lib/auth/current';
 import { getTitleByTmdbId } from '@/lib/catalog';
 import { listStudios } from '@/lib/studios';
 import { parseSubscriptionForm } from '@/lib/subscription-form';
@@ -10,7 +10,7 @@ import { subscribe, unsubscribe, updateSubscription, SubscriptionError } from '@
 import type { DialogState } from '@/components/subscribe/SubscribeDialog';
 
 export async function saveSubscriptionAction(_prev: DialogState, form: FormData): Promise<DialogState> {
-  await requireSession();
+  if (!(await guard('subscribe'))) return { error: DENIED };
   const db = getDb();
   const parsed = parseSubscriptionForm(form, new Set(listStudios(db).map((s) => s.id)));
   if ('error' in parsed) return { error: parsed.error };

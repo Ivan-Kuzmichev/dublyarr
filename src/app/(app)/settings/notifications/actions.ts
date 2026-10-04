@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { requireSession, DENIED, guard } from '@/lib/auth/current';
 import { setSetting } from '@/lib/settings';
 import { applyTelegramForm, createTelegram, telegramProxy, TelegramError } from '@/lib/telegram';
 import { startPairing } from '@/lib/telegram-updates';
@@ -15,7 +15,7 @@ const errText = (e: unknown) => (e instanceof TelegramError ? e.message : 'Не 
 
 /** Одна форма бота: «Сохранить», «Проверить», «Привязать чат», «Отправить тестовое». */
 export async function telegramAction(_prev: TgState, form: FormData): Promise<TgState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   const db = getDb();
   const values = formValues(form, ['proxy', 'baseUrl', 'chatId']);
   const intent = form.get('intent');

@@ -6,13 +6,15 @@ import { getLayaSettings } from '@/lib/laya/settings';
 import { layaHealthInfo } from '@/lib/laya/adapter';
 import { exampleStats } from '@/lib/laya/examples';
 import { LayaForm, LayaStatus } from './LayaForm';
+import { requirePage } from '@/lib/auth/current';
 
 export const metadata = { title: 'AI · Dublyarr' };
 export const dynamic = 'force-dynamic';
 
 const STATUS: Record<string, string> = { ready: 'Модель загружена', downloading: 'Скачивается модель (около 1 ГБ)', loading: 'Модель загружается', error: 'Модель недоступна' };
 
-export default function AiSettingsPage() {
+export default async function AiSettingsPage() {
+  await requirePage('admin');
   const db = getDb();
   const h = layaHealthInfo(db) as { status?: string; runtime?: string; error?: string };
   const bench = getSetting<{ mean: number }>(db, 'laya.bench');

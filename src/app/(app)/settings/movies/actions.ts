@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { DENIED, guard } from '@/lib/auth/current';
 import { setSetting } from '@/lib/settings';
 import { validateMovieProfile } from '@/lib/movie-profile';
 
@@ -10,7 +10,7 @@ export type SaveState = { ok?: string; error?: string };
 
 /** Профиль фильма по умолчанию: подставляется в новые подписки на фильмы. */
 export async function saveMovieDefaultAction(_prev: SaveState, form: FormData): Promise<SaveState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   let raw: unknown;
   try {
     raw = JSON.parse(String(form.get('profile') ?? ''));

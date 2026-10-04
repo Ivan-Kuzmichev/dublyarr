@@ -10,6 +10,7 @@ import { TmdbCard } from './TmdbCard';
 import { plural } from '@/lib/plural';
 import { SourceEditor } from './SourceEditor';
 import { setPrimaryAction, refreshTrackersAction } from './source-actions';
+import { requirePage } from '@/lib/auth/current';
 
 export const metadata = { title: 'Источники · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -17,7 +18,8 @@ export const dynamic = 'force-dynamic';
 const KIND: Record<TrackerRow['kind'], string> = { series: 'Сериалы', anime: 'Аниме', both: 'Сериалы, аниме', unknown: '—' };
 const SLIDERS = 'M4 7h9M17 7h3M4 17h3M11 17h9M15 5v4M9 15v4';
 
-export default function SourcesSettingsPage() {
+export default async function SourcesSettingsPage() {
+  await requirePage('admin');
   const db = getDb();
   const saved = getTmdbSettings(db);
   const cards = sourceCards(db);

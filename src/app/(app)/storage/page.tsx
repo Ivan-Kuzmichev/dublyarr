@@ -11,6 +11,7 @@ import { todayIso } from '@/lib/dates';
 import type { Paths } from '@/lib/downloads';
 import { DeleteSeriesDialog } from './DeleteSeriesDialog';
 import { FirstCleanup } from './FirstCleanup';
+import { requirePage } from '@/lib/auth/current';
 
 export const metadata = { title: 'Хранилище · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -27,6 +28,7 @@ async function load() {
 }
 
 export default async function StoragePage({ searchParams }: { searchParams: Promise<{ sort?: string }> }) {
+  await requirePage('storage');
   const { sort } = await searchParams;
   const { paths, data } = await load();
   const shows = sort === 'date' ? [...data.shows].sort((a, b) => b.lastAt - a.lastAt) : data.shows;
