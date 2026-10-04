@@ -72,6 +72,9 @@ describe('действия без права', () => {
     expect(await o.confirmAction({}, f())).toMatchObject(DENIED);
   });
   test('настройки администратора', async () => {
+    const files = await import('@/app/(app)/settings/files/actions');
+    expect(await files.saveProcessingAction({}, f())).toMatchObject(DENIED);
+    expect(await files.saveIntrosAction({}, f({ introName: 'Intro', creditsName: 'Credits' }))).toMatchObject(DENIED);
     const sch = await import('@/app/(app)/settings/schedule/actions');
     expect(await sch.saveScheduleAction({}, f())).toMatchObject(DENIED);
     const src = await import('@/app/(app)/settings/sources/source-actions');

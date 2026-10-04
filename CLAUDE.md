@@ -228,6 +228,15 @@ Self-hosted сервис для дома (администратор + поль�
   по получателям (`recipients`: чат, включена, событие; `ask` — с правом `answer`); кнопки Telegram — по праву `answer`. Перенос общего чата первому админу — `migrateTelegramChat`.
 - API (`/api/v1`) и токены — только админ.
 
+## Решения (2.4 — заставки и титры)
+
+- Разметка — `src/lib/intros/*`: отпечатки Chromaprint (ffmpeg `-f chromaprint`, окна 10 мин начала / 4 мин конца, кэш `${DATA_DIR}/cache/fp/<id>-<importedAt>-<head|tail>.bin`),
+  общий кусок 15–120 с (`commonSegment`: кандидаты сдвига — перебор по каждому 4-му кадру с допуском ≤ 8 бит; к границам +`LAG` 1 с — замер в образе), согласие ≥ 2 соседей (`agree`), главы `Начало · Intro · Серия · Credits · После титров` через `mkvpropedit` (`IntroTools`, подменяется в тестах).
+- Задача `intros.tick` раз в 10 мин — один сезон (`nextSeason`: не проверенные, `waiting` — раз в час); фильмы, не-mkv и файлы со своими главами не трогаются.
+  Жёсткая ссылка на раздачу — копия в медиатеке (диск < `overflow.warn`), иначе `waiting`. Импорт обнуляет разметку файла и сбрасывает `none` в сезоне.
+- `episode_files.intro_*`; настройки — `app_settings['intros']` («Настройки → Файлы»); в интерфейсе — только «размечено».
+- Настоящая разметка проверяется в образе: `docker run --rm --entrypoint sh dublyarr:dev scripts/intro-smoke.sh` → «intro smoke: OK».
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.

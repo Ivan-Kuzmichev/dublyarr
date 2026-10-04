@@ -357,6 +357,14 @@ export const episodeFiles = sqliteTable(
     hdr: integer('hdr', { mode: 'boolean' }).notNull().default(false),
     duration: integer('duration'), // секунды, по ffprobe
     tracks: json<{ before: { kind: string; name: string; flag?: string }[]; after: { kind: string; name: string; flag?: string }[] }>('tracks'),
+    // разметка заставки и титров (главы для VidHub): null — ещё не проверяли
+    introState: text('intro_state', { enum: ['marked', 'none', 'skipped', 'waiting', 'error'] }),
+    introNote: text('intro_note'),
+    introStart: integer('intro_start'), // мс
+    introEnd: integer('intro_end'),
+    creditsStart: integer('credits_start'),
+    creditsEnd: integer('credits_end'),
+    introCheckedAt: ts('intro_checked_at'),
   },
   (t) => [uniqueIndex('episode_files_title_season_number').on(t.titleId, t.season, t.number)],
 );

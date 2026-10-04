@@ -6,6 +6,9 @@ import { getProcessing } from '@/lib/media/tracks';
 import { systemRunner } from '@/lib/media/runner';
 import { formatSize } from '@/lib/format';
 import { ProcessingForm } from './ProcessingForm';
+import { IntroForm } from './IntroForm';
+import { getIntroSettings } from '@/lib/intros/settings';
+import { systemIntroTools } from '@/lib/intros/tools';
 import { requirePage } from '@/lib/auth/current';
 
 export const metadata = { title: 'Обработка файлов · Dublyarr' };
@@ -54,6 +57,7 @@ export default async function FilesPage() {
         </Card>
       )}
       <ProcessingForm value={getProcessing(db)} />
+      <IntroForm value={getIntroSettings(db)} available={await systemIntroTools.available()} />
       {last?.f.tracks && (
         <Card className="flex min-w-0 flex-col gap-4">
           <div className="flex flex-wrap items-baseline justify-between gap-3">

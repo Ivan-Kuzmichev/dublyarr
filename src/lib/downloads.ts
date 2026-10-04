@@ -25,6 +25,7 @@ const fileExists = (p: string) =>
 import type { Qbit } from './qbit';
 import { parseTorrent, magnetHash, TorrentFileError } from './torrent-file';
 import { filesForEpisodes, filesForEpisodesStrict, isVideo, otherSeasonInPath } from './episode-file';
+import { INTRO_FIELDS_RESET, resetIntroMarks } from './intros/run';
 import { decrypt } from './crypto/secretbox';
 import type { ActiveDownload } from './plan';
 import { logger, redactUrl } from './log';
@@ -758,11 +759,13 @@ async function placeEpisode(
     hdr: proc.probe ? hdrOf(proc.probe) : false,
     duration: proc.probe?.duration ? Math.round(proc.probe.duration) : null,
     tracks: proc.kind === 'remux' ? describePlan(proc.probe, proc.plan, () => undefined) : null,
+    ...INTRO_FIELDS_RESET,
   };
   db.insert(episodeFiles)
     .values(row)
     .onConflictDoUpdate({ target: [episodeFiles.titleId, episodeFiles.season, episodeFiles.number], set: row })
     .run();
+  resetIntroMarks(db, d.titleId, ep.season);
   db.delete(wantedState)
     .where(and(eq(wantedState.titleId, d.titleId), eq(wantedState.season, ep.season), eq(wantedState.number, ep.number)))
     .run();

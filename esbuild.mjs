@@ -18,4 +18,5 @@ await Promise.all([
   build({ ...common, entryPoints: ['src/cli/main.ts'], outfile: 'dist/cli.cjs' }),
   // проверка пересборки настоящими ffprobe/mkvmerge (scripts/remux-smoke.sh внутри образа)
   build({ ...common, entryPoints: ['scripts/remux-smoke.ts'], outfile: 'dist/remux-smoke.cjs' }),
+  build({ ...common, entryPoints: ['scripts/intro-smoke.ts'], outfile: 'dist/intro-smoke.cjs' }),
 ]);

@@ -44,6 +44,15 @@ test('статусы серий', () => {
   expect(s.get('1:6')).toEqual({ state: 'upcoming', text: 'Дата не объявлена' });
 });
 
+test('скачанная серия: «размечено», только когда главы вписаны', () => {
+  const { db, t } = setup();
+  expect(episodeStatuses(db, t.id, today).get('1:1')!.detail).not.toContain('размечено');
+  db.update(episodeFiles).set({ introState: 'none' }).run();
+  expect(episodeStatuses(db, t.id, today).get('1:1')!.detail).not.toContain('размечено');
+  db.update(episodeFiles).set({ introState: 'marked' }).run();
+  expect(episodeStatuses(db, t.id, today).get('1:1')!.detail).toBe('HDrezka Studio · 1080p · 2 ГБ · размечено');
+});
+
 test('без подписки статусов «ищем» нет', () => {
   const { db, t } = setup();
   db.delete(subscriptions).run();
