@@ -5,8 +5,11 @@ import { verifyTotp } from './totp';
 import { SecretDecryptError } from '../crypto/secretbox';
 import { isBlocked, recordFailure, clearFailures } from './ratelimit';
 import { logger } from '../log';
+import { users } from '../db/schema';
+import { eq } from 'drizzle-orm';
 
 const alog = logger('auth');
+const markLogin = (db: Db, id: number, now: number) => db.update(users).set({ lastLoginAt: now }).where(eq(users.id, id)).run();
 import {
   createSession,
   createPendingLogin,
@@ -48,11 +51,16 @@ export async function passwordStep(
     alog.info({ username, ip: ctx.ip }, 'login failed');
     return { kind: 'error', message: 'Неверный логин или пароль' };
   }
+  if (user.disabled) {
+    alog.info({ username, ip: ctx.ip }, 'login disabled');
+    return { kind: 'error', message: 'Учётка выключена' };
+  }
   if (user.totpEnabled && !(ctx.trustToken && isTrustedDevice(db, ctx.trustToken, user.id, now))) {
     return { kind: 'need-code', pendingToken: createPendingLogin(db, user.id, i.remember, now) };
   }
   clearFailures(db, keys);
   const s = createSession(db, { userId: user.id, persistent: i.remember, userAgent: ctx.userAgent, ip: ctx.ip }, now);
+  markLogin(db, user.id, now);
   alog.info({ username, ip: ctx.ip }, 'login');
   return { kind: 'session', ...s, persistent: i.remember };
 }
@@ -86,6 +94,7 @@ export function codeStep(db: Db, i: { pendingToken: string; code: string; trustD
   clearFailures(db, keys);
   const s = createSession(db, { userId: user.id, persistent: p.remember, userAgent: ctx.userAgent, ip: ctx.ip }, now);
   const trust = i.trustDevice ? createTrustedDevice(db, user.id, ctx.userAgent, now) : undefined;
+  markLogin(db, user.id, now);
   alog.info({ username: user.username, ip: ctx.ip }, 'login');
   return { kind: 'session', ...s, persistent: p.remember, trust };
 }

@@ -20,7 +20,7 @@ import {
   PENDING_TTL,
   TRUST_TTL,
 } from '@/lib/auth/sessions';
-import { sessions } from '@/lib/db/schema';
+import { sessions, users } from '@/lib/db/schema';
 
 process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
 const T0 = 1_800_000_000_000;
@@ -80,4 +80,13 @@ test('имя пользователя по ожидающему входу', asy
   const p = createPendingLogin(db, u.id, false, T0);
   expect(getPendingUsername(db, p, T0)).toBe('admin');
   expect(getPendingUsername(db, 'x', T0)).toBeNull();
+});
+
+test('выключенная учётка — сеанс недействителен и удаляется', async () => {
+  const db = testDb();
+  const u = await createUser(db, 'admin', 'пароль-длинный');
+  const s = createSession(db, { userId: u.id, persistent: false, userAgent: null, ip: null }, T0);
+  db.update(users).set({ disabled: true }).run();
+  expect(validateSession(db, s.token, T0 + 1)).toBeNull();
+  expect(db.select().from(sessions).all()).toEqual([]);
 });

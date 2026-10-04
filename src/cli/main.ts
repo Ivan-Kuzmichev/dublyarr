@@ -7,7 +7,7 @@ import { loadConfig } from '../lib/config';
 
 const HELP = `Dublyarr CLI
 
-  dublyarr reset-password [--disable-2fa]   задать новый пароль (все сеансы завершатся);
+  dublyarr reset-password [--user <логин>] [--disable-2fa]   задать новый пароль (все сеансы завершатся; без --user — первому админу);
                                             --disable-2fa — ещё и выключить код из приложения
   dublyarr laya-bench                       замерить скорость Laya на этом железе
   dublyarr help                             эта справка
@@ -74,8 +74,14 @@ async function main(argv: string[]) {
       return 1;
     }
     const disable2fa = rest.includes('--disable-2fa');
-    const { username } = await resetPassword(getDb(), { password: a, disable2fa });
-    console.log(`Пароль для ${username} изменён. Все сеансы завершены.`);
+    const i = rest.indexOf('--user');
+    const username = i >= 0 ? rest[i + 1] : undefined;
+    if (i >= 0 && !username) {
+      console.error('После --user укажите логин');
+      return 1;
+    }
+    const r = await resetPassword(getDb(), { username, password: a, disable2fa });
+    console.log(`Пароль для ${r.username} изменён. Все сеансы завершены.`);
     if (disable2fa) console.log('Двухфакторная защита выключена.');
     return 0;
   } catch (e) {
