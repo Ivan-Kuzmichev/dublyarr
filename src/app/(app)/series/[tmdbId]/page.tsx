@@ -23,7 +23,7 @@ import { isMovieProfile } from '@/lib/movie-profile';
 import { RetentionToggles } from './RetentionToggles';
 import { DeleteSeriesDialog } from '@/app/(app)/storage/DeleteSeriesDialog';
 import { getRetention } from '@/lib/retention-settings';
-import { getSubscription } from '@/lib/subscriptions';
+import { getSubscription, subscriptionAuthor } from '@/lib/subscriptions';
 import { getDefaultProfile, subscribeDialogStudios } from '@/lib/profile';
 import { requireSession } from '@/lib/auth/current';
 import { can } from '@/lib/auth/permissions';
@@ -168,7 +168,7 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
       <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_340px]">
       {sub && (
         <div className="lg:order-2">
-          {!isMovieProfile(sub.profile) && <SubscriptionPanel profile={sub.profile} studioNames={studioNames} />}
+          {!isMovieProfile(sub.profile) && <SubscriptionPanel profile={sub.profile} studioNames={studioNames} author={subscriptionAuthor(db, sub)} />}
           {may.storage && (
             <section className="mt-5 flex flex-col gap-2 rounded-2xl border border-line bg-surface p-5">
               <h3 className="m-0 text-base font-semibold">Хранение</h3>

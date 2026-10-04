@@ -11,7 +11,8 @@ import { subscribe, unsubscribe, updateSubscription, SubscriptionError } from '@
 import type { DialogState } from '@/components/subscribe/SubscribeDialog';
 
 export async function saveMovieSubscriptionAction(_prev: DialogState, form: FormData): Promise<DialogState> {
-  if (!(await guard('subscribe'))) return { error: DENIED };
+  const me = await guard('subscribe');
+  if (!me) return { error: DENIED };
   const db = getDb();
   const tmdbId = Number(form.get('tmdbId'));
   const title = Number.isInteger(tmdbId) && tmdbId > 0 ? getTitleByTmdbId(db, tmdbId, 'movie') : undefined;
@@ -29,7 +30,7 @@ export async function saveMovieSubscriptionAction(_prev: DialogState, form: Form
       const r = validateMovieProfile(raw);
       if (!r.ok) return { error: r.error };
       // новая подписка ищется на ближайшем проходе расписания (раз в 5 минут)
-      if (intent === 'subscribe') subscribe(db, title.id, r.profile);
+      if (intent === 'subscribe') subscribe(db, title.id, r.profile, Date.now(), me.user.id);
       else updateSubscription(db, title.id, r.profile);
     } else return { error: 'Неверное действие' };
   } catch (e) {
