@@ -7,6 +7,8 @@ import { sqliteTable, text, integer, real, index, uniqueIndex, primaryKey, type 
 /** Время — миллисекунды unix. */
 const ts = (name: string) => integer(name, { mode: 'number' });
 
+const json = <T>(name: string) => text(name, { mode: 'json' }).$type<T>();
+
 export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   username: text('username').notNull().unique(),
@@ -14,6 +16,13 @@ export const users = sqliteTable('users', {
   totpSecretEnc: text('totp_secret_enc'),
   totpEnabled: integer('totp_enabled', { mode: 'boolean' }).notNull().default(false),
   totpLastStep: integer('totp_last_step'),
+  // роль: первая учётка и существующие до 2.3 — админ; новые задаются явно
+  role: text('role', { enum: ['admin', 'user'] }).notNull().default('admin'),
+  permissions: json<Partial<Record<'subscribe' | 'search' | 'answer' | 'downloads' | 'storage', boolean>>>('permissions').notNull().default({}),
+  disabled: integer('disabled', { mode: 'boolean' }).notNull().default(false),
+  telegramChatId: text('telegram_chat_id'), // свой чат уведомлений
+  notifyEvents: json<Record<string, boolean>>('notify_events'), // свои события (null — по умолчанию)
+  lastLoginAt: ts('last_login_at'),
   createdAt: ts('created_at').notNull(),
   updatedAt: ts('updated_at').notNull(),
 });
@@ -107,7 +116,6 @@ export const heartbeats = sqliteTable('heartbeats', {
 
 // Каталог TMDB (фаза 1a)
 
-const json = <T>(name: string) => text(name, { mode: 'json' }).$type<T>();
 
 export const titles = sqliteTable(
   'titles',
@@ -200,6 +208,7 @@ export const subscriptions = sqliteTable('subscriptions', {
     .unique()
     .references(() => titles.id, { onDelete: 'cascade' }),
   profile: json<Profile | MovieProfile>('profile').notNull(), // фильм — MovieProfile (type: 'movie')
+  addedBy: integer('added_by').references((): AnySQLiteColumn => users.id, { onDelete: 'set null' }), // кто подписался
   maxSeason: integer('max_season'),
   lastSearchedAt: ts('last_searched_at'),
   keepAll: integer('keep_all', { mode: 'boolean' }).notNull().default(false), // исключение: хранить все сезоны

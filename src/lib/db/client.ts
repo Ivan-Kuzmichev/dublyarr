@@ -7,6 +7,7 @@ import * as schema from './schema';
 import { getConfig } from '../config';
 import { seedStudios } from '../studios';
 import { watchLogSettings } from '../log-settings';
+import { migrateTelegramChat } from '../auth/permissions';
 
 export type Db = BetterSQLite3Database<typeof schema> & { $client: Database.Database };
 
@@ -33,6 +34,7 @@ export function getDb(): Db {
     migrateDb(db);
     seedStudios(db);
     watchLogSettings(db);
+    migrateTelegramChat(db); // 2.3: общий чат Telegram → первому админу
     g.__dublyarrDb = db;
   }
   return g.__dublyarrDb;

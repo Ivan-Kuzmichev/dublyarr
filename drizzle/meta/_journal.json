@@ -169,6 +169,13 @@
       "when": 1790968577361,
       "tag": "0023_merge_aniliberty",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1791107605294,
+      "tag": "0024_powerful_jack_power",
+      "breakpoints": true
     }
   ]
 }
