@@ -8,7 +8,7 @@ import { logger } from '../log';
 import { storageState } from '../storage';
 import { getRetention } from '../retention-settings';
 import { TMP_DIR } from '../media/process';
-import { commonSegment } from './fingerprint';
+import { LAG, commonSegment } from './fingerprint';
 import { agree, nearest, windows, type Seg } from './detect';
 import { buildChapters, decideWrite } from './chapters';
 import { getIntroSettings } from './settings';
@@ -118,9 +118,9 @@ export async function processSeason(db: Db, tools: IntroTools, o: { media: strin
         const other = await printOf(n);
         if (!other) continue;
         const h = commonSegment(mine.head, other.head);
-        if (h) heads.push(h.a);
+        if (h) heads.push([h.a[0] + LAG, h.a[1] + LAG]);
         const t = commonSegment(mine.tail, other.tail);
-        if (t) tails.push([mine.tailStart + t.a[0], mine.tailStart + t.a[1]]);
+        if (t) tails.push([mine.tailStart + t.a[0] + LAG, Math.min(mine.duration, mine.tailStart + t.a[1] + LAG)]);
       }
       const intro = agree(heads, usable.length);
       const credits = agree(tails, usable.length);

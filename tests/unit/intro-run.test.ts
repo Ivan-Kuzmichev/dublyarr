@@ -7,7 +7,7 @@ import { mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync, linkSync
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { IntroTools } from '@/lib/intros/tools';
-import { STEP } from '@/lib/intros/fingerprint';
+import { LAG, STEP } from '@/lib/intros/fingerprint';
 import { setSetting } from '@/lib/settings';
 
 type Db = ReturnType<typeof testDb>;
@@ -90,8 +90,10 @@ test('сезон: опенинг и эндинг найдены у всех, г�
   expect(r).toMatchObject({ titleId: m.t.id, season: 1, marked: 5 });
   const rows = db.select().from(episodeFiles).all();
   expect(rows.every((f) => f.introState === 'marked')).toBe(true);
-  expect(Math.abs(rows[0].introStart! - 113_000)).toBeLessThan(1000);
-  expect(Math.abs(rows[0].creditsStart! - 1_320_000)).toBeLessThan(1000);
+  // значение отпечатка описывает ~2 с звука от своей позиции — к найденному прибавляется LAG (по прогону в образе)
+  expect(Math.abs(rows[0].introStart! - (113 + LAG) * 1000)).toBeLessThan(300);
+  expect(Math.abs(rows[0].introEnd! - (187 + LAG) * 1000)).toBeLessThan(300);
+  expect(Math.abs(rows[0].creditsStart! - (1320 + LAG) * 1000)).toBeLessThan(300);
   expect(written).toHaveLength(5);
   expect(written[0].text).toContain('NAME=Intro');
   expect(written[0].text).toContain('NAME=Credits');
