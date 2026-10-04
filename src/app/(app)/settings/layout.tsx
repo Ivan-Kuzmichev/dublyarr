@@ -2,8 +2,11 @@ import Link from 'next/link';
 import { PageTitle } from '@/components/shell/PageTitle';
 import { Icon, ICONS } from '@/components/ui/Icon';
 import { SettingsNav } from './SettingsNav';
+import { requireSession } from '@/lib/auth/current';
+import { isAdmin } from '@/lib/auth/permissions';
 
-export default function SettingsLayout({ children }: { children: React.ReactNode }) {
+export default async function SettingsLayout({ children }: { children: React.ReactNode }) {
+  const { user } = await requireSession();
   return (
     <div className="flex flex-col gap-7">
       <div className="hidden lg:block">
@@ -15,7 +18,7 @@ export default function SettingsLayout({ children }: { children: React.ReactNode
       </Link>
       <div className="flex items-start gap-8">
         <div className="hidden lg:block">
-          <SettingsNav />
+          <SettingsNav admin={isAdmin(user)} />
         </div>
         <div className="flex min-w-0 grow flex-col gap-5">{children}</div>
       </div>

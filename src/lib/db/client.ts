@@ -7,7 +7,7 @@ import * as schema from './schema';
 import { getConfig } from '../config';
 import { seedStudios } from '../studios';
 import { watchLogSettings } from '../log-settings';
-import { migrateTelegramChat } from '../auth/permissions';
+import { migrateTelegramChat } from '../auth/migrate-telegram';
 
 export type Db = BetterSQLite3Database<typeof schema> & { $client: Database.Database };
 

@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { SETTINGS_SECTIONS } from '@/components/shell/nav';
+import { settingsSectionsFor } from '@/components/shell/nav';
 
-export function SettingsNav() {
+export function SettingsNav({ admin }: { admin: boolean }) {
   const pathname = usePathname();
   return (
     <nav aria-label="Разделы настроек" className="flex w-[220px] shrink-0 flex-col gap-0.5">
-      {SETTINGS_SECTIONS.map((s) => {
+      {settingsSectionsFor(admin).map((s) => {
         const href = `/settings/${s.id}`;
         const on = pathname === href;
         return (

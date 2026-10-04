@@ -1,7 +1,8 @@
 import { expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { testDb } from './helpers';
-import { can, isAdmin, DEFAULT_PERMISSIONS, migrateTelegramChat } from '@/lib/auth/permissions';
+import { can, isAdmin, DEFAULT_PERMISSIONS } from '@/lib/auth/permissions';
+import { migrateTelegramChat } from '@/lib/auth/migrate-telegram';
 import { users } from '@/lib/db/schema';
 import { getSecretSetting, getSetting, setSecretSetting, setSetting } from '@/lib/settings';
 
