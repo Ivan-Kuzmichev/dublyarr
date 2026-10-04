@@ -180,6 +180,9 @@ function waitingWithForecast(db: Db, today: string) {
     });
 }
 
+/** «Новые серии» — скачанные за последние 48 ч. */
+const FRESH_HOURS = 48;
+
 export function todayData(db: Db, today: string, now = Date.now()) {
   const meta = new Map(
     db
@@ -204,7 +207,10 @@ export function todayData(db: Db, today: string, now = Date.now()) {
     const c = d.episodes.length === 1 ? code(d.episodes[0].season, d.episodes[0].number) : `S${pad(d.season)} · ${d.episodes.length} сер.`;
     fresh.push({ tmdbId: t.tmdbId, movie: t.movie, title: t.title, image: image(t, d.episodes[0]), code: d.kind === 'movie' ? 'фильм' : c, quality: quality(d.resolution), state: downloadingText(d), loading: true, pct, at: Number.MAX_SAFE_INTEGER - d.addedAt });
   }
-  for (const f of db.select().from(episodeFiles).where(gte(episodeFiles.importedAt, now - 72 * HOUR)).all().sort((a, b) => b.importedAt - a.importedAt)) {
+  // замены на лучшую копию («Улучшение: …») — не новые серии: они видны в «Активности»
+  const upgrades = new Set(db.select({ id: downloads.id, note: downloads.note }).from(downloads).all().filter((d) => d.note?.startsWith('Улучшение')).map((d) => d.id));
+  const freshFiles = db.select().from(episodeFiles).where(gte(episodeFiles.importedAt, now - FRESH_HOURS * HOUR)).all().filter((f) => !(f.downloadId && upgrades.has(f.downloadId)));
+  for (const f of freshFiles.sort((a, b) => b.importedAt - a.importedAt)) {
     const t = meta.get(f.titleId)!;
     fresh.push({
       tmdbId: t.tmdbId,

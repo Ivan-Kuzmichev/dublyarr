@@ -173,3 +173,13 @@ test('«Новые серии»: кадр серии → фон сериала �
   db.update(titles).set({ backdropPath: null }).where(eq(titles.id, t.id)).run();
   expect(todayData(db, today, NOW).fresh[0].image).toEqual({ path: '/poster.jpg', wide: false });
 });
+
+test('«Новые серии»: за 48 ч; замена на лучшую копию — не новая серия', () => {
+  const { db, t } = setup();
+  db.delete(downloads).run();
+  const up = db.insert(downloads).values({ hash: 'up', titleId: t.id, season: 1, kind: 'episode', episodes: [{ season: 1, number: 3 }], state: 'imported', name: 'x', size: 1, addedAt: NOW - 2 * HOUR, note: 'Улучшение: 1080p → 2160p' }).returning().get();
+  db.insert(episodeFiles).values({ titleId: t.id, season: 1, number: 3, path: 'D/S01E03.mkv', size: 1, resolution: 2160, method: 'hardlink', importedAt: NOW - HOUR, downloadId: up.id }).run();
+  db.insert(episodeFiles).values({ titleId: t.id, season: 1, number: 4, path: 'D/S01E04.mkv', size: 1, resolution: 1080, method: 'hardlink', importedAt: NOW - 50 * HOUR }).run();
+  // S01E01 (час назад) — новая; S01E03 — замена; S01E04 — старше 48 ч
+  expect(todayData(db, today, NOW).fresh.map((f) => f.code)).toEqual(['S01E01']);
+});
