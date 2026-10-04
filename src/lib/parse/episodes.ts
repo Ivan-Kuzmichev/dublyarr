@@ -32,11 +32,13 @@ export function parseEpisodes(raw: string): Eps {
     // признаки сезона без серий
     const range5 =
       /\/\s*(?:Сезоны?)?\s*:\s*(\d{1,2})\s*-\s*(\d{1,2})\s*\//i.exec(t) ?? // «/ : 1-5 /»
+      /Сезоны?\s+(\d{1,2})\s*-\s*(\d{1,2})\b/i.exec(t) ?? // «(сезон 4-5, серии 39-63 из 63)» (nnmclub)
       /\[S(\d{1,2})-(\d{1,2})\b/i.exec(t); // «[S01-02 + Specials]»
     const single =
       /\(S(\d{1,2})\)/i.exec(t) ??
       /(\d{1,2})(?:st|nd|rd|th)\s+Season/i.exec(t) ??
       /Сезон[:\s]+(\d{1,2})/i.exec(t) ??
+      /(?:^|\s)(\d{1,2})\s+сезон(?![а-яё])/i.exec(t) ?? // «Фонари 1 сезон (1-7 из 8)» (bitru)
       /\bSeason\s+(\d{1,2})\b/i.exec(t) ??
       /Полный\s+S(\d{1,2})/i.exec(t) ??
       / - S(\d{1,2}) - /i.exec(t) ??
@@ -46,7 +48,10 @@ export function parseEpisodes(raw: string): Eps {
   }
   if (!episodes) {
     const of = /\[E(\d{1,4})(?:\s*-\s*(\d{1,4}))?(?:\+\d+)?\s+of\s+(\d+)/i.exec(t); // [E10 of 12] — вышло 10 из 12
-    const ru = /Серии?[:\s]+(\d{1,4})\s*-\s*(\d{1,4})(?:\s+из\s+(\d+))?/i.exec(t);
+    const ru =
+      /Сері[яї][:\s]+(\d{1,4})\s*-\s*(\d{1,4})(?:\s+з\s+(\d+))?/i.exec(t) ?? // украинское «серія 1-7»
+      /Серии?[:\s]+(\d{1,4})\s*-\s*(\d{1,4})(?:\s+из\s+(\d+))?/i.exec(t) ??
+      /\d\s+сезон\s*\((\d{1,4})\s*-\s*(\d{1,4})\s+из\s+(\d+)\)/i.exec(t); // «1 сезон (1-7 из 8)»
     const er = /(?:^|[\s/])E(\d{1,4})\s*-\s*E?(\d{1,4})(?:\s+of\s+(\d+))?/i.exec(t);
     const ruOne = /Сери[яи][:\s]+(\d{1,4})(?!\s*-)(?:\s+из\s+(\d+))?/i.exec(t); // «Серии: 1 из 8», «Серия: 5»
     if (of) {

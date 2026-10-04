@@ -18,6 +18,14 @@ test.each([
   ['S1E1-146 of ??? [2009-2024, WEBRip 576p]', { seasons: [1], episodes: { from: 1, to: 146 } }],
   ['Rick and Morty / S2E10 of 10 [2015, BDRemux]', { seasons: [2], episodes: { from: 10, to: 10 }, totalInSeason: 10, pack: false }],
   ['Просто название', { seasons: [], episodes: null, pack: false }],
+  // bitru: «N сезон (A-B из C)»
+  ['Фонари 1 сезон (1-7 из 8) / Lanterns (2026) WEB-DL | 10-bit', { seasons: [1], episodes: { from: 1, to: 7 }, totalInSeason: 8, pack: true }],
+  ['Фонари 1 сезон (1-5 из 8) / Lanterns (2026) WEB-DLRip', { seasons: [1], episodes: { from: 1, to: 5 }, totalInSeason: 8 }],
+  // nnmclub: несколько сезонов «сезон 4-5, серии 39-63 из 63»
+  ['American Horror Story (2014-2016) WEB-DLRip [H.264/1080p-HQ] (сезон 4-5, серии 39-63 из 63) (LostFilm)', { seasons: [4, 5], episodes: { from: 39, to: 63 }, pack: true }],
+  ['American Horror Story (2026) WEB-DL [H.265/2160p] (сезон 13, серии 1-6 из 13) LostFilm', { seasons: [13], episodes: { from: 1, to: 6 }, totalInSeason: 13 }],
+  // украинские трекеры: «серія»
+  ['Ліхтарі / Lanterns (Сезон 1, серія 1-7) (2026) WEB-DL 1080p Ukr/Eng', { seasons: [1], episodes: { from: 1, to: 7 } }],
 ])('%s', (t, exp) => expect(parseEpisodes(t)).toMatchObject(exp));
 
 test.each([
