@@ -2,6 +2,7 @@ import { getDb } from '@/lib/db/client';
 import { handleApi } from '@/lib/api/router';
 import { getQbit } from '@/lib/qbit';
 import { logDir } from '@/lib/log-read';
+import { appVersion } from '@/lib/version';
 import { todayIso } from '@/lib/dates';
 
 // API для автоматизации и отладки: токен, только локальная сеть (src/lib/api/*).
@@ -35,7 +36,7 @@ async function handle(req: Request, { params }: { params: Promise<{ path: string
         forwarded: req.headers.get('forwarded'),
       },
     },
-    { qbit: getQbit(db), logDir: logDir(), today: todayIso(), now: Date.now(), version: process.env.DUBLYARR_VERSION ?? 'dev' },
+    { qbit: getQbit(db), logDir: logDir(), today: todayIso(), now: Date.now(), version: appVersion() },
   );
   return Response.json(r.body, { status: r.status });
 }

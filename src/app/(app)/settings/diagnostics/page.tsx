@@ -9,6 +9,7 @@ import { logDir, readLog, type LogLevel } from '@/lib/log-read';
 import { reconcile, type ReconcileRow } from '@/lib/reconcile';
 import { serviceStatuses } from '@/lib/heartbeat';
 import { AREA_LABELS, jobsSummary } from '@/lib/diagnostics';
+import { appVersion } from '@/lib/version';
 import { LogSettingsForm } from './LogSettingsForm';
 
 export const metadata = { title: 'Диагностика · Dublyarr' };
@@ -42,6 +43,10 @@ export default async function DiagnosticsPage({ searchParams }: { searchParams: 
   return (
     <>
       <SectionHeader title="Диагностика" description="Журнал, сверка с qBittorrent и задачи — чтобы понять, почему что-то не скачалось." />
+      <Card className="flex min-w-0 items-baseline justify-between gap-3">
+        <CardTitle>Версия</CardTitle>
+        <span className="font-mono text-sm text-text-2">Dublyarr {appVersion()}</span>
+      </Card>
       <LogSettingsForm value={getLogSettings(db)} areas={LOG_AREAS.map((a) => ({ id: a, label: AREA_LABELS[a] }))} />
 
       <Card className="flex min-w-0 flex-col gap-4">
