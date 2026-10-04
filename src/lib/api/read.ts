@@ -22,7 +22,6 @@ import { getProcessing } from '../media/tracks';
 import { getRetention } from '../retention-settings';
 import { getDefaultProfile, getMovieDefault } from '../profile';
 import { getLayaSettings } from '../laya/settings';
-import { getEvents } from '../notify';
 import { getLogSettings } from '../log-settings';
 import { ApiError, type ApiCtx, type Route } from './types';
 
@@ -62,7 +61,6 @@ export const SETTINGS_READ: Record<string, (db: Db) => unknown> = {
   'profile.anime': (db) => getDefaultProfile(db, 'anime'),
   'profile.movie': getMovieDefault,
   laya: getLayaSettings,
-  'telegram.events': getEvents,
   logging: getLogSettings,
   qbittorrent: (db) => {
     const q = tryGetSecretSetting<{ url: string; username: string; password: string }>(db, 'qbittorrent');

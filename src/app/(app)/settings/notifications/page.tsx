@@ -4,7 +4,10 @@ import { getDb } from '@/lib/db/client';
 import { notifications } from '@/lib/db/schema';
 import { getTelegramSettings } from '@/lib/telegram';
 import { getTmdbSettings } from '@/lib/tmdb';
-import { getEvents } from '@/lib/notify';
+import { eventsOf } from '@/lib/notify';
+import { requireSession } from '@/lib/auth/current';
+import { isAdmin } from '@/lib/auth/permissions';
+import { MyChatCard } from './MyChatCard';
 import { TelegramCard } from './TelegramCard';
 import { EventsCard } from './EventsCard';
 
@@ -13,16 +16,19 @@ export const dynamic = 'force-dynamic';
 
 const when = (ms: number) => new Date(ms).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
 
-export default function NotificationsPage() {
+export default async function NotificationsPage() {
+  const { user } = await requireSession();
+  const admin = isAdmin(user);
   const db = getDb();
   const s = getTelegramSettings(db);
   const recent = db.select().from(notifications).orderBy(desc(notifications.createdAt)).limit(10).all();
   return (
     <>
       <SectionHeader title="Уведомления" description="Сообщения в Telegram о новых сериях, проблемах и вопросах." />
-      <TelegramCard hasToken={!!s?.token} chatId={s?.chatId ?? ''} proxy={s?.proxy ?? ''} baseUrl={s?.baseUrl ?? ''} tmdbProxy={!!getTmdbSettings(db)?.proxy} />
-      <EventsCard value={getEvents(db)} />
-      {recent.length > 0 && (
+      {admin && <TelegramCard hasToken={!!s?.token} proxy={s?.proxy ?? ''} baseUrl={s?.baseUrl ?? ''} tmdbProxy={!!getTmdbSettings(db)?.proxy} />}
+      <MyChatCard linked={!!user.telegramChatId} bot={!!s?.token} />
+      <EventsCard value={eventsOf(user)} />
+      {admin && recent.length > 0 && (
         <Card className="flex min-w-0 flex-col gap-3">
           <h3 className="m-0 text-base font-semibold">Последние сообщения</h3>
           <ul className="m-0 flex list-none flex-col gap-2.5 p-0">

@@ -1,11 +1,10 @@
 import { expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
-import { testDb } from './helpers';
+import { testDbWithChat } from './helpers';
 import { checkSourcesDown, notifyWanted } from '@/lib/notify-events';
 import { addNotice } from '@/lib/notices';
 import { DEFAULT_EVENTS } from '@/lib/notify';
-import { notifications, releases, sources, titles } from '@/lib/db/schema';
-import { setSetting } from '@/lib/settings';
+import { notifications, releases, sources, titles, users } from '@/lib/db/schema';
 import { saveTelegramSettings } from '@/lib/telegram';
 import type { ParsedRelease } from '@/lib/parse/types';
 
@@ -13,7 +12,7 @@ process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
 const MIN = 60_000;
 
 function setup() {
-  const db = testDb();
+  const db = testDbWithChat();
   const t = db.insert(titles).values({ tmdbId: 1399, kind: 'series', nameRu: 'Игра престолов', nameOriginal: 'GoT', originalLanguage: 'en', status: 'ended', createdAt: 1, refreshedAt: 1 }).returning().get();
   const s = db.insert(sources).values({ name: 'Jackett', url: 'http://j', createdAt: 1 }).returning().get();
   const parsed = { base: 'x', names: [], year: null, seasons: [1], episodes: null, totalInSeason: null, absolute: false, pack: true, resolution: 1080, source: null, hdr: false, dv: false, screener: false, dubs: [], original: false, subs: false } as ParsedRelease;
@@ -41,7 +40,7 @@ test('вышел оригинал — если событие включено',
   const { db, t, all } = setup();
   notifyWanted(db, { titleId: t.id, season: 1, number: 4, state: 'waiting', reason: 'Рано', releaseId: null, until: '2026-10-02' }, null, 5);
   expect(all()).toEqual([]);
-  setSetting(db, 'telegram.events', { ...DEFAULT_EVENTS, original: true });
+  db.update(users).set({ notifyEvents: { ...DEFAULT_EVENTS, original: true } }).run();
   notifyWanted(db, { titleId: t.id, season: 1, number: 4, state: 'waiting', reason: 'Рано', releaseId: null, until: '2026-10-02' }, null, 5);
   expect(all().map((n) => n.text)).toEqual(['🕐 Вышла Игра престолов · S01E04 в оригинале — озвучку ждём до 2 окт']);
 });

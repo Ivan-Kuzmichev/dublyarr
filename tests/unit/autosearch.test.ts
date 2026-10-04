@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import { testDb } from './helpers';
+import { testDbWithChat } from './helpers';
 import { fakeTmdb } from './fake-tmdb';
 import { fakeQbit } from './fake-qbit';
 import { syncTitle } from '@/lib/catalog';
@@ -29,7 +29,7 @@ const pack = (name: string) =>
 const single = (name: string) => bencode(new Map<string, unknown>([['info', new Map<string, unknown>([['name', b(name)], ['length', 100], ['piece length', 1], ['pieces', Buffer.alloc(20)]])]]));
 
 async function setup(today = '2026-09-30') {
-  const db = testDb();
+  const db = testDbWithChat();
   seedStudios(db);
   const { tmdb } = fakeTmdb({ details: { 1399: fx<TmdbTvDetails>('tv-1399') }, seasons: { '1399:1': fx<TmdbSeason>('tv-1399-season-1') } });
   const t = await syncTitle(db, tmdb, 1399, { now: 1 });

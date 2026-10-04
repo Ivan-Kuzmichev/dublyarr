@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
-import { testDb } from './helpers';
+import { testDbWithChat } from './helpers';
 import { libraryItems, filterLibrary, libraryCounts } from '@/lib/subscriptions';
 import { todayData, calendarWeek } from '@/lib/dashboard';
 import { activityQueue } from '@/lib/activity';
@@ -16,7 +16,7 @@ process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
 const TODAY = '2026-10-01';
 
 function setup() {
-  const db = testDb();
+  const db = testDbWithChat();
   const m = db.insert(titles).values({ tmdbId: 603, tmdbType: 'movie', kind: 'movie', nameRu: 'Матрица', nameOriginal: 'The Matrix', originalLanguage: 'en', year: 1999, status: 'released', runtime: 136, releaseDates: { theatrical: '2026-08-01', digital: '2026-09-30', physical: null }, createdAt: 1, refreshedAt: 1 }).returning().get();
   db.insert(subscriptions).values({ titleId: m.id, profile: DEFAULT_MOVIE_PROFILE, subscribedAt: 1, updatedAt: 1 }).run();
   const s = db.insert(titles).values({ tmdbId: 603, kind: 'series', nameRu: 'Сериал', nameOriginal: 'S', originalLanguage: 'en', status: 'ended', createdAt: 1, refreshedAt: 1 }).returning().get();
@@ -83,7 +83,7 @@ describe('поиск и тренды', () => {
     ...o,
   });
   test('поиск — сериалы и фильмы; главная — популярные фильмы', async () => {
-    const db = testDb();
+    const db = testDbWithChat();
     const s = await loadDiscover(db, tmdb(), 'матрица', TODAY);
     expect(s.mode === 'search' && s.cards.map((c) => [c.tmdbId, c.movie ?? false])).toEqual([
       [1, false],
@@ -93,7 +93,7 @@ describe('поиск и тренды', () => {
     expect(home.mode === 'home' && home.movies.map((c) => [c.name, c.year, c.movie])).toEqual([['Миссия: Красный', 2024, true]]);
   });
   test('ошибка поиска фильмов не мешает сериалам', async () => {
-    const s = await loadDiscover(testDb(), tmdb({ searchMulti: async () => { throw new Error('x'); } }), 'матрица', TODAY);
+    const s = await loadDiscover(testDbWithChat(), tmdb({ searchMulti: async () => { throw new Error('x'); } }), 'матрица', TODAY);
     expect(s).toMatchObject({ mode: 'search', cards: [expect.objectContaining({ tmdbId: 1 })] });
   });
 });

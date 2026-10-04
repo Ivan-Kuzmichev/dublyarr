@@ -81,11 +81,11 @@ async function packsJob(db: Db) {
   if (r.checked) log.info(r, 'packs check done');
 }
 
-/** Клиент и чат Telegram, если бот настроен и чат привязан. */
+/** Клиент Telegram, если бот настроен (чаты — у учёток). */
 function telegramFor(db: Db) {
   const s = getTelegramSettings(db);
-  if (!s?.token || !s.chatId) return null;
-  return { client: createTelegram({ token: s.token, proxy: telegramProxy(db, s) }), chatId: s.chatId };
+  if (!s?.token) return null;
+  return createTelegram({ token: s.token, proxy: telegramProxy(db, s) });
 }
 
 export const buildHandlers = (db: Db): Record<string, Handler> => ({
@@ -129,7 +129,7 @@ export const buildHandlers = (db: Db): Record<string, Handler> => ({
   'telegram.send': async () => {
     const tg = telegramFor(db);
     if (!tg) return;
-    const r = await sendPending(db, tg.client, tg.chatId);
+    const r = await sendPending(db, tg);
     if (r.sent || r.failed) log.info(r, 'telegram send');
   },
   'cleanup.run': async () => {

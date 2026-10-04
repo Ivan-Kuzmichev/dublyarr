@@ -3,8 +3,9 @@
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
 import { requireSession, DENIED, guard } from '@/lib/auth/current';
-import { setSetting } from '@/lib/settings';
-import { applyTelegramForm, createTelegram, telegramProxy, TelegramError } from '@/lib/telegram';
+import { users } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
+import { getTelegramSettings, applyTelegramForm, createTelegram, telegramProxy, TelegramError } from '@/lib/telegram';
 import { startPairing } from '@/lib/telegram-updates';
 import { parseEventsForm } from '@/lib/notify';
 import { formValues } from '@/lib/form-values';
@@ -13,35 +14,54 @@ export type TgState = { ok?: string; error?: string; code?: string; values?: Rec
 
 const errText = (e: unknown) => (e instanceof TelegramError ? e.message : 'Не удалось связаться с Telegram');
 
-/** Одна форма бота: «Сохранить», «Проверить», «Привязать чат», «Отправить тестовое». */
+/** Бот (только админ): «Сохранить», «Проверить». Чаты — у каждой учётки свои (myChatAction). */
 export async function telegramAction(_prev: TgState, form: FormData): Promise<TgState> {
   if (!(await guard('admin'))) return { error: DENIED };
   const db = getDb();
-  const values = formValues(form, ['proxy', 'baseUrl', 'chatId']);
-  const intent = form.get('intent');
-  const r = applyTelegramForm(db, { token: String(form.get('token') ?? ''), chatId: values.chatId, proxy: values.proxy, baseUrl: values.baseUrl, unpair: intent === 'unpair' });
+  const values = formValues(form, ['proxy', 'baseUrl']);
+  const r = applyTelegramForm(db, { token: String(form.get('token') ?? ''), chatId: '', proxy: values.proxy, baseUrl: values.baseUrl });
   if ('error' in r) return { values, error: r.error };
   revalidatePath('/settings/notifications');
-  if (intent === 'unpair') return { values: { ...values, chatId: '' }, ok: 'Чат отвязан' };
-  const s = r.settings;
+  if (form.get('intent') !== 'check') return { values, ok: 'Сохранено' };
   try {
-    const tg = createTelegram({ token: s.token, proxy: telegramProxy(db, s) });
-    if (intent === 'check') return { values, ok: `Бот @${(await tg.getMe()).username} · сохранено` };
-    if (intent === 'pair') return { values, ok: `Отправьте этот код боту @${(await tg.getMe()).username} в течение 10 минут`, code: startPairing(db) };
-    if (intent === 'test') {
-      if (!s.chatId) return { values, error: 'Сначала привяжите чат' };
-      await tg.sendMessage(s.chatId, 'Проверка связи: Dublyarr на месте ✓');
-      return { values, ok: 'Тестовое сообщение доставлено' };
-    }
-    return { values, ok: 'Сохранено' };
+    const tg = createTelegram({ token: r.settings.token, proxy: telegramProxy(db, r.settings) });
+    return { values, ok: `Бот @${(await tg.getMe()).username} · сохранено` };
   } catch (e) {
     return { values, error: errText(e) };
   }
 }
 
+/** Свой чат: «Привязать» (код боту), «Отправить тестовое», «Отвязать». */
+export async function myChatAction(_prev: TgState, form: FormData): Promise<TgState> {
+  const { user } = await requireSession();
+  const db = getDb();
+  const s = getTelegramSettings(db);
+  if (!s?.token) return { error: 'Бот ещё не настроен — попросите администратора' };
+  const intent = form.get('intent');
+  if (intent === 'unpair') {
+    db.update(users).set({ telegramChatId: null }).where(eq(users.id, user.id)).run();
+    revalidatePath('/settings/notifications');
+    return { ok: 'Чат отвязан' };
+  }
+  try {
+    const tg = createTelegram({ token: s.token, proxy: telegramProxy(db, s) });
+    if (intent === 'pair') return { ok: `Отправьте этот код боту @${(await tg.getMe()).username} в течение 10 минут`, code: startPairing(db, user.id) };
+    if (intent === 'test') {
+      const chat = db.select({ c: users.telegramChatId }).from(users).where(eq(users.id, user.id)).get()?.c;
+      if (!chat) return { error: 'Сначала привяжите чат' };
+      await tg.sendMessage(chat, 'Проверка связи: Dublyarr на месте ✓');
+      return { ok: 'Тестовое сообщение доставлено' };
+    }
+    return { error: 'Неизвестное действие' };
+  } catch (e) {
+    return { error: errText(e) };
+  }
+}
+
+/** Свои события. */
 export async function saveEventsAction(_prev: TgState, form: FormData): Promise<TgState> {
-  await requireSession();
-  setSetting(getDb(), 'telegram.events', parseEventsForm(form));
+  const { user } = await requireSession();
+  getDb().update(users).set({ notifyEvents: parseEventsForm(form) }).where(eq(users.id, user.id)).run();
   revalidatePath('/settings/notifications');
   return { ok: 'Сохранено' };
 }

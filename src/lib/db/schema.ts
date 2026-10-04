@@ -456,6 +456,27 @@ export const notifications = sqliteTable(
 );
 export type Notification = typeof notifications.$inferSelect;
 
+/** Доставка события каждому получателю (2.3): свой чат, свои повторы и «не доставлено». */
+export const notificationDeliveries = sqliteTable(
+  'notification_deliveries',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    notificationId: integer('notification_id')
+      .notNull()
+      .references(() => notifications.id, { onDelete: 'cascade' }),
+    userId: integer('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    chatId: text('chat_id').notNull(),
+    nextAt: ts('next_at').notNull(),
+    sentAt: ts('sent_at'),
+    messageId: integer('message_id'),
+    attempts: integer('attempts').notNull().default(0),
+    error: text('error'),
+  },
+  (t) => [uniqueIndex('deliveries_once').on(t.notificationId, t.userId), index('deliveries_pending').on(t.sentAt, t.nextAt)],
+);
+
 /** Серии, удалённые правилами хранения или вручную: поиск их больше не качает (до новой подписки). */
 export const retiredEpisodes = sqliteTable(
   'retired_episodes',

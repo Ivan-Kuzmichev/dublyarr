@@ -6,7 +6,7 @@ import type { Runner } from '@/lib/media/runner';
 import { cleanRemuxTmp } from '@/lib/media/process';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
-import { testDb } from './helpers';
+import { testDbWithChat } from './helpers';
 import { fakeQbit } from './fake-qbit';
 import { bencode } from '@/lib/torrent-file';
 import { startRelease, syncDownloads } from '@/lib/downloads';
@@ -28,7 +28,7 @@ const parsed = (o: Partial<ParsedRelease>): ParsedRelease => ({
 const HOUR = 3_600_000;
 
 function setup() {
-  const db = testDb();
+  const db = testDbWithChat();
   const root = mkdtempSync(path.join(tmpdir(), 'dy-sync-'));
   const local = path.join(root, 'downloads');
   const media = path.join(root, 'media');
