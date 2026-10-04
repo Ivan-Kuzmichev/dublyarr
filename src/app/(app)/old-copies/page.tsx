@@ -4,13 +4,15 @@ import { Card } from '@/components/ui/Card';
 import { getDb } from '@/lib/db/client';
 import { oldCopies, titles } from '@/lib/db/schema';
 import { OldCopiesForm } from './OldCopiesForm';
+import { requirePage } from '@/lib/auth/current';
 
 export const metadata = { title: 'Старые копии · Dublyarr' };
 export const dynamic = 'force-dynamic';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
-export default function OldCopiesPage() {
+export default async function OldCopiesPage() {
+  await requirePage('storage');
   const rows = getDb()
     .select({ c: oldCopies, title: titles.nameRu })
     .from(oldCopies)

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { DENIED, guard } from '@/lib/auth/current';
 import { setSecretSetting, setSetting, tryGetSecretSetting } from '@/lib/settings';
 import { checkQbittorrent, type QbitConfig } from '@/lib/integrations/qbittorrent';
 import { parsePathsForm } from '@/lib/paths-form';
@@ -15,7 +15,7 @@ import { enqueue } from '@/worker/jobs';
 export type FormState = { ok?: string; error?: string; values?: Record<string, string> };
 
 export async function saveQbitAction(_prev: FormState, form: FormData): Promise<FormState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   const db = getDb();
   const values = formValues(form, ['url', 'username']);
   const saved = tryGetSecretSetting<QbitConfig>(db, 'qbittorrent');
@@ -30,7 +30,7 @@ export async function saveQbitAction(_prev: FormState, form: FormData): Promise<
 }
 
 export async function savePathsAction(_prev: FormState, form: FormData): Promise<FormState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   const values = formValues(form, ['qbitDownloads', 'downloads', 'media', 'template', 'movies', 'movieTemplate']);
   const p = parsePathsForm(form);
   if ('error' in p) return { values, error: p.error };
@@ -47,7 +47,7 @@ export async function savePathsAction(_prev: FormState, form: FormData): Promise
 }
 
 export async function saveCleanupAction(_prev: FormState, form: FormData): Promise<FormState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   const c = parseCleanupForm(form);
   if ('error' in c) return { error: c.error };
   const db = getDb();

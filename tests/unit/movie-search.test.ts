@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { eq } from 'drizzle-orm';
-import { testDb } from './helpers';
+import { testDbWithChat } from './helpers';
 import { fakeTmdb } from './fake-tmdb';
 import { fakeQbit } from './fake-qbit';
 import { syncMovie } from '@/lib/movies';
@@ -40,7 +40,7 @@ const DUB = { title: 'The Matrix [1999, WEB-DL 1080p] Dub + Original Eng', hash:
 const REMUX = { title: 'The Matrix [1999, BDRemux 1080p] Dub + Original Eng', hash: 'C3', size: 25 };
 
 async function setup(o: { today?: string; items?: Item[]; profile?: Partial<MovieProfile>; movies?: string | null; digital?: string | null } = {}) {
-  const db = testDb();
+  const db = testDbWithChat();
   seedStudios(db);
   const movie = fx<TmdbMovieDetails>('movie-603');
   movie.release_dates = { results: [] }; // дат цифрового релиза в TMDB нет — только по раздачам

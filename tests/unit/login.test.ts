@@ -5,6 +5,8 @@ import { createUser, setTotpSecret, enableTotp } from '@/lib/auth/users';
 import { passwordStep, codeStep } from '@/lib/auth/login';
 import { validateSession, createTrustedDevice } from '@/lib/auth/sessions';
 import { totpAt, currentStep } from '@/lib/auth/totp';
+import { users } from '@/lib/db/schema';
+import { eq } from 'drizzle-orm';
 
 process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
 const SECRET = 'GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ';
@@ -97,4 +99,13 @@ test('секрет 2FA зашифрован другим ключом — пон
   if (r1.kind !== 'need-code') throw new Error('ожидался need-code');
   const r = codeStep(db, { pendingToken: r1.pendingToken, code: '123456', trustDevice: false }, ctx());
   expect(r).toEqual({ kind: 'error', message: 'Ключ шифрования не подходит к базе. Выключите 2FA: dublyarr reset-password --disable-2fa' });
+});
+
+test('выключенная учётка не входит; вход отмечает время', async () => {
+  const { db, u } = await setup(false);
+  const ok = await passwordStep(db, { username: 'admin', password: 'пароль-длинный', remember: false }, ctx());
+  expect(ok.kind).toBe('session');
+  expect(db.select().from(users).get()!.lastLoginAt).toBe(1_800_000_000_000);
+  db.update(users).set({ disabled: true }).where(eq(users.id, u.id)).run();
+  expect(await passwordStep(db, { username: 'admin', password: 'пароль-длинный', remember: false }, ctx())).toEqual({ kind: 'error', message: 'Учётка выключена' });
 });

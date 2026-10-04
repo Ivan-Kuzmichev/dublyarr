@@ -13,13 +13,15 @@ import { movieCard, type MovieStep } from '@/lib/movie-card';
 import { imageUrl, posterColor } from '@/lib/image-url';
 import { todayIso } from '@/lib/dates';
 import { formatSize } from '@/lib/format';
-import { getSubscription } from '@/lib/subscriptions';
+import { getSubscription, subscriptionAuthor } from '@/lib/subscriptions';
 import { getMovieDefault } from '@/lib/profile';
 import { describeMovieProfile, isMovieProfile } from '@/lib/movie-profile';
 import { getRetention } from '@/lib/retention-settings';
 import { RetentionToggles } from '@/app/(app)/series/[tmdbId]/RetentionToggles';
 import { DeleteSeriesDialog } from '@/app/(app)/storage/DeleteSeriesDialog';
 import { MovieRefreshButton, MovieSubscribeButton } from './MovieButtons';
+import { requireSession } from '@/lib/auth/current';
+import { can } from '@/lib/auth/permissions';
 
 export const metadata = { title: 'Фильм · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -65,9 +67,12 @@ export default async function MoviePage({ params }: { params: Promise<{ tmdbId: 
   const t = loaded.r.title;
   requestTitleSearch(getDb(), t.id); // раздачи ищутся фоном — окно подписки покажет найденные переводы
   const db = getDb();
+  const { user } = await requireSession();
+  const may = { subscribe: can(user, 'subscribe'), search: can(user, 'search'), look: can(user, 'search') || can(user, 'answer'), storage: can(user, 'storage') };
   const today = todayIso();
   const sub = getSubscription(db, t.id);
   const profile = sub && isMovieProfile(sub.profile) ? sub.profile : getMovieDefault(db);
+  const author = sub ? subscriptionAuthor(db, sub) : null;
   const card = movieCard(db, t, today);
   const backdrop = imageUrl('w1280', t.backdropPath);
   const meta = [t.nameOriginal !== t.nameRu ? t.nameOriginal : null, t.year, runtime(t.runtime), t.genres.slice(0, 3).join(', ').toLowerCase() || null].filter(Boolean);
@@ -100,11 +105,13 @@ export default async function MoviePage({ params }: { params: Promise<{ tmdbId: 
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            <MovieSubscribeButton tmdbId={t.tmdbId} subscribed={!!sub} title={t.nameRu} subtitle={meta.join(' · ')} profile={profile} />
-            <Link href={`/search/${t.tmdbId}?type=movie`} className={buttonClass('secondary', 'md', 'no-underline hover:text-text')}>
-              Ручной поиск
-            </Link>
-            <MovieRefreshButton tmdbId={t.tmdbId} />
+            {may.subscribe && <MovieSubscribeButton tmdbId={t.tmdbId} subscribed={!!sub} title={t.nameRu} subtitle={meta.join(' · ')} profile={profile} />}
+            {may.look && (
+              <Link href={`/search/${t.tmdbId}?type=movie`} className={buttonClass('secondary', 'md', 'no-underline hover:text-text')}>
+                Ручной поиск
+              </Link>
+            )}
+            {may.search && <MovieRefreshButton tmdbId={t.tmdbId} />}
           </div>
         </div>
       </section>
@@ -133,7 +140,7 @@ export default async function MoviePage({ params }: { params: Promise<{ tmdbId: 
             <section className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-5">
               <div className="flex items-baseline justify-between gap-3">
                 <h3 className="m-0 text-base font-semibold">Подписка</h3>
-                <span className="text-[13px] text-accent">активна</span>
+                <span className="text-[13px] text-accent">активна{author ? ` · добавил ${author}` : ''}</span>
               </div>
               <ul className="m-0 flex list-none flex-col gap-2 p-0">
                 {describeMovieProfile(profile).map((line) => (
@@ -144,13 +151,15 @@ export default async function MoviePage({ params }: { params: Promise<{ tmdbId: 
                 ))}
               </ul>
             </section>
-            <section className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-5">
-              <h3 className="m-0 text-base font-semibold">Хранение</h3>
-              <RetentionToggles tmdbId={t.tmdbId} keepAll={sub.keepAll} autoDelete={sub.autoDelete} days={getRetention(db).age.days} movie />
-              <div className="pt-2">
-                <DeleteSeriesDialog tmdbId={t.tmdbId} title={t.nameRu} trigger="button" movie />
-              </div>
-            </section>
+            {may.storage && (
+              <section className="flex flex-col gap-2 rounded-2xl border border-line bg-surface p-5">
+                <h3 className="m-0 text-base font-semibold">Хранение</h3>
+                <RetentionToggles tmdbId={t.tmdbId} keepAll={sub.keepAll} autoDelete={sub.autoDelete} days={getRetention(db).age.days} movie />
+                <div className="pt-2">
+                  <DeleteSeriesDialog tmdbId={t.tmdbId} title={t.nameRu} trigger="button" movie />
+                </div>
+              </section>
+            )}
           </div>
         )}
       </div>

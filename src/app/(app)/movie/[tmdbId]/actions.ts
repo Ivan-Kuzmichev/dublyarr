@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { DENIED, guard } from '@/lib/auth/current';
 import { getTitleByTmdbId } from '@/lib/catalog';
 import { getTmdb } from '@/lib/tmdb';
 import { syncMovie } from '@/lib/movies';
@@ -11,7 +11,8 @@ import { subscribe, unsubscribe, updateSubscription, SubscriptionError } from '@
 import type { DialogState } from '@/components/subscribe/SubscribeDialog';
 
 export async function saveMovieSubscriptionAction(_prev: DialogState, form: FormData): Promise<DialogState> {
-  await requireSession();
+  const me = await guard('subscribe');
+  if (!me) return { error: DENIED };
   const db = getDb();
   const tmdbId = Number(form.get('tmdbId'));
   const title = Number.isInteger(tmdbId) && tmdbId > 0 ? getTitleByTmdbId(db, tmdbId, 'movie') : undefined;
@@ -29,7 +30,7 @@ export async function saveMovieSubscriptionAction(_prev: DialogState, form: Form
       const r = validateMovieProfile(raw);
       if (!r.ok) return { error: r.error };
       // новая подписка ищется на ближайшем проходе расписания (раз в 5 минут)
-      if (intent === 'subscribe') subscribe(db, title.id, r.profile);
+      if (intent === 'subscribe') subscribe(db, title.id, r.profile, Date.now(), me.user.id);
       else updateSubscription(db, title.id, r.profile);
     } else return { error: 'Неверное действие' };
   } catch (e) {
@@ -44,7 +45,7 @@ export async function saveMovieSubscriptionAction(_prev: DialogState, form: Form
 export type RefreshState = { error?: string };
 
 export async function refreshMovieAction(_prev: RefreshState, form: FormData): Promise<RefreshState> {
-  await requireSession();
+  if (!(await guard('search'))) return { error: DENIED };
   const db = getDb();
   const tmdb = getTmdb(db);
   const tmdbId = Number(form.get('tmdbId'));

@@ -28,13 +28,17 @@ export const SETTINGS_SECTIONS = [
   { id: 'files', label: 'Обработка файлов', phase: 3 },
   { id: 'movies', label: 'Фильмы', phase: 3 }, // своя страница /settings/movies
   { id: 'storage', label: 'Хранение', phase: 3 },
-  { id: 'notify', label: 'Уведомления', phase: 2 },
+  { id: 'notifications', label: 'Уведомления', phase: 2, forUsers: true },
   { id: 'ai', label: 'AI', phase: 4 }, // своя страница /settings/ai
+  { id: 'users', label: 'Пользователи', phase: 6 }, // своя страница /settings/users
   { id: 'diagnostics', label: 'Диагностика', phase: 5 }, // своя страница /settings/diagnostics
-  { id: 'security', label: 'Безопасность', phase: 0 },
+  { id: 'security', label: 'Безопасность', phase: 0, forUsers: true },
 ] as const;
 
 export type SettingsSectionId = (typeof SETTINGS_SECTIONS)[number]['id'];
+
+/** Пользователю (не админу) из настроек доступны только «Уведомления» и «Безопасность». */
+export const settingsSectionsFor = (admin: boolean) => SETTINGS_SECTIONS.filter((s) => admin || ('forUsers' in s && s.forUsers));
 
 export function activeNavId(pathname: string): NavId {
   const seg = pathname.split('/')[1] ?? '';

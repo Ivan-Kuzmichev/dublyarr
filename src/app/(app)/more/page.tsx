@@ -2,7 +2,9 @@ import Link from 'next/link';
 import { PageTitle } from '@/components/shell/PageTitle';
 import { Icon, ICONS } from '@/components/ui/Icon';
 import { ServiceRow } from '@/components/ui/StatusDot';
-import { SETTINGS_SECTIONS } from '@/components/shell/nav';
+import { settingsSectionsFor } from '@/components/shell/nav';
+import { requireSession } from '@/lib/auth/current';
+import { can, isAdmin } from '@/lib/auth/permissions';
 import { getDb } from '@/lib/db/client';
 import { serviceStatuses } from '@/lib/heartbeat';
 import { Button } from '@/components/ui/Button';
@@ -26,22 +28,25 @@ function Row({ href, children, icon, first }: { href: string; children: React.Re
 }
 
 /** Мобильное меню «Ещё» (MobileMore.dc.html). На десктопе те же пункты есть в боковой навигации. */
-export default function MorePage() {
+export default async function MorePage() {
+  const { user } = await requireSession();
   const services = serviceStatuses(getDb());
   return (
     <div className="flex flex-col gap-[18px]">
       <PageTitle>Ещё</PageTitle>
       <div className="overflow-hidden rounded-2xl border border-line bg-surface">
-        <Row href="/storage" icon={DESKTOP_ICONS.storage} first>
-          Хранилище
-        </Row>
-        <Row href="/discover" icon={DESKTOP_ICONS.discover}>
+        {can(user, 'storage') && (
+          <Row href="/storage" icon={DESKTOP_ICONS.storage} first>
+            Хранилище
+          </Row>
+        )}
+        <Row href="/discover" icon={DESKTOP_ICONS.discover} first={!can(user, 'storage')}>
           Поиск и тренды
         </Row>
       </div>
       <span className={sectionLabel}>Настройки</span>
       <div className="overflow-hidden rounded-2xl border border-line bg-surface">
-        {SETTINGS_SECTIONS.map((s, i) => (
+        {settingsSectionsFor(isAdmin(user)).map((s, i) => (
           <Row key={s.id} href={`/settings/${s.id}`} first={i === 0}>
             {s.label}
           </Row>

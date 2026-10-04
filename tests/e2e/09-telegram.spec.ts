@@ -16,18 +16,21 @@ test('Telegram: привязка кодом → тестовое → «Не то
   await card.getByLabel('Токен бота').fill('123456:abcdefghijklmnopqrstuvwxyz');
   await card.getByRole('button', { name: 'Проверить' }).click();
   await expect(card.getByText('Бот @dublyarr_test_bot · сохранено')).toBeVisible();
-  await card.getByRole('button', { name: 'Привязать чат' }).click();
-  const code = (await card.locator('span.font-mono.text-\\[28px\\]').textContent())!.trim();
+  // свой чат — у каждой учётки (2.3)
+  const mine = page.locator('section', { has: page.getByRole('heading', { name: 'Мой чат' }) });
+  await page.reload();
+  await mine.getByRole('button', { name: 'Привязать', exact: true }).click();
+  const code = (await mine.locator('span.font-mono.text-\\[28px\\]').textContent())!.trim();
   expect(code).toMatch(/^\d{6}$/);
   await request.post(`${TG}/__push`, { data: { message: { message_id: 1, chat: { id: 4242, first_name: 'Иван' }, text: code } } });
   await expect(async () => {
     await page.reload();
-    await expect(card.getByText('чат привязан')).toBeVisible({ timeout: 1000 });
+    await expect(mine.getByText('привязан', { exact: true })).toBeVisible({ timeout: 1000 });
   }).toPass({ timeout: 60_000 });
   expect((await sent()).some((m) => m.text?.startsWith('Чат привязан'))).toBe(true);
 
-  await card.getByRole('button', { name: 'Отправить тестовое' }).click();
-  await expect(card.getByText('Тестовое сообщение доставлено')).toBeVisible();
+  await mine.getByRole('button', { name: 'Отправить тестовое' }).click();
+  await expect(mine.getByText('Тестовое сообщение доставлено')).toBeVisible();
   expect((await sent()).some((m) => m.method === 'sendMessage' && m.chat_id === '4242' && m.text?.startsWith('Проверка связи'))).toBe(true);
 
   // нажатие «Не тот сериал» по раздаче Kinozal (вопрос мог прийти и раньше — данные кнопки те же)

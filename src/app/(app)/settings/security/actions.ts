@@ -3,7 +3,7 @@
 import QRCode from 'qrcode';
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { requireSession, DENIED, guard } from '@/lib/auth/current';
 import { getUser, setPassword, setTotpSecret } from '@/lib/auth/users';
 import { verifyPassword, validateNewPassword } from '@/lib/auth/password';
 import { startTotpSetup, confirmTotpSetup, disableTotp } from '@/lib/auth/twofa';
@@ -88,7 +88,7 @@ export type ApiState = { ok?: string; error?: string; token?: string };
 
 /** «API включён»: доступ по токену только из локальной сети. */
 export async function saveApiAccessAction(_prev: ApiState, form: FormData): Promise<ApiState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   setApiEnabled(getDb(), form.get('enabled') === 'on');
   revalidatePath('/settings/security');
   return { ok: form.get('enabled') === 'on' ? 'API включён' : 'API выключен' };
@@ -96,7 +96,7 @@ export async function saveApiAccessAction(_prev: ApiState, form: FormData): Prom
 
 /** Новый токен — показывается один раз, в базе остаётся только хэш. */
 export async function createApiTokenAction(_prev: ApiState, form: FormData): Promise<ApiState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   const name = String(form.get('name') ?? '').trim();
   if (!name) return { error: 'Назовите токен — например, «Claude»' };
   const { token } = createApiToken(getDb(), name);
@@ -105,7 +105,7 @@ export async function createApiTokenAction(_prev: ApiState, form: FormData): Pro
 }
 
 export async function revokeApiTokenAction(form: FormData) {
-  await requireSession();
+  if (!(await guard('admin'))) return;
   const id = Number(form.get('id'));
   if (Number.isInteger(id) && id > 0) revokeApiToken(getDb(), id);
   revalidatePath('/settings/security');

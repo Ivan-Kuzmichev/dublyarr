@@ -3,7 +3,7 @@
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { DENIED, guard } from '@/lib/auth/current';
 import { getSetting } from '@/lib/settings';
 import { getQbit } from '@/lib/qbit';
 import { getCleanup, runCleanup } from '@/lib/cleanup';
@@ -13,7 +13,7 @@ export type ConfirmState = { error?: string };
 
 /** «Удалить отмеченные»: выполнить выбранное и включить затронутые правила уборки. */
 export async function confirmCleanupAction(_prev: ConfirmState, form: FormData): Promise<ConfirmState> {
-  await requireSession();
+  if (!(await guard('storage'))) return { error: DENIED };
   const db = getDb();
   const qbit = getQbit(db);
   const paths = getSetting<Paths>(db, 'paths');

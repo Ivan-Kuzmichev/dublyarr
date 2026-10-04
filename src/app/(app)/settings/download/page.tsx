@@ -10,6 +10,7 @@ import { PathsCard } from './PathsCard';
 import { DEFAULT_MOVIE_TEMPLATE } from '@/lib/movie-files';
 import { CleanupCard } from './CleanupCard';
 import { getCleanup } from '@/lib/cleanup';
+import { requirePage } from '@/lib/auth/current';
 
 export const metadata = { title: 'Загрузка и папки · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -28,7 +29,8 @@ function example(template: string) {
   }
 }
 
-export default function DownloadSettingsPage() {
+export default async function DownloadSettingsPage() {
+  await requirePage('admin');
   const db = getDb();
   const qbit = tryGetSecretSetting<QbitConfig>(db, 'qbittorrent');
   const paths = getSetting<Paths>(db, 'paths');

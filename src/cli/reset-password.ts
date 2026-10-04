@@ -1,11 +1,15 @@
+import { asc, eq } from 'drizzle-orm';
 import type { Db } from '../lib/db/client';
 import { users } from '../lib/db/schema';
 import { validateNewPassword } from '../lib/auth/password';
 import { setPassword, setTotpSecret } from '../lib/auth/users';
 import { revokeAllSessions, revokeTrustedDevices } from '../lib/auth/sessions';
 
-export async function resetPassword(db: Db, o: { password: string; disable2fa: boolean }) {
-  const u = db.select().from(users).get();
+export async function resetPassword(db: Db, o: { username?: string; password: string; disable2fa: boolean }) {
+  const u = o.username
+    ? db.select().from(users).where(eq(users.username, o.username.trim())).get()
+    : db.select().from(users).where(eq(users.role, 'admin')).orderBy(asc(users.id)).get();
+  if (!u && o.username) throw new Error(`Нет учётки «${o.username.trim()}»`);
   if (!u) throw new Error('Пользователь ещё не создан — откройте Dublyarr в браузере');
   const err = validateNewPassword(o.password);
   if (err) throw new Error(err);

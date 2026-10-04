@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { eq } from 'drizzle-orm';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { DENIED, guard } from '@/lib/auth/current';
 import { getConfig } from '@/lib/config';
 import { setSetting } from '@/lib/settings';
 import { parseLayaForm } from '@/lib/laya/settings';
@@ -16,7 +16,7 @@ import path from 'node:path';
 export type FormState = { ok?: string; error?: string };
 
 export async function saveLayaAction(_prev: FormState, form: FormData): Promise<FormState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   const s = parseLayaForm(form);
   if ('error' in s) return { error: s.error };
   setSetting(getDb(), 'laya', s);
@@ -26,7 +26,7 @@ export async function saveLayaAction(_prev: FormState, form: FormData): Promise<
 
 /** «Проверить»: здоровье laya-serve и один вопрос — сколько отвечает. */
 export async function checkLayaAction(): Promise<FormState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   const c = createLayaClient({ port: getConfig().layaPort });
   const h = await c.health();
   if (!h) return { error: 'Laya не отвечает' };
@@ -39,20 +39,20 @@ export async function checkLayaAction(): Promise<FormState> {
 }
 
 export async function trainNowAction(): Promise<FormState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   enqueue(getDb(), 'laya.train-now');
   return { ok: 'Обучение запущено — займёт несколько секунд' };
 }
 
 export async function rollbackAction(form: FormData) {
-  await requireSession();
+  if (!(await guard('admin'))) return;
   const v = String(form.get('version'));
   rollback(getDb(), path.join(getConfig().dataDir, 'laya'), v === 'base' ? 'base' : Number(v));
   revalidatePath('/settings/ai/training');
 }
 
 export async function deleteExampleAction(form: FormData) {
-  await requireSession();
+  if (!(await guard('admin'))) return;
   const id = Number(form.get('id'));
   if (Number.isInteger(id)) getDb().delete(layaExamples).where(eq(layaExamples.id, id)).run();
   revalidatePath('/settings/ai/training');

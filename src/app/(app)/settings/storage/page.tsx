@@ -8,6 +8,7 @@ import { formatSize } from '@/lib/format';
 import { todayIso } from '@/lib/dates';
 import type { Paths } from '@/lib/downloads';
 import { RetentionForm } from './RetentionForm';
+import { requirePage } from '@/lib/auth/current';
 
 export const metadata = { title: 'Хранение · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -32,6 +33,7 @@ async function load() {
 }
 
 export default async function StorageSettingsPage() {
+  await requirePage('admin');
   const d = await load();
   return (
     <>

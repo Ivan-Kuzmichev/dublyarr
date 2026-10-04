@@ -11,7 +11,6 @@ import { parseProfileJson } from '../profile-core';
 import { saveDefaultProfile } from '../profile';
 import { listStudios } from '../studios';
 import { parseLayaForm } from '../laya/settings';
-import { parseEventsForm } from '../notify';
 import { parseLogForm, saveLogSettings } from '../log-settings';
 import { checkQbittorrent, type QbitConfig } from '../integrations/qbittorrent';
 import { enqueue } from '../../worker/jobs';
@@ -50,7 +49,6 @@ export const SETTINGS_WRITE: Record<string, (db: Db, form: FormData) => Promise<
   processing: simple(parseProcessingForm, (db, v) => setSetting(db, 'processing', v)),
   retention: simple(parseRetentionForm, saveRetentionSettings),
   laya: simple(parseLayaForm, (db, v) => setSetting(db, 'laya', v)),
-  'telegram.events': simple(parseEventsForm, (db, v) => setSetting(db, 'telegram.events', v)),
   logging: simple(parseLogForm, saveLogSettings),
   'profile.series': profileJson('series'),
   'profile.anime': profileJson('anime'),

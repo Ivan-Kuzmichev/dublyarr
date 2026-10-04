@@ -1,7 +1,7 @@
 import { titleHref } from './title-href';
-import { eq } from 'drizzle-orm';
+import { and, desc, eq, isNull, like } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { releases, sources, titles, type Download, type EpisodeRef, type WantedState } from './db/schema';
+import { notificationDeliveries, notifications, releases, sources, titles, type Download, type EpisodeRef, type WantedState } from './db/schema';
 import { notify } from './notify';
 import { getTelegramSettings, type InlineButton } from './telegram';
 import { formatShortDate, todayIso } from './dates';
@@ -31,20 +31,36 @@ export function linkButton(db: Db, path: string, text = 'Открыть'): Inlin
   return base ? [[{ text, url: `${base}${path}` }]] : [];
 }
 
+/** Пока идёт импорт (пересборка пака — проходами, несколько паков сериала), «скачано» копится и уходит одним сообщением через 5 мин затишья. */
+const IMPORT_QUIET = 5 * 60_000;
+
 export function notifyImported(db: Db, d: Download, eps: EpisodeRef[], now = Date.now()) {
   const t = titleOf(db, d.titleId);
   if (!t || !eps.length) return;
+  const upgrade = !!d.note?.startsWith('Улучшение');
   const what = d.note ? d.note.replace(/^Улучшение/, 'Улучшено') : [d.studioLabel, d.resolution ? `${d.resolution}p` : null].filter(Boolean).join(' ');
-  notify(
-    db,
-    {
-      key: `import:${d.id}:${eps.map((e) => `${e.season}.${e.number}`).join(',')}`,
-      kind: 'downloaded',
-      text: `📥 ${t.nameRu}${t.kind === 'movie' ? '' : ` · ${codeRange(eps)}`}${what ? ` — ${what}` : ''}`,
-      buttons: linkButton(db, titleHref(t)),
-    },
-    now,
-  );
+  const group = `import:${t.id}:${upgrade ? 'up' : 'new'}`;
+  const text = (all: EpisodeRef[], labels: string[]) => `📥 ${t.nameRu}${t.kind === 'movie' ? '' : ` · ${codeRange(all)}`}${labels.length ? ` — ${labels.join(', ')}` : ''}`;
+  // открытая группа: событие сериала, которое ещё никому не ушло, — дополнить и отложить отправку
+  const open = db
+    .select()
+    .from(notifications)
+    .where(and(like(notifications.key, `${group}:%`), isNull(notifications.sentAt)))
+    .orderBy(desc(notifications.id))
+    .get();
+  if (open) {
+    const ref = (open.ref ?? {}) as { eps?: EpisodeRef[]; labels?: string[] };
+    const all = [...new Map([...(ref.eps ?? []), ...eps].map((e) => [`${e.season}:${e.number}`, e])).values()].sort((a, b) => a.season - b.season || a.number - b.number);
+    const labels = [...new Set([...(ref.labels ?? []), ...(what ? [what] : [])])];
+    db.update(notifications).set({ text: text(all, labels), ref: { ...ref, eps: all, labels } }).where(eq(notifications.id, open.id)).run();
+    db.update(notificationDeliveries)
+      .set({ nextAt: now + IMPORT_QUIET })
+      .where(and(eq(notificationDeliveries.notificationId, open.id), isNull(notificationDeliveries.sentAt)))
+      .run();
+    return;
+  }
+  const labels = what ? [what] : [];
+  notify(db, { key: `${group}:${now}`, kind: 'downloaded', text: text(eps, labels), buttons: linkButton(db, titleHref(t)), ref: { eps, labels }, delayMs: IMPORT_QUIET }, now);
 }
 
 export function notifyStalled(db: Db, d: Download, now = Date.now()) {
@@ -120,5 +136,6 @@ export function notifyNotice(db: Db, noticeId: number, titleId: number, text: st
 export function notifyPendingConfirm(db: Db, what: 'old-copies' | 'cleanup' | 'retention', text: string, now = Date.now()) {
   const day = new Date(now).toISOString().slice(0, 10);
   const page = { 'old-copies': '/old-copies', cleanup: '/cleanup', retention: '/storage' }[what];
-  notify(db, { key: `${what}:${day}`, kind: 'ask', text, buttons: linkButton(db, page, 'Посмотреть список') }, now);
+  // подтвердить удаление может тот, у кого «Хранилище», а не «Ответы на вопросы»
+  notify(db, { key: `${what}:${day}`, kind: 'ask', text, buttons: linkButton(db, page, 'Посмотреть список'), need: 'storage' }, now);
 }

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { eq } from 'drizzle-orm';
-import { testDb } from './helpers';
+import { testDbWithChat } from './helpers';
 import { fakeQbit } from './fake-qbit';
 import { checkDisk, diskUsage, type Disk } from '@/lib/storage';
 import { applySpeed } from '@/lib/speed';
@@ -23,7 +23,7 @@ test('занятость тома по statfs', async () => {
 
 describe('защита от переполнения', () => {
   async function setup() {
-    const db = testDb();
+    const db = testDbWithChat();
     const t = db.insert(titles).values({ tmdbId: 1, kind: 'series', nameRu: 'A', nameOriginal: 'A', originalLanguage: 'en', status: 'returning', createdAt: 1, refreshedAt: 1 }).returning().get();
     const fq = fakeQbit();
     const hash = 'a'.repeat(40);
@@ -67,7 +67,7 @@ describe('данные «Хранилища»', () => {
   const DAY = 86_400_000;
   async function setup() {
     const { episodeFiles: ef, episodes: ep, seasons: se, subscriptions: su, deletions: de } = await import('@/lib/db/schema');
-    const db = testDb();
+    const db = testDbWithChat();
     const mk = (tmdbId: number, nameRu: string, kind: 'series' | 'anime') => db.insert(titles).values({ tmdbId, kind, nameRu, nameOriginal: nameRu, originalLanguage: 'en', status: 'returning', createdAt: 1, refreshedAt: 1 }).returning().get();
     const g = mk(1, 'Гриффины', 'series');
     const a = mk(2, 'Фрирен', 'anime');

@@ -1,11 +1,10 @@
 import { expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
-import { testDb } from './helpers';
+import { testDbWithChat } from './helpers';
 import { checkSourcesDown, notifyWanted } from '@/lib/notify-events';
 import { addNotice } from '@/lib/notices';
 import { DEFAULT_EVENTS } from '@/lib/notify';
-import { notifications, releases, sources, titles } from '@/lib/db/schema';
-import { setSetting } from '@/lib/settings';
+import { notifications, releases, sources, titles, users } from '@/lib/db/schema';
 import { saveTelegramSettings } from '@/lib/telegram';
 import type { ParsedRelease } from '@/lib/parse/types';
 
@@ -13,7 +12,7 @@ process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
 const MIN = 60_000;
 
 function setup() {
-  const db = testDb();
+  const db = testDbWithChat();
   const t = db.insert(titles).values({ tmdbId: 1399, kind: 'series', nameRu: 'Игра престолов', nameOriginal: 'GoT', originalLanguage: 'en', status: 'ended', createdAt: 1, refreshedAt: 1 }).returning().get();
   const s = db.insert(sources).values({ name: 'Jackett', url: 'http://j', createdAt: 1 }).returning().get();
   const parsed = { base: 'x', names: [], year: null, seasons: [1], episodes: null, totalInSeason: null, absolute: false, pack: true, resolution: 1080, source: null, hdr: false, dv: false, screener: false, dubs: [], original: false, subs: false } as ParsedRelease;
@@ -41,7 +40,7 @@ test('вышел оригинал — если событие включено',
   const { db, t, all } = setup();
   notifyWanted(db, { titleId: t.id, season: 1, number: 4, state: 'waiting', reason: 'Рано', releaseId: null, until: '2026-10-02' }, null, 5);
   expect(all()).toEqual([]);
-  setSetting(db, 'telegram.events', { ...DEFAULT_EVENTS, original: true });
+  db.update(users).set({ notifyEvents: { ...DEFAULT_EVENTS, original: true } }).run();
   notifyWanted(db, { titleId: t.id, season: 1, number: 4, state: 'waiting', reason: 'Рано', releaseId: null, until: '2026-10-02' }, null, 5);
   expect(all().map((n) => n.text)).toEqual(['🕐 Вышла Игра престолов · S01E04 в оригинале — озвучку ждём до 2 окт']);
 });
@@ -67,4 +66,30 @@ test('заметка о новом сезоне уходит в Telegram', () =>
   const { db, t, all } = setup();
   addNotice(db, t.id, 'season-subscribed', 'Подписался на 2-й сезон', 5);
   expect(all().map((n) => n.text)).toEqual(['🗓 Игра престолов: Подписался на 2-й сезон']);
+});
+
+test('скачанные серии одного сериала — одним сообщением после затишья; улучшения — отдельно', async () => {
+  const { notifyImported } = await import('@/lib/notify-events');
+  const { sendPending } = await import('@/lib/notify');
+  const { downloads } = await import('@/lib/db/schema');
+  const db = testDbWithChat();
+  const t = db.insert(titles).values({ tmdbId: 73223, kind: 'anime', nameRu: 'Чёрный клевер', nameOriginal: 'Black Clover', originalLanguage: 'ja', status: 'returning', createdAt: 1, refreshedAt: 1 }).returning().get();
+  const dl = (hash: string, note: string | null = null) =>
+    db.insert(downloads).values({ hash, titleId: t.id, season: 1, kind: 'pack', episodes: [], state: 'imported', name: hash, size: 1, addedAt: 1, studioLabel: 'AniLibria', resolution: 1080, note }).returning().get();
+  const eps = (a: number, b: number) => Array.from({ length: b - a + 1 }, (_, i) => ({ season: 1, number: a + i }));
+  const T0 = 1_800_000_000_000;
+  const d1 = dl('a');
+  notifyImported(db, d1, eps(1, 10), T0);
+  notifyImported(db, d1, eps(11, 30), T0 + 60_000); // следующий проход пересборки
+  notifyImported(db, dl('b'), eps(31, 72), T0 + 120_000); // другой пак того же сериала
+  notifyImported(db, dl('c', 'Улучшение: 720p → 1080p'), eps(1, 2), T0 + 130_000);
+  expect(db.select().from(notifications).all().map((n) => n.text)).toEqual(['📥 Чёрный клевер · S01E01–E72 — AniLibria 1080p', '📥 Чёрный клевер · S01E01–E02 — Улучшено: 720p → 1080p']);
+  const sent: string[] = [];
+  const tg = { sendMessage: async (_c: string, text: string) => (sent.push(text), { messageId: sent.length }) } as never;
+  await sendPending(db, tg, T0 + 3 * 60_000); // импорт ещё идёт — ждём
+  expect(sent).toEqual([]);
+  await sendPending(db, tg, T0 + 130_000 + 5 * 60_000);
+  expect(sent).toHaveLength(2);
+  notifyImported(db, d1, eps(73, 74), T0 + 20 * 60_000); // после отправки — новое сообщение
+  expect(db.select().from(notifications).all()).toHaveLength(3);
 });

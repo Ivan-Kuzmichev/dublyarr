@@ -2,14 +2,14 @@
 
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { DENIED, guard } from '@/lib/auth/current';
 import { setSetting } from '@/lib/settings';
 import { parseScheduleForm, parseSpeedForm } from '@/lib/schedule';
 
 export type SaveState = { ok?: string; error?: string };
 
 export async function saveScheduleAction(_prev: SaveState, form: FormData): Promise<SaveState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   const s = parseScheduleForm(form);
   if ('error' in s) return { error: s.error };
   setSetting(getDb(), 'schedule', s);
@@ -18,7 +18,7 @@ export async function saveScheduleAction(_prev: SaveState, form: FormData): Prom
 }
 
 export async function saveSpeedAction(_prev: SaveState, form: FormData): Promise<SaveState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   const s = parseSpeedForm(form);
   if ('error' in s) return { error: s.error };
   setSetting(getDb(), 'speed', s);

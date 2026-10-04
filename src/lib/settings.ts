@@ -39,3 +39,7 @@ export function tryGetSecretSetting<T>(db: Db, key: string): T | undefined {
     throw e;
   }
 }
+
+export function deleteSetting(db: Db, key: string) {
+  db.delete(appSettings).where(eq(appSettings.key, key)).run();
+}

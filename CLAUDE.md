@@ -1,6 +1,6 @@
 # Dublyarr
 
-Self-hosted сервис для одного пользователя: подписка на сериалы (и фильмы) в нужной
+Self-hosted сервис для дома (администратор + пользователи с правами, общая библиотека): подписка на сериалы (и фильмы) в нужной
 озвучке и качестве, автоматический поиск и докачка серий с русских трекеров.
 Работает в Docker на домашнем Synology NAS. Смотрят файлы в VidHub по SMB —
 медиасервера (Jellyfin/Plex) и TorrServe в системе НЕТ.
@@ -214,6 +214,17 @@ Self-hosted сервис для одного пользователя: подп�
 - Проверка паков: `.torrent` не скачался — этот пак не раньше чем через 6 ч (`app_settings['packs.retryAt']`). JacRed `aniliberty` = Jackett `anilibria` (`SAME_AS_JACKETT`).
 - Окно подписки: раздачи ищутся фоном при открытии страницы сериала/фильма (`requestTitleSearch`, задача `title.search`, кэш 6 ч по `titles.releases_searched_at`, его ставит `searchTitle`);
   `foundAction` + `useFound` (опрос раз в 3 с, пока идёт поиск) → найденные студии (`foundStudios`) первыми в жёлтой рамке с числом раздач, у фильма — «нашлось раздач: N» по типу перевода.
+
+## Решения (2.3 — пользователи)
+
+- `users.role` (`admin`|`user`), `permissions` (JSON: `subscribe`, `search`, `answer`, `downloads`, `storage`), `disabled`, `telegram_chat_id`, `notify_events`, `last_login_at`;
+  `subscriptions.added_by`. Права — чистый `src/lib/auth/permissions.ts` (`can`, `isAdmin`, годится для клиента).
+- Проверка на сервере: actions — `guard(perm | 'admin')` → сеанс или null (ответ «Недостаточно прав»); страницы — `requireAdmin()` / `requirePage(...)` → 404.
+  Тест `tests/unit/guards.test.ts` — каждое защищённое действие без права. Разделы настроек — `settingsSectionsFor(admin)`; «Требует внимания» — `attentionFor`.
+- «Настройки → Пользователи» — `src/lib/users-admin.ts` (последний админ, себя — нельзя; выключение/сброс пароля завершают сеансы).
+- Уведомления: бот (токен) — у админа; у каждой учётки свой чат (привязка кодом, один чат — одна учётка) и события; доставка — `notification_deliveries`
+  по получателям (`recipients`: чат, включена, событие; `ask` — с правом `answer`); кнопки Telegram — по праву `answer`. Перенос общего чата первому админу — `migrateTelegramChat`.
+- API (`/api/v1`) и токены — только админ.
 
 # This is NOT the Next.js you know
 

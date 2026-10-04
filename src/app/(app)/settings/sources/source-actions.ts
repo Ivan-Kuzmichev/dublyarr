@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { DENIED, guard } from '@/lib/auth/current';
 import { parseSourceForm } from '@/lib/source-form';
 import { removeSource, sourcesForSearch } from '@/lib/sources';
 import { torznabIndexers } from '@/lib/torznab';
@@ -19,7 +19,7 @@ const idOf = (form: FormData, key = 'id') => {
 };
 
 export async function saveSourceAction(_prev: SourceFormState, form: FormData): Promise<SourceFormState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   const db = getDb();
   const values = formValues(form, ['name', 'url', 'timeout', 'kind']);
   const input = parseSourceForm(form);
@@ -31,7 +31,7 @@ export async function saveSourceAction(_prev: SourceFormState, form: FormData): 
 }
 
 export async function deleteSourceAction(_prev: SourceFormState, form: FormData): Promise<SourceFormState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   const id = idOf(form);
   if (!id) return { error: 'Источник не найден' };
   removeSource(getDb(), id);
@@ -40,14 +40,14 @@ export async function deleteSourceAction(_prev: SourceFormState, form: FormData)
 }
 
 export async function setPrimaryAction(form: FormData) {
-  await requireSession();
+  if (!(await guard('admin'))) return;
   const id = idOf(form, 'trackerId');
   if (id) setPrimary(getDb(), id);
   revalidatePath('/settings/sources');
 }
 
 export async function refreshTrackersAction(form: FormData) {
-  await requireSession();
+  if (!(await guard('admin'))) return;
   const db = getDb();
   const id = idOf(form);
   const src = sourcesForSearch(db).find((s) => s.id === id);

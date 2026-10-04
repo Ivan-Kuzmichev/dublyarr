@@ -23,8 +23,10 @@ import { isMovieProfile } from '@/lib/movie-profile';
 import { RetentionToggles } from './RetentionToggles';
 import { DeleteSeriesDialog } from '@/app/(app)/storage/DeleteSeriesDialog';
 import { getRetention } from '@/lib/retention-settings';
-import { getSubscription } from '@/lib/subscriptions';
+import { getSubscription, subscriptionAuthor } from '@/lib/subscriptions';
 import { getDefaultProfile, subscribeDialogStudios } from '@/lib/profile';
+import { requireSession } from '@/lib/auth/current';
+import { can } from '@/lib/auth/permissions';
 
 const EP_TONE: Record<EpisodeStatus['state'], string> = {
   downloaded: 'text-text-2',
@@ -85,6 +87,8 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
 
   const { title: t } = loaded.r;
   const db = getDb();
+  const { user } = await requireSession();
+  const may = { subscribe: can(user, 'subscribe'), search: can(user, 'search'), look: can(user, 'search') || can(user, 'answer'), storage: can(user, 'storage') };
   requestTitleSearch(db, t.id); // раздачи ищутся фоном — окно подписки покажет найденные студии
   const today = todayIso();
   const seasons = listSeasons(db, t.id);
@@ -135,6 +139,7 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
+            {may.subscribe && (
             <SubscribeButton
               tmdbId={t.tmdbId}
               subscribed={!!sub}
@@ -145,11 +150,14 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
               profile={sub && !isMovieProfile(sub.profile) ? sub.profile : getDefaultProfile(db, t.kind)}
               basis={basis}
             />
-            <Link href={`/search/${t.tmdbId}?s=${current}`} className={buttonClass('secondary', 'md', 'no-underline hover:text-text')}>
-              Ручной поиск
-            </Link>
-            <RefreshButton tmdbId={t.tmdbId} />
-            <KindSwitch tmdbId={t.tmdbId} kind={seriesKind(t.kind)} />
+            )}
+            {may.look && (
+              <Link href={`/search/${t.tmdbId}?s=${current}`} className={buttonClass('secondary', 'md', 'no-underline hover:text-text')}>
+                Ручной поиск
+              </Link>
+            )}
+            {may.search && <RefreshButton tmdbId={t.tmdbId} />}
+            {may.search && <KindSwitch tmdbId={t.tmdbId} kind={seriesKind(t.kind)} />}
           </div>
         </div>
       </section>
@@ -160,14 +168,16 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
       <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_340px]">
       {sub && (
         <div className="lg:order-2">
-          {!isMovieProfile(sub.profile) && <SubscriptionPanel profile={sub.profile} studioNames={studioNames} />}
-          <section className="mt-5 flex flex-col gap-2 rounded-2xl border border-line bg-surface p-5">
-            <h3 className="m-0 text-base font-semibold">Хранение</h3>
-            <RetentionToggles tmdbId={t.tmdbId} keepAll={sub.keepAll} autoDelete={sub.autoDelete} days={getRetention(db).age.days} />
-            <div className="pt-2">
-              <DeleteSeriesDialog tmdbId={t.tmdbId} title={t.nameRu} trigger="button" />
-            </div>
-          </section>
+          {!isMovieProfile(sub.profile) && <SubscriptionPanel profile={sub.profile} studioNames={studioNames} author={subscriptionAuthor(db, sub)} />}
+          {may.storage && (
+            <section className="mt-5 flex flex-col gap-2 rounded-2xl border border-line bg-surface p-5">
+              <h3 className="m-0 text-base font-semibold">Хранение</h3>
+              <RetentionToggles tmdbId={t.tmdbId} keepAll={sub.keepAll} autoDelete={sub.autoDelete} days={getRetention(db).age.days} />
+              <div className="pt-2">
+                <DeleteSeriesDialog tmdbId={t.tmdbId} title={t.nameRu} trigger="button" />
+              </div>
+            </section>
+          )}
           {speed.length > 0 && (
             <section className="mt-5 flex flex-col gap-3.5 rounded-2xl border border-line bg-surface p-5">
               <h3 className="m-0 text-base font-semibold">Скорость озвучки</h3>
@@ -249,7 +259,7 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
                   </span>
                   <span className="flex items-center justify-between gap-2 text-[13px]">
                     {formatAirDate(e.airDate, today)}
-                    {!future && (
+                    {!future && may.look && (
                       <Link
                         href={`/search/${t.tmdbId}?s=${e.season}&e=${e.number}`}
                         aria-label={`Ручной поиск ${e.season}×${e.number}`}

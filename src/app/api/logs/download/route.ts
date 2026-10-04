@@ -1,12 +1,15 @@
 import { readFileSync } from 'node:fs';
 import { getCurrentSession } from '@/lib/auth/current';
+import { isAdmin } from '@/lib/auth/permissions';
 import { logDir, logFiles } from '@/lib/log-read';
 
 export const dynamic = 'force-dynamic';
 
 /** «Скачать логи»: все файлы журнала подряд (старые первыми). */
 export async function GET() {
-  if (!(await getCurrentSession())) return new Response(null, { status: 401 });
+  const s = await getCurrentSession();
+  if (!s) return new Response(null, { status: 401 });
+  if (!isAdmin(s.user)) return new Response(null, { status: 403 });
   const body = logFiles(logDir())
     .map((f) => {
       try {

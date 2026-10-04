@@ -7,6 +7,7 @@ import { subscriptions, titles } from '@/lib/db/schema';
 import { movieCard } from '@/lib/movie-card';
 import { todayIso } from '@/lib/dates';
 import { MovieDefaultForm } from './MovieDefaultForm';
+import { requirePage } from '@/lib/auth/current';
 
 export const metadata = { title: 'Фильмы · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -14,7 +15,8 @@ export const dynamic = 'force-dynamic';
 const BOX = { done: 'border border-line bg-surface-2', forecast: 'border-[1.5px] border-dashed border-accent', wait: 'border border-line', none: 'border border-line' } as const;
 const TEXT = { done: 'text-text-2', forecast: 'text-accent', wait: 'text-accent', none: 'text-faint' } as const;
 
-export default function MovieSettingsPage() {
+export default async function MovieSettingsPage() {
+  await requirePage('admin');
   const db = getDb();
   // «Как это выглядит» — по последнему фильму в подписках
   const last = db.select({ t: titles }).from(subscriptions).innerJoin(titles, eq(titles.id, subscriptions.titleId)).where(eq(titles.kind, 'movie')).orderBy(desc(subscriptions.subscribedAt)).get()?.t;

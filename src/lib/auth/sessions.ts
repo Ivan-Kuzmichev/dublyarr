@@ -39,7 +39,11 @@ export function validateSession(db: Db, token: string, now = Date.now()): { sess
     return null;
   }
   const user = getUser(db, s.userId);
-  if (!user) return null;
+  // выключенная учётка — сеанс сразу недействителен
+  if (!user || user.disabled) {
+    db.delete(sessions).where(eq(sessions.id, id)).run();
+    return null;
+  }
   const upd = { lastSeenAt: now, expiresAt: now + ttl(s.persistent) };
   db.update(sessions).set(upd).where(eq(sessions.id, id)).run();
   return { session: { ...s, ...upd }, user };

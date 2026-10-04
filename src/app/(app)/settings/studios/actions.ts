@@ -3,7 +3,7 @@
 import { confirmLayaAlias } from '@/lib/laya/review';
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { DENIED, guard } from '@/lib/auth/current';
 import { createStudio, deleteStudio, listStudios, updateStudio, StudioError } from '@/lib/studios';
 import { parseStudioForm } from '@/lib/studio-form';
 import { parseProfileJson, saveDefaultProfile } from '@/lib/profile';
@@ -18,7 +18,7 @@ const done = () => {
 };
 
 export async function saveStudioAction(_prev: StudioFormState, form: FormData): Promise<StudioFormState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   const values = formValues(form, ['name', 'aliases', 'trackers', 'kind']);
   const input = parseStudioForm(form);
   if ('error' in input) return { error: input.error, values };
@@ -34,7 +34,7 @@ export async function saveStudioAction(_prev: StudioFormState, form: FormData): 
 }
 
 export async function deleteStudioAction(_prev: StudioFormState, form: FormData): Promise<StudioFormState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   const id = Number(form.get('id'));
   if (!Number.isInteger(id) || id <= 0) return { error: 'Студия не найдена' };
   try {
@@ -47,7 +47,7 @@ export async function deleteStudioAction(_prev: StudioFormState, form: FormData)
 }
 
 export async function saveDefaultProfileAction(_prev: DialogState, form: FormData): Promise<DialogState> {
-  await requireSession();
+  if (!(await guard('admin'))) return { error: DENIED };
   const kind = form.get('kind');
   if (kind !== 'series' && kind !== 'anime') return { error: 'Неверный профиль' };
   const db = getDb();
@@ -59,7 +59,7 @@ export async function saveDefaultProfileAction(_prev: DialogState, form: FormDat
 
 /** «Верно» / «Нет» на вариант написания, который добавила Laya. */
 export async function confirmLayaAliasAction(form: FormData) {
-  await requireSession();
+  if (!(await guard('admin'))) return;
   const id = Number(form.get('studioId'));
   const alias = String(form.get('alias') ?? '');
   if (!Number.isInteger(id) || !alias) return;

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { DENIED, guard } from '@/lib/auth/current';
 import { getTitleByTmdbId } from '@/lib/catalog';
 import { answerMatch, assignStudio } from '@/lib/manual-search';
 import { StudioError } from '@/lib/studios';
@@ -26,7 +26,7 @@ function titleOf(form: FormData) {
 }
 
 export async function assignStudioAction(_prev: AssignState, form: FormData): Promise<AssignState> {
-  await requireSession();
+  if (!(await guard('answer'))) return { error: DENIED };
   const t = titleOf(form);
   if (!t) return { error: 'Сериал не найден' };
   const label = String(form.get('label') ?? '').trim();
@@ -50,7 +50,7 @@ export async function assignStudioAction(_prev: AssignState, form: FormData): Pr
 }
 
 export async function answerMatchAction(form: FormData) {
-  await requireSession();
+  if (!(await guard('answer'))) return;
   const t = titleOf(form);
   const releaseId = positive(form.get('releaseId'));
   const verdict = form.get('verdict');
@@ -63,7 +63,7 @@ export type DownloadState = { ok?: string; error?: string };
 
 /** «Скачать» из ручного поиска: серия — по плану (серия/пак), сезон — пак целиком, фильм — основной файл. */
 export async function downloadAction(_prev: DownloadState, form: FormData): Promise<DownloadState> {
-  await requireSession();
+  if (!(await guard('search'))) return { error: DENIED };
   const t = titleOf(form);
   const releaseId = positive(form.get('releaseId'));
   if (!t || !releaseId) return { error: 'Неверные данные' };
@@ -75,7 +75,7 @@ export async function downloadAction(_prev: DownloadState, form: FormData): Prom
 
 /** Исправить нумерацию аниме (варианты — как у Laya): ответ пользователя окончательный и идёт в дообучение. */
 export async function correctAnimeAction(form: FormData) {
-  await requireSession();
+  if (!(await guard('answer'))) return;
   const t = titleOf(form);
   const releaseId = positive(form.get('releaseId'));
   const label = String(form.get('label') ?? '');

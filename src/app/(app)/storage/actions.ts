@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { DENIED, guard } from '@/lib/auth/current';
 import { getSetting } from '@/lib/settings';
 import { getQbit } from '@/lib/qbit';
 import { getTitleByTmdbId } from '@/lib/catalog';
@@ -17,7 +17,7 @@ export type ActionState = { ok?: string; error?: string };
 const MODES = ['all', 'files', 'sub'] as const;
 
 export async function deleteSeriesAction(_prev: ActionState, form: FormData): Promise<ActionState> {
-  await requireSession();
+  if (!(await guard('storage'))) return { error: DENIED };
   const db = getDb();
   const tmdbId = Number(form.get('tmdbId'));
   const mode = String(form.get('mode')) as (typeof MODES)[number];
@@ -38,7 +38,7 @@ export async function deleteSeriesAction(_prev: ActionState, form: FormData): Pr
 
 /** Первая уборка по правилу: удалить отмеченное, правило дальше работает само. */
 export async function confirmRetentionAction(_prev: ActionState, form: FormData): Promise<ActionState> {
-  await requireSession();
+  if (!(await guard('storage'))) return { error: DENIED };
   const db = getDb();
   const paths = getSetting<Paths>(db, 'paths');
   if (!paths) return { error: 'Не настроены папки' };
@@ -55,7 +55,7 @@ export async function confirmRetentionAction(_prev: ActionState, form: FormData)
 
 /** Исключения сериала: «хранить все сезоны», «удалять через N дней». */
 export async function setExceptionsAction(form: FormData) {
-  await requireSession();
+  if (!(await guard('storage'))) return;
   const db = getDb();
   const t = getTitleByTmdbId(db, Number(form.get('tmdbId')), form.get('type') === 'movie' ? 'movie' : 'tv');
   if (!t) return;

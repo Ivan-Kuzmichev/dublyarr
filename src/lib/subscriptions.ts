@@ -2,14 +2,14 @@ import { movieCard } from './movie-card';
 import { isMovieProfile, type MovieProfile } from './movie-profile';
 import { and, eq, gte, gt, max, min } from 'drizzle-orm';
 import type { Db } from './db/client';
-import { episodes, retiredEpisodes, seasons, subscriptions, titles, type Episode, type Subscription, type Title } from './db/schema';
+import { episodes, retiredEpisodes, seasons, subscriptions, titles, users, type Episode, type Subscription, type Title } from './db/schema';
 import type { Profile } from './profile';
 
 export class SubscriptionError extends Error {}
 
 export const getSubscription = (db: Db, titleId: number) => db.select().from(subscriptions).where(eq(subscriptions.titleId, titleId)).get();
 
-export function subscribe(db: Db, titleId: number, profile: Profile | MovieProfile, now = Date.now()): Subscription {
+export function subscribe(db: Db, titleId: number, profile: Profile | MovieProfile, now = Date.now(), addedBy: number | null = null): Subscription {
   const t = db.select({ id: titles.id, kind: titles.kind }).from(titles).where(eq(titles.id, titleId)).get();
   if (!t) throw new SubscriptionError('Сериал не найден');
   if ((t.kind === 'movie') !== isMovieProfile(profile)) throw new SubscriptionError('Профиль не подходит к этому виду');
@@ -17,7 +17,7 @@ export function subscribe(db: Db, titleId: number, profile: Profile | MovieProfi
   const maxSeason = db.select({ n: max(seasons.number) }).from(seasons).where(eq(seasons.titleId, titleId)).get()?.n ?? null;
   // новая подписка — заново: удалённые раньше серии снова нужны
   db.delete(retiredEpisodes).where(eq(retiredEpisodes.titleId, titleId)).run();
-  return db.insert(subscriptions).values({ titleId, profile, maxSeason, subscribedAt: now, updatedAt: now }).returning().get();
+  return db.insert(subscriptions).values({ titleId, profile, maxSeason, addedBy, subscribedAt: now, updatedAt: now }).returning().get();
 }
 
 export function updateSubscription(db: Db, titleId: number, profile: Profile | MovieProfile, now = Date.now()): Subscription {
@@ -96,3 +96,9 @@ export const libraryCounts = (items: LibraryItem[]): Record<Exclude<LibraryFilte
   airing: filterLibrary(items, 'airing').length,
   ended: filterLibrary(items, 'ended').length,
 });
+
+/** Кто добавил подписку: логин; учётку удалили — «удалённая учётка»; подписка до 2.3 — null. */
+export function subscriptionAuthor(db: Db, sub: { addedBy: number | null }): string | null {
+  if (sub.addedBy === null) return null;
+  return db.select({ u: users.username }).from(users).where(eq(users.id, sub.addedBy)).get()?.u ?? 'удалённая учётка';
+}

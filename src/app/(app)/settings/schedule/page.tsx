@@ -5,6 +5,7 @@ import { getSchedule, getSpeed, nextSearchAt, speedSummary } from '@/lib/schedul
 import { eagerTitles } from '@/lib/forecast';
 import { ScheduleForm } from './ScheduleForm';
 import { SpeedGrid } from './SpeedGrid';
+import { requirePage } from '@/lib/auth/current';
 
 export const metadata = { title: 'Расписание · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -21,7 +22,8 @@ function nextLabel(db: ReturnType<typeof getDb>, now: Date) {
   return `следующая проверка ${sameDay ? '' : 'завтра '}в ${hhmm(next)}`;
 }
 
-export default function SchedulePage() {
+export default async function SchedulePage() {
+  await requirePage('admin');
   const db = getDb();
   const now = new Date();
   const speed = getSpeed(db);

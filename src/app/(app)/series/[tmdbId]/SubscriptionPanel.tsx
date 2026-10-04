@@ -8,14 +8,14 @@ const Rule = ({ on, children }: { on: boolean; children: React.ReactNode }) => (
 );
 
 /** Блок «Подписка» в карточке сериала (Series.dc.html, правая колонка). */
-export function SubscriptionPanel({ profile, studioNames }: { profile: Profile; studioNames: Record<number, string> }) {
+export function SubscriptionPanel({ profile, studioNames, author }: { profile: Profile; studioNames: Record<number, string>; author?: string | null }) {
   const name = (id: number) => studioNames[id];
   const d = describeProfile(profile, name);
   return (
     <section aria-label="Подписка" className="flex flex-col gap-4 rounded-2xl border border-line bg-surface p-5">
       <div className="flex items-baseline justify-between">
         <h2 className="m-0 text-lg font-semibold">Подписка</h2>
-        <span className="text-[13px] text-accent">активна</span>
+        <span className="text-[13px] text-accent">активна{author ? ` · добавил ${author}` : ''}</span>
       </div>
       <ol className="m-0 flex list-none flex-col gap-2 p-0">
         {profile.dubs.map((p, i) => (

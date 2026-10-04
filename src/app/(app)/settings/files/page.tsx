@@ -6,6 +6,7 @@ import { getProcessing } from '@/lib/media/tracks';
 import { systemRunner } from '@/lib/media/runner';
 import { formatSize } from '@/lib/format';
 import { ProcessingForm } from './ProcessingForm';
+import { requirePage } from '@/lib/auth/current';
 
 export const metadata = { title: 'Обработка файлов · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -28,6 +29,7 @@ function Tracks({ label, items }: { label: string; items: { kind: string; name: 
 }
 
 export default async function FilesPage() {
+  await requirePage('admin');
   const db = getDb();
   const avail = await systemRunner.available();
   const last = db

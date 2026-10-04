@@ -1,3 +1,4 @@
+import { can, isAdmin } from './auth/permissions';
 import { isMovieProfile } from './movie-profile';
 import { and, eq, gte, inArray, lte } from 'drizzle-orm';
 import type { Db } from './db/client';
@@ -393,4 +394,11 @@ export function speedBlock(db: Db, titleId: number): { name: string; text: strin
 /** Основание прогноза по студиям — для окна подписки. */
 export function delayBasis(db: Db, titleId: number): Record<number, string> {
   return Object.fromEntries([...studioDelays(db, titleId).values()].map((d) => [d.studioId, d.basisText]));
+}
+
+/** «Требует внимания» для учётки: вопросы о раздачах — с правом ответа, уборка и старые копии — с хранилищем, настройки — админу. */
+export function attentionFor<T extends { href: string }>(user: Parameters<typeof can>[0], items: T[]): T[] {
+  return items.filter((i) =>
+    i.href.startsWith('/search/') ? can(user, 'answer') : /^\/(cleanup|old-copies|storage)/.test(i.href) ? can(user, 'storage') : i.href.startsWith('/settings') ? isAdmin(user) : true,
+  );
 }

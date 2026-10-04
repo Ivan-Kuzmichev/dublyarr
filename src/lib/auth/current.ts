@@ -1,6 +1,7 @@
 import 'server-only';
 import { cookies, headers } from 'next/headers';
-import { redirect } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
+import { can, isAdmin, type Permission } from './permissions';
 import { getDb } from '../db/client';
 import { validateSession } from './sessions';
 import { hasAnyUser } from './users';
@@ -21,4 +22,26 @@ export async function requireSession() {
   const s = await getCurrentSession();
   if (s) return s;
   redirect(hasAnyUser(getDb()) ? '/login' : '/setup');
+}
+
+export const DENIED = 'Недостаточно прав';
+
+/** Действие: сеанс с правом (или админ), иначе null — action отвечает DENIED и ничего не меняет. */
+export async function guard(p: Permission | 'admin') {
+  const s = await requireSession();
+  return (p === 'admin' ? isAdmin(s.user) : can(s.user, p)) ? s : null;
+}
+
+/** Страница только для админа: пользователю — 404 (раздела для него нет). */
+export async function requireAdmin() {
+  const s = await requireSession();
+  if (!isAdmin(s.user)) notFound();
+  return s;
+}
+
+/** Страница по праву: хотя бы одно из прав (или админ), иначе 404. */
+export async function requirePage(...perms: (Permission | 'admin')[]) {
+  const s = await requireSession();
+  if (!perms.some((p) => (p === 'admin' ? isAdmin(s.user) : can(s.user, p)))) notFound();
+  return s;
 }

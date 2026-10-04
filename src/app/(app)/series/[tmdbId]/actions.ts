@@ -2,14 +2,14 @@
 
 import { revalidatePath } from 'next/cache';
 import { getDb } from '@/lib/db/client';
-import { requireSession } from '@/lib/auth/current';
+import { DENIED, guard } from '@/lib/auth/current';
 import { getTitleByTmdbId, setKind, syncTitle } from '@/lib/catalog';
 import { getTmdb } from '@/lib/tmdb';
 
 export type RefreshState = { error?: string };
 
 export async function refreshTitleAction(_prev: RefreshState, form: FormData): Promise<RefreshState> {
-  await requireSession();
+  if (!(await guard('search'))) return { error: DENIED };
   const db = getDb();
   const tmdb = getTmdb(db);
   const tmdbId = Number(form.get('tmdbId'));
@@ -24,7 +24,7 @@ export async function refreshTitleAction(_prev: RefreshState, form: FormData): P
 }
 
 export async function setKindAction(tmdbId: number, kind: 'series' | 'anime') {
-  await requireSession();
+  if (!(await guard('search'))) return;
   const db = getDb();
   const t = getTitleByTmdbId(db, tmdbId);
   if (!t) return;

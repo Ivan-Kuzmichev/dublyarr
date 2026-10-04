@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { testDb } from './helpers';
-import { episodeStatuses, todayData, calendarWeek, mondayOf, seriesDubColumns, speedBlock, delayBasis } from '@/lib/dashboard';
+import { episodeStatuses, todayData, calendarWeek, mondayOf, seriesDubColumns, speedBlock, delayBasis, attentionFor } from '@/lib/dashboard';
 import { setSetting } from '@/lib/settings';
 import { eq } from 'drizzle-orm';
 import { downloads, episodeFiles, episodes, notices, oldCopies, seasons, studioSightings, studios, subscriptions, titles, wantedState } from '@/lib/db/schema';
@@ -182,4 +182,17 @@ test('«Новые серии»: за 48 ч; замена на лучшую ко
   db.insert(episodeFiles).values({ titleId: t.id, season: 1, number: 4, path: 'D/S01E04.mkv', size: 1, resolution: 1080, method: 'hardlink', importedAt: NOW - 50 * HOUR }).run();
   // S01E01 (час назад) — новая; S01E03 — замена; S01E04 — старше 48 ч
   expect(todayData(db, today, NOW).fresh.map((f) => f.code)).toEqual(['S01E01']);
+});
+
+test('«Требует внимания» по правам: вопросы — с правом ответа, уборка — с хранилищем, настройки — админу', () => {
+  const items = [
+    { tmdbId: 1, title: 'A', code: 'S01E01', text: 'Сомнительное совпадение', href: '/search/1?s=1&e=1' },
+    { tmdbId: 0, title: 'Уборка', code: '', text: 'ждёт подтверждения', href: '/cleanup' },
+    { tmdbId: 0, title: 'Старые копии', code: '', text: 'x', href: '/old-copies' },
+    { tmdbId: 0, title: 'Не задана папка фильмов', code: '', text: 'x', href: '/settings/download' },
+  ];
+  const user = (p: Record<string, boolean>) => ({ role: 'user' as const, permissions: p, disabled: false });
+  expect(attentionFor(user({ answer: true }), items).map((i) => i.href)).toEqual(['/search/1?s=1&e=1']);
+  expect(attentionFor(user({ storage: true }), items).map((i) => i.href)).toEqual(['/cleanup', '/old-copies']);
+  expect(attentionFor({ role: 'admin', permissions: {}, disabled: false }, items)).toHaveLength(4);
 });

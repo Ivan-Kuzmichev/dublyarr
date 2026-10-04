@@ -9,6 +9,7 @@ import { logoutAction } from '@/app/login/actions';
 import { TwoFactorCard } from './TwoFactorCard';
 import { PasswordCard } from './PasswordCard';
 import { ApiCard } from './ApiCard';
+import { isAdmin } from '@/lib/auth/permissions';
 import { getApiEnabled, listApiTokens } from '@/lib/api/tokens';
 import { revokeSessionAction, logoutEverywhereAction } from './actions';
 
@@ -45,7 +46,7 @@ export default async function SecurityPage() {
       <SectionHeader title="Безопасность" description={`Вход для ${user.username}: пароль и код из приложения.`} />
       <TwoFactorCard enabled={user.totpEnabled} />
       <PasswordCard />
-      <ApiCard enabled={getApiEnabled(getDb())} tokens={tokens} />
+      {isAdmin(user) && <ApiCard enabled={getApiEnabled(getDb())} tokens={tokens} />}
       <Card className="flex flex-col gap-4">
         <CardTitle note={`${sessions.length}`}>Активные сеансы</CardTitle>
         <Table<Session>

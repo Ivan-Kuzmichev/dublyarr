@@ -7,7 +7,7 @@ import { Icon } from '@/components/ui/Icon';
 import { ServiceRow, type ServiceStatus } from '@/components/ui/StatusDot';
 import { DESKTOP_NAV, activeNavId } from './nav';
 
-export function Sidebar({ services }: { services: ServiceStatus[] }) {
+export function Sidebar({ services, storage = true }: { services: ServiceStatus[]; storage?: boolean }) {
   const active = activeNavId(usePathname());
   return (
     <aside className="sticky top-0 flex h-dvh w-[232px] shrink-0 flex-col gap-7 border-r border-line-nav bg-sidebar px-3.5 py-[22px] box-border">
@@ -15,7 +15,7 @@ export function Sidebar({ services }: { services: ServiceStatus[] }) {
         <Logo />
       </Link>
       <nav aria-label="Основная навигация" className="flex flex-col gap-0.5">
-        {DESKTOP_NAV.map((item) => {
+        {DESKTOP_NAV.filter((item) => storage || item.id !== 'storage').map((item) => {
           const on = item.id === active;
           return (
             <Link
