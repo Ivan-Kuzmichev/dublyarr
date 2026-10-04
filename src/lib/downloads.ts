@@ -286,7 +286,15 @@ export function topicDownload(db: Db, release: Release, season?: number): Downlo
     .get()?.d;
 }
 
-export type SwitchResult = { switched: true; download: Download; added: EpisodeRef[] } | { switched: false; reason: 'same-hash' | 'no-new-episodes' };
+export type SwitchResult = { switched: true; download: Download; added: EpisodeRef[] } | { switched: false; reason: 'same-hash' | 'no-new-episodes' | 'other-release' };
+
+/** Новая версия раздачи — в основном те же файлы. Один адрес страницы ещё не значит одну раздачу: у AniLibria все паки тайтла на одной странице. */
+function sameRelease(oldFiles: { name: string }[] | null, newFiles: { name: string }[]): boolean {
+  if (!oldFiles?.length) return true; // magnet без списка файлов — сравнить не с чем
+  const base = (n: string) => n.split('/').pop()!.toLowerCase();
+  const fresh = new Set(newFiles.map((f) => base(f.name)));
+  return oldFiles.filter((f) => fresh.has(base(f.name))).length * 2 >= oldFiles.length;
+}
 
 /** «+серия 6», «+серии 6–7», «+серии 6, 8». */
 function addedNote(eps: EpisodeRef[]) {
@@ -316,6 +324,7 @@ export async function switchTorrent(db: Db, deps: DownloadDeps, old: Download, t
   const map = filesForEpisodesStrict(files, old.season, all.filter((e) => e.season === old.season).map((e) => e.number));
   const found = all.filter((e) => e.season === old.season && map.has(e.number));
   if (!found.length) return { switched: false, reason: 'no-new-episodes' };
+  if (!sameRelease(old.files, files)) return { switched: false, reason: 'other-release' };
   // эта версия уже есть у нас — дополняем её, а не добавляем заново
   const known = db.select().from(downloads).where(eq(downloads.hash, meta.infohash)).get();
   if (known) {

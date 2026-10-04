@@ -151,3 +151,12 @@ test('новая версия топика в qBittorrent 5 появляется
   expect(res).toMatchObject({ switched: true });
   expect(late.torrents.get(parseTorrent(v2).infohash)!.files.map((f) => f.priority)).toEqual([0, 0, 1]);
 });
+
+test('та же страница, но другой торрент (AniLibria: все паки тайтла на одной странице) — не новая версия', async () => {
+  const { db, fq, deps, old } = await setup();
+  const other = torrent(['A.S01E165.mkv', 'A.S01E166.mkv', 'A.S01E03.mkv'], 3); // другие файлы; общая с паком только E03
+  const res = await switchTorrent(db, deps, old, other, [ep(3)]);
+  expect(res).toEqual({ switched: false, reason: 'other-release' });
+  expect(fq.torrents.has(old.hash)).toBe(true); // старый пак в клиенте не тронут
+  expect(db.select().from(downloads).where(eq(downloads.id, old.id)).get()!.state).toBe('downloading');
+});

@@ -27,7 +27,7 @@ export async function handleApi(db: Db, req: ApiRequest, deps: ApiDeps): Promise
   const started = Date.now();
   const access = checkApiAccess(db, req.headers, deps.now);
   const done = (r: ApiResponse, token?: string): ApiResponse => {
-    log.info({ method: req.method, path: `/${req.path.join('/')}`, token, status: r.status, ms: Date.now() - started }, 'api');
+    log.info({ method: req.method, path: `/${req.path.join('/')}`, tokenName: token, status: r.status, ms: Date.now() - started }, 'api');
     return r;
   };
   if (!('ok' in access)) return done({ status: access.status, body: { error: access.error } });
