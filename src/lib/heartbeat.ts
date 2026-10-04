@@ -30,6 +30,7 @@ const JOB_LABEL: Record<string, string> = {
   'downloads.sync': 'синхронизация загрузок',
   'packs.check': 'проверка паков',
   'cleanup.run': 'уборка загрузок',
+  'intros.tick': 'разметка заставок',
   'retention.run': 'уборка медиатеки',
   'retention.tick': 'уборка медиатеки',
   'tmdb.refresh-all': 'обновление из TMDB',

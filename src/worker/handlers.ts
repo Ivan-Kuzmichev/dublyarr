@@ -26,6 +26,9 @@ import { eq } from 'drizzle-orm';
 import path from 'node:path';
 import { getConfig } from '../lib/config';
 import { trainVersion, trainingDue } from '../lib/laya/versions';
+import { processSeason } from '../lib/intros/run';
+import { systemIntroTools } from '../lib/intros/tools';
+import { getIntroSettings } from '../lib/intros/settings';
 
 const log = logger('worker');
 
@@ -90,6 +93,13 @@ function telegramFor(db: Db) {
 
 export const buildHandlers = (db: Db): Record<string, Handler> => ({
   'downloads.sync': () => syncJob(db),
+  // заставки и титры: один сезон за проход (главы для VidHub)
+  'intros.tick': async () => {
+    const media = getSetting<Paths>(db, 'paths')?.media;
+    if (!media || !getIntroSettings(db).on || !(await systemIntroTools.available())) return;
+    const r = await processSeason(db, systemIntroTools, { media, cacheDir: path.join(getConfig().dataDir, 'cache', 'fp'), now: Date.now() });
+    if (r) log.info(r, 'intros season');
+  },
   // открыли страницу сериала/фильма — найти раздачи (окно подписки покажет найденные студии)
   'title.search': async (payload) => {
     const titleId = Number((payload as { titleId?: number }).titleId);
