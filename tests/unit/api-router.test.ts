@@ -53,3 +53,16 @@ test('logs: каталога нет — пустой список', async () => 
   const { call } = api();
   expect(await call('GET', 'logs?area=qbit')).toEqual({ status: 200, body: [] });
 });
+
+test('журнал запросов API: имя токена видно (не маскируется как секрет)', async () => {
+  const { Writable } = await import('node:stream');
+  const { setLogDestination, applyLogSettings } = await import('@/lib/log');
+  const lines: Record<string, unknown>[] = [];
+  setLogDestination(new Writable({ write(c, _e, cb) { for (const l of String(c).trim().split('\n')) lines.push(JSON.parse(l)); cb(); } }));
+  applyLogSettings({ level: 'info', areas: {} });
+  const { call, token } = api();
+  await call('GET', 'status');
+  const row = lines.find((l) => l.area === 'api' && l.msg === 'api')!;
+  expect(row).toMatchObject({ tokenName: 'claude', status: 200 });
+  expect(JSON.stringify(lines)).not.toContain(token);
+});
