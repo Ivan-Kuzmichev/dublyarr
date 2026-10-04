@@ -72,7 +72,7 @@ export function episodeStatuses(db: Db, titleId: number, today: string): Map<str
     out.set(key(f.season, f.number), {
       state: 'downloaded',
       text: 'Скачана',
-      detail: [f.studioLabel, [quality(f.resolution), f.hdr ? 'HDR' : ''].filter(Boolean).join(' '), formatSize(f.size), f.processed ? 'пересобран' : ''].filter(Boolean).join(' · '),
+      detail: [f.studioLabel, [quality(f.resolution), f.hdr ? 'HDR' : ''].filter(Boolean).join(' '), formatSize(f.size), f.processed ? 'пересобран' : '', f.introState === 'marked' ? 'размечено' : ''].filter(Boolean).join(' · '),
     });
   return out;
 }
