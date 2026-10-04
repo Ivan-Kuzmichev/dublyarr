@@ -6,6 +6,8 @@ import { logger } from '../log';
 export type Runner = {
   available(): Promise<{ ffprobe: boolean; mkvmerge: boolean }>;
   probe(file: string): Promise<unknown>;
+  /** `mkvmerge -J`: контейнер и номера дорожек; null — не прочитал */
+  identify(file: string): Promise<unknown>;
   mkvmerge(args: string[]): Promise<{ code: number; output: string }>;
 };
 
@@ -33,6 +35,14 @@ export const systemRunner: Runner = {
     const r = await run('ffprobe', ['-v', 'error', '-print_format', 'json', '-show_streams', '-show_format', file], 120_000);
     if (r.code !== 0) throw new Error('Файл не читается');
     return JSON.parse(r.stdout);
+  },
+  async identify(file) {
+    const r = await run('mkvmerge', ['-J', file], 120_000);
+    try {
+      return JSON.parse(r.stdout);
+    } catch {
+      return null;
+    }
   },
   async mkvmerge(args) {
     // mkvmerge: 0 — успех, 1 — предупреждения, 2 — ошибка

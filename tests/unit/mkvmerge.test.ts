@@ -30,6 +30,7 @@ test('внешние дорожки — отдельными входами с �
     '-o', '/m/out.mkv',
     '--audio-tracks', '1,2,3',
     '--no-subtitles',
+    '--default-track-flag', '1:1', '--default-track-flag', '2:0', '--default-track-flag', '3:0',
     '--track-order', '0:0,0:1,0:2,0:3,1:0,2:0',
     '/d/src.mkv',
     '--language', '0:rus', '--track-name', '0:LostFilm', '--default-track-flag', '0:0', '/d/LostFilm/e.mka',
@@ -49,4 +50,11 @@ test('двойная серия и длинный финал — не «не т�
   expect(wrongEpisode(125 * 60, 55)).toBeNull(); // 2,3× — финал
   expect(wrongEpisode(150 * 60, 55)).toBe('Не та серия: 2 ч 30 мин вместо ~55 мин');
   expect(wrongEpisode(110 * 60, 55, 2)).toBeNull(); // файл на две серии
+});
+
+test('имя и язык дорожек явно (из mp4/avi mkvmerge их не берёт)', () => {
+  const plan = { changed: true, audio: [1], subs: [], order: [0, 1], defaults: { audio: 1, sub: null }, external: [], untouchedAudio: false };
+  expect(mkvmergeArgs('/d/a.mp4', '/m/o.mkv', plan, new Map([[1, { name: 'HDrezka Studio', language: 'rus' }]]))).toEqual([
+    '-o', '/m/o.mkv', '--audio-tracks', '1', '--no-subtitles', '--default-track-flag', '1:1', '--track-order', '0:0,0:1', '--track-name', '1:HDrezka Studio', '--language', '1:rus', '/d/a.mp4',
+  ]);
 });

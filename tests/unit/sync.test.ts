@@ -293,6 +293,7 @@ describe('пересборка при импорте', () => {
     const runner: Runner = {
       available: async () => ({ ffprobe: o.avail !== false, mkvmerge: o.avail !== false }),
       probe: async () => o.json ?? probeJson(),
+      identify: async () => null,
       async mkvmerge(args) {
         calls.push(args);
         if ((o.code ?? 0) >= 2) return { code: 2, output: 'Error: нет места на диске' };
@@ -377,11 +378,12 @@ describe('пересборка: исправления по ревью', () => {
     ],
     format: { format_name: container, duration: '3000' },
   });
-  function runnerOf(json: unknown) {
+  function runnerOf(json: unknown, identify: unknown = null) {
     const calls: string[][] = [];
     const runner: Runner = {
       available: async () => ({ ffprobe: true, mkvmerge: true }),
       probe: async () => json,
+      identify: async () => identify,
       async mkvmerge(args) {
         calls.push(args);
         writeFileSync(args[1], 'пересобрано');
@@ -425,13 +427,26 @@ describe('пересборка: исправления по ревью', () => {
     expect(calls[0].some((a) => a.endsWith('Rus Sound/LostFilm/GoT.S01E01.mka'))).toBe(true);
   });
 
-  test('не mkv — кладётся как есть, без пересборки', async () => {
+  test('mp4 пересобирается в mkv: номера дорожек — от mkvmerge, не от ffprobe', async () => {
     const s = await packSetup(['GoT.S01E01.mp4', 'GoT.S01E02.mp4']);
     s.finish(s.d.hash);
-    const { runner, calls } = runnerOf(multiProbe('mov,mp4,m4a,3gp,3g2,mj2'));
+    // у mkvmerge звук идёт первым: Original = 0, LostFilm = 1, видео = 2
+    const identify = { container: { recognized: true, supported: true }, tracks: [{ id: 0, type: 'audio' }, { id: 1, type: 'audio' }, { id: 2, type: 'video' }] };
+    const { runner, calls } = runnerOf(multiProbe('mov,mp4,m4a,3gp,3g2,mj2'), identify);
+    await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: HOUR, runner });
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toEqual(expect.arrayContaining(['--audio-tracks', '1,0', '--track-order', '0:2,0:1,0:0']));
+    expect(s.db.select().from(episodeFiles).get()).toMatchObject({ processed: true });
+    expect(s.db.select().from(episodeFiles).get()!.path.endsWith('.mkv')).toBe(true);
+  });
+
+  test('контейнер, который mkvmerge не читает (wmv), — кладётся как есть', async () => {
+    const s = await packSetup(['GoT.S01E01.wmv', 'GoT.S01E02.wmv']);
+    s.finish(s.d.hash);
+    const { runner, calls } = runnerOf(multiProbe('asf'), { container: { recognized: false, supported: false }, tracks: [] });
     await syncDownloads(s.db, { qbit: s.fq.qbit, paths: s.paths, now: HOUR, runner });
     expect(calls).toEqual([]);
-    expect(s.db.select().from(episodeFiles).all().map((f) => f.path.endsWith('.mp4'))).toEqual([true, true]);
+    expect(s.db.select().from(episodeFiles).all().map((f) => f.path.endsWith('.wmv'))).toEqual([true, true]);
   });
 });
 

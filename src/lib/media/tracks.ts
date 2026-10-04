@@ -119,7 +119,8 @@ export function planTracks(
   const subs = subStreams.map((s) => s.index);
   const rus = subStreams.filter((s) => s.language === 'rus');
   const sub = st.defaultSubs === 'forced' ? (rus.find(isForcedSub)?.index ?? null) : st.defaultSubs === 'full' ? (rus.find((s) => !isForcedSub(s))?.index ?? null) : null;
-  const defaults = { audio: untouchedAudio ? null : wanted[0].index, sub };
+  // не опознали — оставляем флаг источника (первая «по умолчанию»), чтобы mp4/avi → mkv не сделал такими все дорожки
+  const defaults = { audio: untouchedAudio ? (audios.find((s) => s.isDefault) ?? audios[0])?.index ?? null : wanted[0].index, sub };
   const external = st.external ? o.external : [];
 
   const order = [...videos.map((s) => s.index), ...audio, ...subs];

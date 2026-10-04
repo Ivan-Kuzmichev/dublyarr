@@ -123,6 +123,7 @@ test('пересборка фильма: дорожка «Дубляж» — н�
     const r: Runner = {
       available: async () => ({ ffprobe: true, mkvmerge: true }),
       probe: async () => probe(min),
+      identify: async () => null,
       async mkvmerge(args) {
         calls.push(args);
         writeFileSync(args[1], 'пересобрано');

@@ -2,7 +2,7 @@ import path from 'node:path';
 
 // Номер серии по имени файла в раздаче: «S01E03», «1x03», «E05», «Серия 3», «03. Название», « - 03 [1080p]», «[03]».
 
-export const VIDEO_EXT = new Set(['.mkv', '.mp4', '.avi', '.m4v', '.ts', '.webm']);
+export const VIDEO_EXT = new Set(['.mkv', '.mp4', '.avi', '.m4v', '.ts', '.m2ts', '.webm', '.mov', '.flv', '.wmv', '.mpg', '.mpeg']);
 export const isVideo = (name: string) => VIDEO_EXT.has(path.extname(name).toLowerCase());
 const isSample = (name: string) => /(?:^|[\s._-])sample(?:$|[\s._-])/i.test(path.basename(name, path.extname(name)));
 

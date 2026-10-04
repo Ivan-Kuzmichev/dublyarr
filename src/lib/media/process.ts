@@ -4,6 +4,7 @@ import path from 'node:path';
 import { parseProbe, type Probe } from './probe';
 import { planTracks, type External, type ProcessingSettings, type TrackPlan } from './tracks';
 import { mkvmergeArgs } from './mkvmerge';
+import { mkvTrackIds, remapPlan, trackMeta } from './track-ids';
 import { wrongEpisode, wrongMovie } from './checks';
 import type { Runner } from './runner';
 
@@ -45,12 +46,14 @@ export async function processEpisode(o: {
   const wrong = o.movie ? wrongMovie(probe.duration, o.runtime) : wrongEpisode(probe.duration, o.runtime, o.episodesInFile ?? 1);
   if (wrong) throw new WrongEpisodeError(wrong);
   const plan = planTracks(probe, { wanted: o.wanted, backups: o.backups, originalLang: o.originalLang, studios: o.studios, settings: o.settings, external: o.external });
-  // пока пересобираем только mkv: номера дорожек mkvmerge для других контейнеров не проверены
-  if (!avail.mkvmerge || !plan.changed || probe.container !== 'matroska') return { kind: 'link', probe };
+  if (!avail.mkvmerge || !plan.changed) return { kind: 'link', probe };
+  // любой контейнер, который читает mkvmerge (mp4, avi, ts…), — результат mkv; номера дорожек — от mkvmerge
+  const ids = mkvTrackIds(probe, probe.container === 'matroska' ? null : await o.runner.identify(o.src));
+  if (!ids) return { kind: 'link', probe };
   if (o.allowRemux === false) throw new RemuxDeferred('пересборка в следующий проход');
   await mkdir(path.join(o.targetDir, TMP_DIR), { recursive: true });
   const tmp = path.join(o.targetDir, TMP_DIR, `.dy-${randomBytes(4).toString('hex')}.tmp.mkv`);
-  const r = await o.runner.mkvmerge(mkvmergeArgs(o.src, tmp, plan));
+  const r = await o.runner.mkvmerge(mkvmergeArgs(o.src, tmp, remapPlan(plan, ids), trackMeta(probe, ids)));
   if (r.code >= 2) {
     await rm(tmp, { force: true });
     const last = r.output.split('\n').filter(Boolean).at(-1) ?? 'ошибка';

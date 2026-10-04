@@ -37,7 +37,7 @@ describe('выбор дорожек', () => {
   test('нужная озвучка не опознана — аудио не трогаем', () => {
     const p = plan({}, [3]);
     expect(p).toMatchObject({ untouchedAudio: true, audio: [1, 2, 3] });
-    expect(p.defaults.audio).toBeNull();
+    expect(p.defaults.audio).toBe(1); // флаг «по умолчанию» — как в источнике (mp4 → mkv иначе даст всем дорожкам)
   });
   test('субтитры: языки, полные, без субтитров по умолчанию', () => {
     expect(plan({ keepSubs: ['rus'] }).subs).toEqual([4, 5]);

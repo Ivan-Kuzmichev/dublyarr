@@ -1,4 +1,4 @@
-// Проверка пересборки настоящими ffprobe/mkvmerge (внутри образа Docker): node dist/remux-smoke.cjs <вход.mkv> <папка>
+// Проверка пересборки настоящими ffprobe/mkvmerge (внутри образа Docker): node dist/remux-smoke.cjs <вход.mkv|mp4|avi> <папка> [nosubs]
 import { rename } from "node:fs/promises";
 import path from "node:path";
 import { processEpisode } from "../src/lib/media/process";
@@ -6,7 +6,8 @@ import { systemRunner } from "../src/lib/media/runner";
 import { parseProbe } from "../src/lib/media/probe";
 import { DEFAULT_PROCESSING } from "../src/lib/media/tracks";
 
-const [src, dir] = process.argv.slice(2);
+const [src, dir, mode] = process.argv.slice(2);
+const withSubs = mode !== "nosubs";
 const fail = (msg: string) => {
   console.error(`remux smoke: FAIL — ${msg}`);
   process.exit(1);
@@ -32,7 +33,7 @@ async function main() {
     external: [],
   });
   if (r.kind !== "remux") fail(`ожидалась пересборка, получено ${r.kind}`);
-  const out = path.join(dir, "out.mkv");
+  const out = path.join(dir, `out-${path.basename(src)}.mkv`);
   await rename((r as { tmp: string }).tmp, out);
   const p = parseProbe(await systemRunner.probe(out));
   const audio = p.streams.filter((s) => s.type === "audio");
@@ -46,11 +47,12 @@ async function main() {
   if (audio.length !== 2) fail(`аудио: ${audio.length} вместо 2`);
   if (audio[0].title !== "HDrezka Studio" || !audio[0].isDefault)
     fail("первая аудиодорожка должна быть HDrezka по умолчанию");
-  if (audio[1].language !== "eng" || audio[1].isDefault)
+  // в avi языков дорожек нет — оригинал узнаём по имени
+  if ((audio[1].language ?? (audio[1].title === "Original" ? "eng" : null)) !== "eng" || audio[1].isDefault)
     fail("вторая — оригинал, не по умолчанию");
-  if (subs.length !== 2 || !subs[0].isDefault || subs[1].isDefault)
+  if (withSubs && (subs.length !== 2 || !subs[0].isDefault || subs[1].isDefault))
     fail("субтитры: форсированные по умолчанию, полные — нет");
-  console.log("remux smoke: OK");
+  console.log(`remux smoke: OK (${path.extname(src)})`);
 }
 
 main().catch((e) => fail(e instanceof Error ? e.message : String(e)));
