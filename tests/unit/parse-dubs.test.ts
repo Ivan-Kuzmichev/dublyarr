@@ -121,3 +121,13 @@ test('«свой трекер» не перекрывает студию, явн
   // без явной студии — по трекеру, как раньше
   expect(parseRelease('Dogulwang [01-12 из 12] [RUS(int)]', {}, { id: 'anidub', name: 'AniDUB' }, studios).dubs.map((d) => d.label)).toEqual(['AniDUB']);
 });
+
+test('канал или стриминг в скобках — не студия озвучки: «MVO (HBO)» — многоголосая, студия не указана', () => {
+  const r = parseDubs('Lanterns - S1E1-8 - 2026  MVO (HBO) HEVC WEBDL 1080p - RUSSIAN', [], tracker('Kinozal'), find, studios);
+  expect(r.dubs).toEqual([{ kind: 'mvo', studioId: null, label: 'MVO', by: 'none' }]);
+  for (const n of ['Netflix', 'Amazon', 'Apple TV+', 'Hulu', 'Disney+', 'HBO Max']) {
+    expect(parseDubs(`Show - S1E1 - 2026  DUB (${n}) 1080p`, [], tracker('Kinozal'), find, studios).dubs, n).toEqual([{ kind: 'dub', studioId: null, label: 'DUB', by: 'none' }]);
+  }
+  // рядом с настоящей студией — остаётся только она
+  expect(parseDubs('Show - S1E1 - 2026  MVO (HBO, LostFilm)', [], tracker('Kinozal'), find, studios).dubs.map((d) => nameOf(d.studioId))).toEqual(['LostFilm']);
+});

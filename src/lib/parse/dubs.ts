@@ -22,6 +22,8 @@ export const GENERIC_DUB = /^(?:DUB|MVO|DVO|VO|AVO|Русская озвучка
 const KIND: Record<string, DubKind> = { dub: 'dub', mvo: 'mvo', dvo: 'dvo', vo: 'vo', avo: 'avo' };
 const TAG_KIND: Record<string, DubKind> = { дубляж: 'dub', многоголосый: 'mvo', двухголосый: 'dvo', одноголосый: 'vo', авторский: 'avo' };
 const LANGUAGE = /^(?:ukr|укр|украинский|eng|english|англ|rus|рус|jap|jpn|ger|fr)$/i;
+/** Каналы и стриминги в скобках — откуда сериал, а не студия озвучки: «MVO (HBO)» (решение владельца). */
+const NETWORK = /^(?:HBO(?:\s*Max)?|Max|Netflix|Amazon(?:\s*Prime)?|Prime\s*Video|Apple(?:\s*TV\+?)?|Hulu|Disney\+?|AMC\+?|FX|Showtime|Starz|Peacock|Paramount\+?|BBC)$/i;
 const STOP = 'Sub|Original|Оригинал|WEB|WEBDL|WEB-DL|WEBRip|HEVC|BDRip|Rus|RUSSIAN|Eng|AVC|HDR|DV|x264|x265|DUB|Dub|MVO|DVO|AVO|VO';
 // «6 x MVO (A, B)», «DUB (X)», «MVO Paravozik», «DUB»
 const GROUP = new RegExp(
@@ -53,9 +55,14 @@ export function parseDubs(title: string, tags: string[], tracker: TrackerRef, fi
   for (const m of title.matchAll(GROUP)) {
     const kind = KIND[m[1].toLowerCase()];
     if (m[2] !== undefined) {
-      for (const raw of m[2].split(',')) {
-        const item = raw.trim();
-        if (!item || LANGUAGE.test(item)) continue;
+      const items = m[2].split(',').map((x) => x.trim());
+      // в скобках только канал — озвучка есть, студия не названа
+      if (items.some((x) => NETWORK.test(x)) && items.every((x) => !x || NETWORK.test(x) || LANGUAGE.test(x)) && !seenNone.has(kind)) {
+        seenNone.add(kind);
+        out.push({ kind, studioId: null, label: m[1].toUpperCase(), by: 'none' });
+      }
+      for (const item of items) {
+        if (!item || LANGUAGE.test(item) || NETWORK.test(item)) continue;
         const s = find(item);
         add(s ? { kind, studioId: s.id, label: s.name, by: 'title' } : { kind, studioId: null, label: item, by: 'title' });
       }
