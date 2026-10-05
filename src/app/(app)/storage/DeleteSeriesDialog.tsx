@@ -4,19 +4,34 @@ import { useActionState, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { Icon } from '@/components/ui/Icon';
+import { formatSize } from '@/lib/format';
+import type { StoragePart } from '@/lib/storage';
 import { deleteSeriesAction, type ActionState } from './actions';
 
 const MODES = [
   { id: 'all', title: 'Удалить файлы и отписаться', sub: 'Пропадёт из библиотеки, дальше ничего не качается', label: 'Удалить всё' },
   { id: 'files', title: 'Только файлы, подписка остаётся', sub: 'Освободит место; удалённое заново не скачается, новые серии — да', label: 'Удалить файлы' },
   { id: 'sub', title: 'Только отписаться, файлы оставить', sub: 'Скачанное останется на диске, дальше ничего не качается', label: 'Отписаться' },
+  { id: 'episodes', title: 'Сезоны или серии', sub: 'Выбранное удалится и заново не скачается; подписка остаётся', label: 'Удалить выбранное' },
 ] as const;
+const key = (season: number, number: number) => `${season}:${number}`;
 
 /** Удаление сериала: три варианта; торренты сериала убираются вместе с файлами в папке загрузок. */
-export function DeleteSeriesDialog({ tmdbId, title, trigger = 'icon', movie = false }: { tmdbId: number; title: string; trigger?: 'icon' | 'button'; movie?: boolean }) {
+export function DeleteSeriesDialog({ tmdbId, title, trigger = 'icon', movie = false, parts }: { tmdbId: number; title: string; trigger?: 'icon' | 'button'; movie?: boolean; parts?: StoragePart[] }) {
   const [open, setOpen] = useState(false);
   const [mode, setMode] = useState<(typeof MODES)[number]['id']>('all');
   const [state, action, pending] = useActionState<ActionState, FormData>(deleteSeriesAction, {});
+  const [picked, setPicked] = useState<Set<string>>(new Set());
+  const [openSeason, setOpenSeason] = useState<number | null>(null);
+  const modes = MODES.filter((m) => m.id !== 'episodes' || (!movie && parts?.length));
+  const toggle = (keys: string[], on: boolean) =>
+    setPicked((p) => {
+      const n = new Set(p);
+      for (const k of keys) if (on) n.add(k);
+      else n.delete(k);
+      return n;
+    });
+  const pickedSize = (parts ?? []).flatMap((p) => p.episodes.filter((e) => picked.has(key(p.season, e.number))).map((e) => e.size)).reduce((a, b) => a + b, 0);
   const id = `del-${movie ? 'm' : 's'}${tmdbId}`;
   return (
     <>
@@ -38,7 +53,7 @@ export function DeleteSeriesDialog({ tmdbId, title, trigger = 'icon', movie = fa
             Удалить «{title}»?
           </h2>
           <div role="radiogroup" aria-label="Что удалить" className="flex flex-col gap-2.5">
-            {MODES.map((m) => (
+            {modes.map((m) => (
               <label key={m.id} className={`flex cursor-pointer gap-3 rounded-xl border p-4 ${mode === m.id ? 'border-destructive bg-surface-2' : 'border-line'}`}>
                 <input type="radio" name="pick" checked={mode === m.id} onChange={() => setMode(m.id)} className="mt-0.5 h-[18px] w-[18px] accent-[var(--color-destructive)]" />
                 <span className="flex flex-col gap-1">
@@ -48,7 +63,50 @@ export function DeleteSeriesDialog({ tmdbId, title, trigger = 'icon', movie = fa
               </label>
             ))}
           </div>
-          {mode !== 'sub' && <p className="m-0 text-[13px] text-faint">Торренты сериала уберутся из qBittorrent вместе с их файлами в папке загрузок.</p>}
+          {mode === 'episodes' && parts && (
+            <div className="flex max-h-[320px] flex-col gap-1 overflow-y-auto rounded-xl border border-line p-2">
+              {[...picked].map((k) => (
+                <input key={k} type="hidden" name="ep" value={k} />
+              ))}
+              {parts.map((p) => {
+                const keys = p.episodes.map((e) => key(p.season, e.number));
+                const all = keys.every((k) => picked.has(k));
+                const some = !all && keys.some((k) => picked.has(k));
+                return (
+                  <div key={p.season} className="flex flex-col">
+                    <div className="flex min-h-11 items-center gap-3 px-2">
+                      <input
+                        type="checkbox"
+                        aria-label={`Сезон ${p.season}`}
+                        checked={all}
+                        ref={(el) => {
+                          if (el) el.indeterminate = some;
+                        }}
+                        onChange={(e) => toggle(keys, e.target.checked)}
+                        className="h-[18px] w-[18px] accent-[var(--color-destructive)]"
+                      />
+                      <button type="button" onClick={() => setOpenSeason(openSeason === p.season ? null : p.season)} className="flex grow cursor-pointer items-baseline justify-between gap-3 text-left">
+                        <span className="text-[15px]">
+                          Сезон {p.season} <span className="text-[13px] text-faint">· серий: {p.episodes.length}</span>
+                        </span>
+                        <span className="font-mono text-[13px] text-muted">{formatSize(p.size)} {openSeason === p.season ? '▴' : '▾'}</span>
+                      </button>
+                    </div>
+                    {openSeason === p.season &&
+                      p.episodes.map((e) => (
+                        <label key={e.number} className="flex min-h-10 cursor-pointer items-center gap-3 pr-2 pl-9 text-sm text-text-2">
+                          <input type="checkbox" checked={picked.has(key(p.season, e.number))} onChange={(ev) => toggle([key(p.season, e.number)], ev.target.checked)} className="h-[18px] w-[18px] accent-[var(--color-destructive)]" />
+                          <span className="grow">Серия {e.number}</span>
+                          <span className="font-mono text-[13px] text-faint">{formatSize(e.size)}</span>
+                        </label>
+                      ))}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          {mode === 'episodes' && <p className="m-0 text-[13px] text-faint">{picked.size ? `Выбрано серий: ${picked.size} · ${formatSize(pickedSize)}. Если серия ещё раздаётся, место освободится после окончания раздачи.` : 'Отметьте сезон целиком или раскройте его и выберите серии.'}</p>}
+          {mode !== 'sub' && mode !== 'episodes' && <p className="m-0 text-[13px] text-faint">Торренты сериала уберутся из qBittorrent вместе с их файлами в папке загрузок.</p>}
           {state.error && (
             <p role="alert" className="m-0 text-sm text-danger">
               {state.error}
@@ -60,7 +118,7 @@ export function DeleteSeriesDialog({ tmdbId, title, trigger = 'icon', movie = fa
               {state.ok ? 'Закрыть' : 'Отмена'}
             </Button>
             {!state.ok && (
-              <Button type="submit" variant="destructive" disabled={pending}>
+              <Button type="submit" variant="destructive" disabled={pending || (mode === 'episodes' && !picked.size)}>
                 {MODES.find((m) => m.id === mode)!.label}
               </Button>
             )}

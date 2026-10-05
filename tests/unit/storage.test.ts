@@ -98,6 +98,11 @@ describe('данные «Хранилища»', () => {
       ['Гриффины', 'S01–S03', '2160p', 30, 'S02 + выходящий', 33],
       ['Фрирен', 'S01', '1080p', 4, 'исключение: все', 0],
     ]);
+    // для удаления по сезонам и сериям: сезоны с размером и серии
+    const parts = d.shows[0].parts;
+    expect(parts.map((p) => p.season)).toEqual([1, 2, 3]);
+    expect(parts.every((p) => p.size === p.episodes.reduce((n, e) => n + e.size, 0) && p.episodes.length > 0)).toBe(true);
+    expect(d.shows[0].parts[0].episodes[0]).toEqual({ number: expect.any(Number), size: expect.any(Number) });
     expect(d.pending.map((p) => p.label)).toEqual(['Гриффины · S01']); // по сезону
     expect(d.pendingRule).toBe('seasons');
     expect(Math.round(d.forecast.perWeek / 1024 ** 3)).toBe(3); // (10 + 4) ГБ за месяц → ~3,3 в неделю

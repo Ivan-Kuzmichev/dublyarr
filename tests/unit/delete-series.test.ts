@@ -101,3 +101,50 @@ test('удалённые вручную серии помечены — поис
   const { retiredEpisodes } = await import('@/lib/db/schema');
   expect(s.db.select().from(retiredEpisodes).all().map((r) => r.number).sort()).toEqual([1, 2]);
 });
+
+describe('удаление серий и сезонов', () => {
+  test('выбранная серия: файл и старая копия удалены, серия не скачается снова, остальное и подписка на месте, торренты не тронуты', async () => {
+    const s = await setup();
+    const { deleteEpisodes } = await import('@/lib/delete-series');
+    const { retiredEpisodes, wantedState } = await import('@/lib/db/schema');
+    s.db.insert(wantedState).values({ titleId: s.t.id, season: 1, number: 1, state: 'missing', reason: 'x', checkedAt: 1 }).run();
+    const r = await deleteEpisodes(s.db, { paths: s.paths }, s.t.id, [{ season: 1, number: 1 }], 5);
+    expect(r).toMatchObject({ files: 2, freed: 1500, later: 0 });
+    expect(existsSync(path.join(s.paths.media, 'Дэдлок (2023)/Season 01/E1.mkv'))).toBe(false);
+    expect(existsSync(path.join(s.paths.media, 'Дэдлок (2023)/Season 01/E2.mkv'))).toBe(true);
+    expect(s.db.select().from(episodeFiles).all().map((f) => f.number)).toEqual([2]);
+    expect(s.db.select().from(oldCopies).all()).toEqual([]);
+    expect(s.db.select().from(retiredEpisodes).all().map((x) => [x.season, x.number])).toEqual([[1, 1]]);
+    expect(s.db.select().from(wantedState).all()).toEqual([]);
+    expect(s.db.select().from(subscriptions).all()).toHaveLength(1);
+    expect(s.fq.torrents.size).toBe(2);
+    expect(s.db.select().from(deletions).all().map((d) => [d.label, d.size])).toEqual([['Дэдлок · S01E01', 1500]]);
+  });
+
+  test('сезон целиком — подпись «сезон 1»; файл, который ещё раздаётся (жёсткая ссылка), — место освободится позже', async () => {
+    const s = await setup();
+    const { deleteEpisodes } = await import('@/lib/delete-series');
+    const { linkSync } = await import('node:fs');
+    const e2 = path.join(s.paths.media, 'Дэдлок (2023)/Season 01/E2.mkv');
+    const { rmSync } = await import('node:fs');
+    rmSync(e2);
+    linkSync(s.own, e2); // E2 в медиатеке — ссылка на файл раздачи
+    const r = await deleteEpisodes(s.db, { paths: s.paths }, s.t.id, [{ season: 1, number: 1 }, { season: 1, number: 2 }], 5);
+    expect(r).toMatchObject({ files: 3, freed: 1500, later: 1000 });
+    expect(existsSync(s.own)).toBe(true); // раздача не тронута
+    expect(s.db.select().from(deletions).all().map((d) => d.label)).toEqual(['Дэдлок · сезон 1']);
+  });
+
+  test('серия не того сериала или без файла — пропускается', async () => {
+    const s = await setup();
+    const { deleteEpisodes } = await import('@/lib/delete-series');
+    const r = await deleteEpisodes(s.db, { paths: s.paths }, s.t.id, [{ season: 3, number: 9 }], 5);
+    expect(r).toMatchObject({ files: 0, freed: 0 });
+    expect(s.db.select().from(episodeFiles).all()).toHaveLength(2);
+  });
+});
+
+test('выбор серий из формы: «сезон:серия», мусор отбрасывается', async () => {
+  const { parsePicks } = await import('@/lib/delete-series');
+  expect(parsePicks(['1:1', '1:2', '2:10', 'x', '1:', '3:-1', '1:1'])).toEqual([{ season: 1, number: 1 }, { season: 1, number: 2 }, { season: 2, number: 10 }]);
+});

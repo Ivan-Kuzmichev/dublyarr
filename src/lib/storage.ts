@@ -47,7 +47,8 @@ export function checkDisk(db: Db, disk: Disk | null, settings: RetentionSettings
 const DAY = 86_400_000;
 const pad = (n: number) => String(n).padStart(2, '0');
 
-export type StorageShow = { tmdbId: number; kind: Title['kind']; title: string; posterPath: string | null; seasons: string; quality: string; size: number; rule: string; keepPct: number; dropPct: number; lastAt: number };
+export type StoragePart = { season: number; size: number; episodes: { number: number; size: number }[] };
+export type StorageShow = { tmdbId: number; kind: Title['kind']; title: string; posterPath: string | null; seasons: string; quality: string; size: number; rule: string; keepPct: number; dropPct: number; lastAt: number; parts: StoragePart[] };
 
 /** Данные экрана «Хранилище»: диск, сериалы, первая уборка, прогноз, история. */
 export function storageData(db: Db, disk: Disk | null, settings: RetentionSettings, now: number, today: string) {
@@ -98,6 +99,11 @@ export function storageData(db: Db, disk: Disk | null, settings: RetentionSettin
       keepPct: 100 - dropPct,
       dropPct,
       lastAt: Math.max(...fs.map((f) => f.importedAt)),
+      // сезоны и серии — для удаления по частям
+      parts: ss.map((season) => {
+        const episodes = fs.filter((f) => f.season === season).sort((a, b) => a.number - b.number).map((f) => ({ number: f.number, size: f.size }));
+        return { season, size: episodes.reduce((n, e) => n + e.size, 0), episodes };
+      }),
     };
   });
   shows.sort((a, b) => b.size - a.size);

@@ -11,8 +11,25 @@ test('«Хранилище» → удалить сериал «только фа
 
   await page.goto('/storage');
   await expect(page.getByRole('heading', { name: 'Хранилище' })).toBeVisible();
+
+  // одна серия: «Сезоны или серии» → раскрыть сезон → отметить первую серию
+  const season = path.join(show, 'Season 01');
+  const before = readdirSync(season).length;
+  expect(before).toBeGreaterThan(1);
   await page.getByRole('button', { name: 'Удалить «Игра престолов»' }).click();
   const dialog = page.getByRole('dialog');
+  await dialog.getByText('Сезоны или серии').click();
+  await expect(dialog.getByRole('button', { name: 'Удалить выбранное' })).toBeDisabled();
+  await dialog.getByRole('button', { name: /Сезон 1/ }).click();
+  await dialog.getByRole('checkbox').nth(1).check();
+  await dialog.getByRole('button', { name: 'Удалить выбранное' }).click();
+  await expect(dialog.getByText(/Удалено файлов: 1/)).toBeVisible();
+  expect(readdirSync(season).length).toBe(before - 1);
+  await dialog.getByRole('button', { name: 'Закрыть' }).click();
+  await page.reload();
+  await expect(page.getByText(/Игра престолов · S01E\d\d/)).toBeVisible();
+
+  await page.getByRole('button', { name: 'Удалить «Игра престолов»' }).click();
   await dialog.getByText('Только файлы, подписка остаётся').click();
   await dialog.getByRole('button', { name: 'Удалить файлы' }).click();
   // строка сериала пропадает из списка вместе с диалогом

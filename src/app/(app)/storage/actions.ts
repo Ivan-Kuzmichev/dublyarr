@@ -6,7 +6,7 @@ import { DENIED, guard } from '@/lib/auth/current';
 import { getSetting } from '@/lib/settings';
 import { getQbit } from '@/lib/qbit';
 import { getTitleByTmdbId } from '@/lib/catalog';
-import { deleteSeries } from '@/lib/delete-series';
+import { deleteEpisodes, deleteSeries, parsePicks } from '@/lib/delete-series';
 import { runRetention } from '@/lib/retention';
 import { getRetention, setSeriesExceptions } from '@/lib/retention-settings';
 import { formatSize } from '@/lib/format';
@@ -14,7 +14,7 @@ import type { Paths } from '@/lib/downloads';
 
 export type ActionState = { ok?: string; error?: string };
 
-const MODES = ['all', 'files', 'sub'] as const;
+const MODES = ['all', 'files', 'sub', 'episodes'] as const;
 
 export async function deleteSeriesAction(_prev: ActionState, form: FormData): Promise<ActionState> {
   if (!(await guard('storage'))) return { error: DENIED };
@@ -26,6 +26,16 @@ export async function deleteSeriesAction(_prev: ActionState, form: FormData): Pr
   const paths = getSetting<Paths>(db, 'paths');
   if (!t || !paths) return { error: 'Сериал или папки не найдены' };
   try {
+    if (mode === 'episodes') {
+      const picks = parsePicks(form.getAll('ep').map(String));
+      if (!picks.length) return { error: 'Отметьте сезоны или серии' };
+      const r = await deleteEpisodes(db, { paths }, t.id, picks);
+      revalidatePath('/storage');
+      revalidatePath('/library');
+      revalidatePath(`/series/${tmdbId}`);
+      const later = r.later ? ` · ещё ${formatSize(r.later)} — после окончания раздачи` : '';
+      return { ok: `Удалено файлов: ${r.files} · ${formatSize(r.freed)}${later}` };
+    }
     const r = await deleteSeries(db, { qbit: getQbit(db), paths }, t.id, mode);
     revalidatePath('/storage');
     revalidatePath('/library');

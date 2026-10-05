@@ -112,7 +112,7 @@ export default async function StoragePage({ searchParams }: { searchParams: Prom
                       <span className={s.dropPct ? 'text-accent' : ''}>{s.rule}</span>
                     </div>
                   </div>
-                  <DeleteSeriesDialog tmdbId={s.tmdbId} title={s.title} movie={s.kind === 'movie'} />
+                  <DeleteSeriesDialog tmdbId={s.tmdbId} title={s.title} movie={s.kind === 'movie'} parts={s.parts} />
                 </div>
               ))}
             </div>
