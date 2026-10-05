@@ -11,7 +11,7 @@ import { getRetention } from '../retention-settings';
 import { TMP_DIR } from '../media/process';
 import { LAG, commonSegment } from './fingerprint';
 import { agree, nearest, windows, type Seg } from './detect';
-import { buildChapters, decideWrite } from './chapters';
+import { BODY_CHAPTER, buildChapters, decideWrite } from './chapters';
 import { getIntroSettings } from './settings';
 import type { IntroTools } from './tools';
 
@@ -106,7 +106,9 @@ export async function processSeason(
         continue;
       }
       await stat(absOf(f));
-      if ((await tools.chapterCount(absOf(f))) > 0 && f.introState !== 'marked') {
+      // главы релиз-группы не трогаем; свои (с главой «Серия») — можно переписать
+      const titles = await tools.chapterTitles(absOf(f));
+      if (titles.length > 0 && !titles.includes(BODY_CHAPTER) && f.introState !== 'marked') {
         if (own) set(f.id, { introState: 'skipped', introNote: 'свои главы' });
         continue;
       }
@@ -138,9 +140,10 @@ export async function processSeason(
         const other = await printOf(n);
         if (!other) continue;
         const h = commonSegment(mine.head, other.head);
-        if (h) heads.push([h.a[0] + LAG, h.a[1] + LAG]);
+        // LAG — только к концу: начало по сверке с главами AniDUB и так не раньше настоящего
+        if (h) heads.push([h.a[0], h.a[1] + LAG]);
         const t = commonSegment(mine.tail, other.tail);
-        if (t) tails.push([mine.tailStart + t.a[0] + LAG, Math.min(mine.duration, mine.tailStart + t.a[1] + LAG)]);
+        if (t) tails.push([mine.tailStart + t.a[0], Math.min(mine.duration, mine.tailStart + t.a[1] + LAG)]);
       }
       const intro = agree(heads, usable.length);
       const credits = agree(tails, usable.length);

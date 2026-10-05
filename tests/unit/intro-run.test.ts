@@ -38,7 +38,7 @@ function noise(n: number, seed: number) {
   return out;
 }
 /** «Файлы» серий: опенинг в своём месте у каждой, эндинг за 2 мин до конца. */
-function fakeTools(o: { opAt: Record<string, number>; chapters?: Record<string, number> }) {
+function fakeTools(o: { opAt: Record<string, number>; chapters?: Record<string, string[]> }) {
   const op = noise(sec(74), 7);
   const ed = noise(sec(67), 8);
   const written: { file: string; text: string }[] = [];
@@ -46,7 +46,7 @@ function fakeTools(o: { opAt: Record<string, number>; chapters?: Record<string, 
   const tools: IntroTools = {
     available: async () => true,
     duration: async () => 1450,
-    chapterCount: async (f) => o.chapters?.[path.basename(f)] ?? 0,
+    chapterTitles: async (f) => o.chapters?.[path.basename(f)] ?? [],
     async fingerprint(file, start, dur) {
       fpCalls.push(`${path.basename(file)}@${start}`);
       const seed = [...path.basename(file)].reduce((a, c) => a * 31 + c.charCodeAt(0), 7);
@@ -91,9 +91,10 @@ test('сезон: опенинг и эндинг найдены у всех, г�
   const rows = db.select().from(episodeFiles).all();
   expect(rows.every((f) => f.introState === 'marked')).toBe(true);
   // значение отпечатка описывает ~2 с звука от своей позиции — к найденному прибавляется LAG (по прогону в образе)
-  expect(Math.abs(rows[0].introStart! - (113 + LAG) * 1000)).toBeLessThan(300);
+  // поправка LAG — только к концу (сверка с главами AniDUB: начало и так не раньше настоящего)
+  expect(Math.abs(rows[0].introStart! - 113 * 1000)).toBeLessThan(300);
   expect(Math.abs(rows[0].introEnd! - (187 + LAG) * 1000)).toBeLessThan(300);
-  expect(Math.abs(rows[0].creditsStart! - (1320 + LAG) * 1000)).toBeLessThan(300);
+  expect(Math.abs(rows[0].creditsStart! - 1320 * 1000)).toBeLessThan(300);
   expect(written).toHaveLength(5);
   expect(written[0].text).toContain('NAME=Intro');
   expect(written[0].text).toContain('NAME=Credits');
@@ -104,7 +105,7 @@ test('свои главы и не mkv — пропуск; одна серия в
   const m = mediaWith(db, 3, () => 100);
   db.update(episodeFiles).set({ path: 'Клевер/Season 01/E3.avi' }).where(eq(episodeFiles.number, 3)).run();
   writeFileSync(path.join(m.media, 'Клевер/Season 01/E3.avi'), 'v');
-  const { tools } = fakeTools({ opAt: m.at, chapters: { 'E2.mkv': 6 } });
+  const { tools } = fakeTools({ opAt: m.at, chapters: { 'E2.mkv': ['Chapter 01', 'Chapter 02'] } });
   await processSeason(db, tools, { media: m.media, cacheDir: m.cacheDir, now: 1 });
   const by = (n: number) => db.select().from(episodeFiles).where(eq(episodeFiles.number, n)).get()!;
   expect(by(2)).toMatchObject({ introState: 'skipped', introNote: 'свои главы' });
@@ -213,4 +214,14 @@ test('серию удалили из веба, пока шла копия, — �
   };
   await processSeason(db, tools, { media: m.media, cacheDir: m.cacheDir, now: 1, disk: async () => ({ pct: 10, free: 1e12 }) });
   expect(existsSync(target)).toBe(false);
+});
+
+test('свои главы Dublyarr (есть «Серия») — не «главы релиза»: файл размечается заново', async () => {
+  const db = testDb();
+  const m = mediaWith(db, 3, () => 100);
+  const ours = ['Начало', 'Intro', 'Серия', 'Credits', 'После титров'];
+  const { tools, written } = fakeTools({ opAt: m.at, chapters: { 'E1.mkv': ours, 'E2.mkv': ours, 'E3.mkv': ours } });
+  await processSeason(db, tools, { media: m.media, cacheDir: m.cacheDir, now: 1 });
+  expect(db.select().from(episodeFiles).all().map((f) => f.introState)).toEqual(['marked', 'marked', 'marked']);
+  expect(written).toHaveLength(3);
 });

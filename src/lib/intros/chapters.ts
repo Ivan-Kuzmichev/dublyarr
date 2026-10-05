@@ -3,6 +3,8 @@ import type { Seg } from './detect';
 // Главы для mkvpropedit (простой формат OGM) и решение, как писать в файл медиатеки.
 
 const MIN = 1; // главы короче секунды не пишем
+/** Глава основной части — по ней Dublyarr узнаёт свои главы (у релиз-групп такой нет). */
+export const BODY_CHAPTER = 'Серия';
 
 function stamp(sec: number) {
   const ms = Math.round(sec * 1000);
@@ -17,7 +19,7 @@ export function buildChapters(o: { intro: Seg | null; credits: Seg | null; durat
   const bodyStart = o.intro ? o.intro[1] : 0;
   const bodyEnd = o.credits ? o.credits[0] : o.duration;
   if (o.intro) parts.push([0, o.intro[0], 'Начало'], [o.intro[0], o.intro[1], o.introName]);
-  parts.push([bodyStart, bodyEnd, 'Серия']);
+  parts.push([bodyStart, bodyEnd, BODY_CHAPTER]);
   if (o.credits) parts.push([o.credits[0], o.credits[1], o.creditsName], [o.credits[1], o.duration, 'После титров']);
   const kept = parts.filter(([a, b]) => b - a >= MIN);
   return (

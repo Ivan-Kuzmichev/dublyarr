@@ -17,3 +17,17 @@ test('миграция 0027: ошибки mkvpropedit (обрезанный пу
   const st = (n: number) => db.select().from(episodeFiles).where(eq(episodeFiles.number, n)).get()!;
   expect([st(1).introState, st(2).introState, st(3).introState]).toEqual([null, 'error', 'marked']);
 });
+
+test('миграция 0028: размеченные и «не нашлось» — заново, пропущенные (главы релиза) не трогаются', () => {
+  const db = testDb();
+  const t = db.insert(titles).values({ tmdbId: 2, kind: 'anime', nameRu: 'Y', nameOriginal: 'Y', originalLanguage: 'ja', status: 'returning', createdAt: 1, refreshedAt: 1 }).returning().get();
+  const row = (number: number, introState: 'marked' | 'none' | 'skipped') =>
+    db.insert(episodeFiles).values({ titleId: t.id, season: 1, number, path: `q${number}.mkv`, size: 1, method: 'hardlink', importedAt: 1, introState }).run();
+  row(1, 'marked');
+  row(2, 'none');
+  row(3, 'skipped');
+  const sql = readFileSync(`drizzle/${readdirSync('drizzle').find((f) => f.startsWith('0028_'))}`, 'utf8');
+  (db as unknown as { $client: { exec(s: string): void } }).$client.exec(sql);
+  const st = (n: number) => db.select().from(episodeFiles).where(eq(episodeFiles.number, n)).get()!.introState;
+  expect([st(1), st(2), st(3)]).toEqual([null, null, 'skipped']);
+});

@@ -49,3 +49,25 @@ test('короче 15 с или длиннее 120 с — нет', () => {
 test('разные серии без общего куска — нет', () => {
   expect(commonSegment(noise(sec(300), 1), noise(sec(300), 2))).toBeNull();
 });
+
+test('голос поверх опенинга (название серии) — разрыв до 12 с при том же сдвиге не режет опенинг', () => {
+  const op = noise(sec(90), 11);
+  const a = episode(600, 1, op, 100);
+  const b = episode(600, 2, op, 40);
+  // в каждой серии с 16-й по 26-ю секунду опенинга звук свой
+  a.set(noise(sec(10), 21), sec(100 + 16));
+  b.set(noise(sec(10), 22), sec(40 + 16));
+  const r = commonSegment(a, b)!;
+  expect(r.a[0]).toBeCloseTo(100, 0);
+  expect(r.a[1]).toBeCloseTo(190, 0);
+});
+
+test('разрыв длиннее 12 с — два разных куска, берётся длинный', () => {
+  const op = noise(sec(90), 11);
+  const a = episode(600, 1, op, 100);
+  const b = episode(600, 2, op, 40);
+  a.set(noise(sec(20), 21), sec(100 + 16));
+  b.set(noise(sec(20), 22), sec(40 + 16));
+  const r = commonSegment(a, b)!;
+  expect(r.a[0]).toBeCloseTo(136, 0);
+});

@@ -2,7 +2,7 @@
 // Кандидаты сдвига — перебором по прореженным кадрам, затем полный проход по лучшим сдвигам с допуском по битам.
 
 export const STEP = 4096 / 3 / 11025; // секунд на кадр
-/** Значение отпечатка описывает ~2 с звука от своей позиции: найденные границы раньше настоящих примерно на секунду (замер в образе). */
+/** Значение отпечатка описывает ~2 с звука от своей позиции: найденный конец раньше настоящего примерно на секунду (замер в образе и по главам AniDUB). */
 export const LAG = 1;
 const MAX_BITS = 8;
 const MAX_GAP = 3;
@@ -17,19 +17,32 @@ export function popcount(x: number): number {
   return (((x + (x >>> 4)) & 0x0f0f0f0f) * 0x01010101) >>> 24;
 }
 
-/** Самый длинный отрезок при сдвиге s (i в a ↔ i - s в b): допускается MAX_GAP плохих кадров подряд. */
+const MERGE_GAP = Math.round(12 / STEP); // голос поверх музыки опенинга (название серии) — до 12 с
+const MIN_PIECE = Math.round(3 / STEP); // склеиваются только куски от 3 с — не случайные совпадения
+
+/** Самый длинный отрезок при сдвиге s (i в a ↔ i - s в b): внутри куска — до MAX_GAP плохих кадров подряд,
+ *  куски от 3 с при том же сдвиге склеиваются через разрыв до 12 с. */
 function bestRun(a: Uint32Array, b: Uint32Array, s: number): [number, number] {
-  let best: [number, number] = [0, 0];
+  const pieces: [number, number][] = [];
   let start = -1;
   let lastGood = -1;
   const from = Math.max(0, s);
   const to = Math.min(a.length, b.length + s);
   for (let i = from; i < to; i++) {
-    if (popcount((a[i] ^ b[i - s]) >>> 0) <= MAX_BITS) {
-      if (start < 0 || i - lastGood > MAX_GAP + 1) start = i;
-      lastGood = i;
-      if (lastGood + 1 - start > best[1] - best[0]) best = [start, lastGood + 1];
+    if (popcount((a[i] ^ b[i - s]) >>> 0) > MAX_BITS) continue;
+    if (start < 0 || i - lastGood > MAX_GAP + 1) {
+      if (start >= 0) pieces.push([start, lastGood + 1]);
+      start = i;
     }
+    lastGood = i;
+  }
+  if (start >= 0) pieces.push([start, lastGood + 1]);
+  let best: [number, number] = [0, 0];
+  let cur: [number, number] | null = null;
+  for (const p of pieces) {
+    if (p[1] - p[0] < MIN_PIECE) continue;
+    cur = cur && p[0] - cur[1] <= MERGE_GAP ? [cur[0], p[1]] : [p[0], p[1]];
+    if (cur[1] - cur[0] > best[1] - best[0]) best = cur;
   }
   return best;
 }
