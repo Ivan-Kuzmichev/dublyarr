@@ -25,7 +25,9 @@ export async function telegramAction(_prev: TgState, form: FormData): Promise<Tg
   if (form.get('intent') !== 'check') return { values, ok: 'Сохранено' };
   try {
     const tg = createTelegram({ token: r.settings.token, proxy: telegramProxy(db, r.settings) });
-    return { values, ok: `Бот @${(await tg.getMe()).username} · сохранено` };
+    const me = await tg.getMe();
+    const at = new Date().toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit', timeZone: process.env.TZ });
+    return { values, ok: `Связь есть: бот @${me.username} отвечает · проверено в ${at}` };
   } catch (e) {
     return { values, error: errText(e) };
   }

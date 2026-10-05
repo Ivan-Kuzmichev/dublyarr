@@ -15,7 +15,7 @@ test('Telegram: привязка кодом → тестовое → «Не то
   const card = page.locator('section', { has: page.getByRole('heading', { name: 'Telegram-бот' }) });
   await card.getByLabel('Токен бота').fill('123456:abcdefghijklmnopqrstuvwxyz');
   await card.getByRole('button', { name: 'Проверить' }).click();
-  await expect(card.getByText('Бот @dublyarr_test_bot · сохранено')).toBeVisible();
+  await expect(card.getByText(/Связь есть: бот @dublyarr_test_bot отвечает · проверено в \d\d:\d\d/)).toBeVisible();
   // свой чат — у каждой учётки (2.3)
   const mine = page.locator('section', { has: page.getByRole('heading', { name: 'Мой чат' }) });
   await page.reload();

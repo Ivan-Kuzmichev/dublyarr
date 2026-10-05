@@ -20,11 +20,15 @@ export function MyChatCard({ linked, chatId, bot }: { linked: boolean; chatId?: 
       ) : (
         <form action={action} className="flex flex-col gap-4">
           <p className="m-0 text-sm text-muted">Бот общий, у каждого свой Telegram ID. Нажмите «Привязать» и отправьте боту код — или впишите Telegram ID сами (сначала нажмите «Start» у бота).</p>
-          <div className="flex flex-wrap items-end gap-3">
-            <Field label="Telegram ID" name="chatId" mono inputMode="numeric" defaultValue={chatId ?? ''} placeholder="например, 123456789" hint="Свой ID подскажет @userinfobot" className="min-w-[200px] grow" />
-            <Button type="submit" name="intent" value="set" variant="secondary" disabled={pending}>
-              Сохранить ID
-            </Button>
+          <div className="flex flex-col gap-1.5">
+            {/* подсказка — под строкой, чтобы кнопка стояла вровень с полем */}
+            <div className="flex flex-wrap items-end gap-3">
+              <Field label="Telegram ID" name="chatId" mono inputMode="numeric" defaultValue={chatId ?? ''} placeholder="например, 123456789" className="min-w-[200px] grow" />
+              <Button type="submit" name="intent" value="set" variant="secondary" disabled={pending}>
+                Сохранить ID
+              </Button>
+            </div>
+            <span className="text-[13px] leading-[1.45] text-faint">Свой ID подскажет @userinfobot</span>
           </div>
           {state.code && (
             <div className="flex flex-col gap-1 rounded-xl border border-accent/50 bg-accent/[0.06] p-4">
