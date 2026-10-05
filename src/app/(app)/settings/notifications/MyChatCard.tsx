@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Field } from '@/components/ui/Field';
 import { myChatAction, type TgState } from './actions';
 
-/** Свой чат Telegram: у каждой учётки свой, привязка кодом. */
+/** Свой чат Telegram: у каждой учётки свой Telegram ID (бот присылает его в ответ на /start). */
 export function MyChatCard({ linked, chatId, bot }: { linked: boolean; chatId?: string | null; bot: boolean }) {
   const [state, action, pending] = useActionState<TgState, FormData>(myChatAction, {});
   return (
@@ -19,7 +19,7 @@ export function MyChatCard({ linked, chatId, bot }: { linked: boolean; chatId?: 
         <p className="m-0 text-sm text-muted">Бот Telegram ещё не настроен — это делает администратор.</p>
       ) : (
         <form action={action} className="flex flex-col gap-4">
-          <p className="m-0 text-sm text-muted">Бот общий, у каждого свой Telegram ID. Нажмите «Привязать» и отправьте боту код — или впишите Telegram ID сами (сначала нажмите «Start» у бота).</p>
+          <p className="m-0 text-sm text-muted">Бот общий, у каждого свой Telegram ID. Напишите боту /start — он пришлёт ваш ID, впишите его сюда.</p>
           <div className="flex flex-col gap-1.5">
             {/* подсказка — под строкой, чтобы кнопка стояла вровень с полем */}
             <div className="flex flex-wrap items-end gap-3">
@@ -28,35 +28,24 @@ export function MyChatCard({ linked, chatId, bot }: { linked: boolean; chatId?: 
                 Сохранить ID
               </Button>
             </div>
-            <span className="text-[13px] leading-[1.45] text-faint">Свой ID подскажет @userinfobot</span>
+            <span className="text-[13px] leading-[1.45] text-faint">ID — число из ответа бота на /start</span>
           </div>
-          {state.code && (
-            <div className="flex flex-col gap-1 rounded-xl border border-accent/50 bg-accent/[0.06] p-4">
-              <span className="font-mono text-[28px] tracking-[0.2em] text-accent">{state.code}</span>
-              <span className="text-[13px] text-text-2">{state.ok}</span>
-            </div>
-          )}
           {state.error && (
             <p role="alert" className="m-0 text-sm text-danger">
               {state.error}
             </p>
           )}
-          {state.ok && !state.code && <p className="m-0 text-sm text-progress">{state.ok}</p>}
-          <div className="flex flex-wrap gap-3">
-            <Button type="submit" name="intent" value="pair" variant={linked ? 'secondary' : 'primary'} disabled={pending}>
-              {linked ? 'Привязать другой чат' : 'Привязать'}
-            </Button>
-            {linked && (
-              <>
-                <Button type="submit" name="intent" value="test" variant="secondary" disabled={pending}>
-                  Отправить тестовое
-                </Button>
-                <Button type="submit" name="intent" value="unpair" variant="ghost" disabled={pending}>
-                  Отвязать
-                </Button>
-              </>
-            )}
-          </div>
+          {state.ok && <p className="m-0 text-sm text-progress">{state.ok}</p>}
+          {linked && (
+            <div className="flex flex-wrap gap-3">
+              <Button type="submit" name="intent" value="test" variant="secondary" disabled={pending}>
+                Отправить тестовое
+              </Button>
+              <Button type="submit" name="intent" value="unpair" variant="ghost" disabled={pending}>
+                Отвязать
+              </Button>
+            </div>
+          )}
         </form>
       )}
     </Card>

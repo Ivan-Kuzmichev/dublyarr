@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { testDb } from './helpers';
-import { pollUpdates, startPairing } from '@/lib/telegram-updates';
+import { pollUpdates } from '@/lib/telegram-updates';
 import { saveTelegramSettings, type Telegram, type TgUpdate } from '@/lib/telegram';
 import { notificationDeliveries, notifications, releaseRules, releases, sources, titles, jobs, users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -43,27 +43,17 @@ function setup() {
 const msg = (id: number, chat: number, text: string): TgUpdate => ({ update_id: id, message: { message_id: id, chat: { id: chat, first_name: 'Иван' }, text } });
 const cb = (id: number, chat: number, data: string, messageId = 5): TgUpdate => ({ update_id: id, callback_query: { id: `cb${id}`, data, message: { message_id: messageId, chat: { id: chat } } } });
 
-test('привязка чата кодом; неверный и просроченный код — нет', async () => {
-  const { db, tg, calls, push, admin, anya, chatOf } = setup();
-  const code = startPairing(db, admin.id, 0);
-  expect(code).toMatch(/^\d{6}$/);
-  push(msg(1, 555, '000000'));
+test('бот отвечает на /start: непривязанному — его Telegram ID и куда вписать; привязанному — к какой учётке', async () => {
+  const { db, tg, calls, push, admin, chatOf } = setup();
+  push(msg(1, 555, '/start'));
   await pollUpdates(db, tg, MIN);
-  expect(chatOf(admin.id)).toBeNull();
-  push(msg(2, 777, code));
-  await pollUpdates(db, tg, 11 * MIN); // код живёт 10 минут
-  expect(chatOf(admin.id)).toBeNull();
-  const fresh = startPairing(db, admin.id, 20 * MIN);
-  push(msg(3, 777, ` ${fresh} `));
-  await pollUpdates(db, tg, 21 * MIN);
-  expect(chatOf(admin.id)).toBe('777');
-  // тот же чат привязала Аня — у админа он отвязан (один чат — одна учётка)
-  const hers = startPairing(db, anya.id, 30 * MIN);
-  push(msg(4, 777, hers));
-  await pollUpdates(db, tg, 31 * MIN);
-  expect([chatOf(admin.id), chatOf(anya.id)]).toEqual([null, '777']);
-  expect(calls).toContain('send:777:Чат привязан — сюда будут приходить уведомления Dublyarr');
-  expect(getSetting(db, 'telegram.offset')).toBe(5);
+  expect(calls).toContain('send:555:Ваш Telegram ID: 555\nВпишите его в Dublyarr: Настройки → Уведомления → Мой чат.');
+  expect(chatOf(admin.id)).toBeNull(); // сам по себе чат не привязывается
+  db.update(users).set({ telegramChatId: '555' }).where(eq(users.id, admin.id)).run();
+  push(msg(2, 555, 'привет'));
+  await pollUpdates(db, tg, 2 * MIN);
+  expect(calls).toContain('send:555:Этот чат привязан к учётке «admin» — сюда приходят уведомления Dublyarr.');
+  expect(getSetting(db, 'telegram.offset')).toBe(3);
 });
 
 function withQuestion() {
@@ -103,18 +93,6 @@ test('нажатие из чужого чата и без права ответ�
   await pollUpdates(db, tg, 3);
   expect(db.select().from(releaseRules).get()!.verdict).toBe('reject');
   expect(calls).toContain('answer:Уже решено');
-});
-
-test('привязка: старые сообщения и подбор кода не проходят', async () => {
-  const { db, tg, push, admin, chatOf } = setup();
-  const code = startPairing(db, admin.id, 100 * MIN);
-  const at = (id: number, text: string, date: number): TgUpdate => ({ update_id: id, message: { message_id: id, chat: { id: 9 }, text, date } as never });
-  push(at(1, code, (99 * MIN) / 1000)); // отправлено до выдачи кода
-  await pollUpdates(db, tg, 101 * MIN);
-  expect(chatOf(admin.id)).toBeNull();
-  push(...[2, 3, 4, 5, 6].map((i) => at(i, String(100000 + i), (101 * MIN) / 1000)), at(7, code, (101 * MIN) / 1000));
-  await pollUpdates(db, tg, 102 * MIN);
-  expect(chatOf(admin.id)).toBeNull(); // после 5 неверных код сгорел
 });
 
 test('Telegram ID вручную: число (группа — с минусом), один чат — одна учётка', async () => {

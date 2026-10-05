@@ -1,4 +1,3 @@
-import { randomInt } from 'node:crypto';
 import { and, eq } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { notificationDeliveries, notifications, releases, users } from './db/schema';
@@ -12,12 +11,9 @@ import { logger } from './log';
 
 const log = logger('telegram');
 
-// Входящие из Telegram: привязка чата кодом и ответы кнопками «Это он» / «Не тот сериал».
+// Входящие из Telegram: ответ на /start (Telegram ID для «Моего чата») и ответы кнопками «Это он» / «Не тот сериал».
 
-const PAIR_TTL = 10 * 60_000;
-
-/** Одноразовый код из 6 цифр: пользователь отправляет его боту, и чат привязывается. */
-/** Чат учётки (привязка кодом или Telegram ID вручную). Один чат — одна учётка: у прежнего владельца отвязывается. */
+/** Чат учётки (Telegram ID вписывается в «Мой чат»; бот присылает его в ответ на /start). Один чат — одна учётка: у прежнего владельца отвязывается. */
 export function setUserChat(db: Db, userId: number, raw: string): { ok: true } | { error: string } {
   const chat = raw.trim();
   if (!/^-?\d{1,20}$/.test(chat)) return { error: 'Telegram ID — число' };
@@ -26,21 +22,14 @@ export function setUserChat(db: Db, userId: number, raw: string): { ok: true } |
   return { ok: true };
 }
 
-/** Код привязки чата к учётке (у каждого свой чат). */
-export function startPairing(db: Db, userId: number, now = Date.now()): string {
-  const code = String(randomInt(0, 1_000_000)).padStart(6, '0');
-  setSetting(db, 'telegram.pairing', { code, userId, startedAt: now, expires: now + PAIR_TTL, wrong: 0 });
-  return code;
-}
-
-export async function pollUpdates(db: Db, tg: Telegram, now = Date.now()) {
+export async function pollUpdates(db: Db, tg: Telegram, _now = Date.now()) {
   const res = { handled: 0 };
   let offset = getSetting<number>(db, 'telegram.offset') ?? 0;
   const updates = await tg.getUpdates(offset);
   for (const u of updates) {
     offset = Math.max(offset, u.update_id + 1);
     try {
-      if (u.message?.text) await onMessage(db, tg, u.message.chat.id, u.message.text, now, (u.message as { date?: number }).date);
+      if (u.message?.text) await onMessage(db, tg, u.message.chat.id);
       if (u.callback_query) res.handled += await onButton(db, tg, u.callback_query);
     } catch (e) {
       log.warn({ update: u.update_id, err: e instanceof Error ? e.message : String(e) }, 'telegram update failed');
@@ -50,23 +39,15 @@ export async function pollUpdates(db: Db, tg: Telegram, now = Date.now()) {
   return res;
 }
 
-const MAX_WRONG = 5;
-
-async function onMessage(db: Db, tg: Telegram, chat: number, text: string, now: number, date?: number) {
-  const pairing = getSetting<{ code: string; userId: number; startedAt: number; expires: number; wrong: number }>(db, 'telegram.pairing');
-  if (!pairing || now > pairing.expires) return;
-  // отправленное до выдачи кода не считается; подбор — после 5 неверных код сгорает
-  if (date !== undefined && date * 1000 < pairing.startedAt) return;
-  const guess = text.trim();
-  if (guess !== pairing.code) {
-    if (!/^\d{6}$/.test(guess)) return;
-    const wrong = (pairing.wrong ?? 0) + 1;
-    setSetting(db, 'telegram.pairing', wrong >= MAX_WRONG ? null : { ...pairing, wrong });
-    return;
-  }
-  setUserChat(db, pairing.userId, String(chat));
-  setSetting(db, 'telegram.pairing', null);
-  await tg.sendMessage(String(chat), 'Чат привязан — сюда будут приходить уведомления Dublyarr');
+/** Любое сообщение боту (/start): непривязанному чату — его Telegram ID и куда вписать, привязанному — к какой учётке. */
+async function onMessage(db: Db, tg: Telegram, chat: number) {
+  const owner = db.select({ username: users.username }).from(users).where(eq(users.telegramChatId, String(chat))).get();
+  await tg.sendMessage(
+    String(chat),
+    owner
+      ? `Этот чат привязан к учётке «${owner.username}» — сюда приходят уведомления Dublyarr.`
+      : `Ваш Telegram ID: ${chat}\nВпишите его в Dublyarr: Настройки → Уведомления → Мой чат.`,
+  );
 }
 
 const ANSWER = { m: '✓ Это он', r: '✗ Не тот сериал' } as const;

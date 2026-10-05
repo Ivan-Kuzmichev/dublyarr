@@ -6,7 +6,7 @@ import { loginWithCode } from './helpers';
 const TG = 'http://127.0.0.1:3196';
 type Sent = { method: string; text?: string; chat_id?: string };
 
-test('Telegram: привязка кодом → тестовое → «Не тот сериал» кнопкой', async ({ page, request }) => {
+test('Telegram: /start → бот присылает ID → вписать в «Мой чат» → тестовое → «Не тот сериал» кнопкой', async ({ page, request }) => {
   test.setTimeout(240_000);
   const sent = async () => (await (await request.get(`${TG}/__sent`)).json()) as Sent[];
   await loginWithCode(page);
@@ -19,15 +19,12 @@ test('Telegram: привязка кодом → тестовое → «Не то
   // свой чат — у каждой учётки (2.3)
   const mine = page.locator('section', { has: page.getByRole('heading', { name: 'Мой чат' }) });
   await page.reload();
-  await mine.getByRole('button', { name: 'Привязать', exact: true }).click();
-  const code = (await mine.locator('span.font-mono.text-\\[28px\\]').textContent())!.trim();
-  expect(code).toMatch(/^\d{6}$/);
-  await request.post(`${TG}/__push`, { data: { message: { message_id: 1, chat: { id: 4242, first_name: 'Иван' }, text: code } } });
-  await expect(async () => {
-    await page.reload();
-    await expect(mine.getByText('привязан', { exact: true })).toBeVisible({ timeout: 1000 });
-  }).toPass({ timeout: 60_000 });
-  expect((await sent()).some((m) => m.text?.startsWith('Чат привязан'))).toBe(true);
+  // пишем боту /start — он присылает Telegram ID; вписываем его в «Мой чат»
+  await request.post(`${TG}/__push`, { data: { message: { message_id: 1, chat: { id: 4242, first_name: 'Иван' }, text: '/start' } } });
+  await expect.poll(async () => (await sent()).some((m) => m.chat_id === '4242' && m.text?.startsWith('Ваш Telegram ID: 4242')), { timeout: 60_000 }).toBe(true);
+  await mine.getByLabel('Telegram ID').fill('4242');
+  await mine.getByRole('button', { name: 'Сохранить ID' }).click();
+  await expect(mine.getByText('привязан', { exact: true })).toBeVisible();
 
   await mine.getByRole('button', { name: 'Отправить тестовое' }).click();
   await expect(mine.getByText('Тестовое сообщение доставлено')).toBeVisible();

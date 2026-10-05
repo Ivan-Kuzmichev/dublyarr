@@ -6,11 +6,11 @@ import { requireSession, DENIED, guard } from '@/lib/auth/current';
 import { users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import { getTelegramSettings, applyTelegramForm, createTelegram, telegramProxy, TelegramError } from '@/lib/telegram';
-import { setUserChat, startPairing } from '@/lib/telegram-updates';
+import { setUserChat } from '@/lib/telegram-updates';
 import { parseEventsForm } from '@/lib/notify';
 import { formValues } from '@/lib/form-values';
 
-export type TgState = { ok?: string; error?: string; code?: string; values?: Record<string, string> };
+export type TgState = { ok?: string; error?: string; values?: Record<string, string> };
 
 const errText = (e: unknown) => (e instanceof TelegramError ? e.message : 'Не удалось связаться с Telegram');
 
@@ -33,7 +33,7 @@ export async function telegramAction(_prev: TgState, form: FormData): Promise<Tg
   }
 }
 
-/** Свой чат: «Привязать» (код боту), «Отправить тестовое», «Отвязать». */
+/** Свой чат: «Сохранить ID», «Отправить тестовое», «Отвязать». */
 export async function myChatAction(_prev: TgState, form: FormData): Promise<TgState> {
   const { user } = await requireSession();
   const db = getDb();
@@ -53,7 +53,6 @@ export async function myChatAction(_prev: TgState, form: FormData): Promise<TgSt
   }
   try {
     const tg = createTelegram({ token: s.token, proxy: telegramProxy(db, s) });
-    if (intent === 'pair') return { ok: `Отправьте этот код боту @${(await tg.getMe()).username} в течение 10 минут`, code: startPairing(db, user.id) };
     if (intent === 'test') {
       const chat = db.select({ c: users.telegramChatId }).from(users).where(eq(users.id, user.id)).get()?.c;
       if (!chat) return { error: 'Сначала привяжите чат' };
