@@ -7,7 +7,7 @@ import { mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync, linkSync
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import type { IntroTools } from '@/lib/intros/tools';
-import { LAG, STEP } from '@/lib/intros/fingerprint';
+import { LAG, LAG_START, STEP } from '@/lib/intros/fingerprint';
 import { setSetting } from '@/lib/settings';
 
 type Db = ReturnType<typeof testDb>;
@@ -38,15 +38,16 @@ function noise(n: number, seed: number) {
   return out;
 }
 /** «Файлы» серий: опенинг в своём месте у каждой, эндинг за 2 мин до конца. */
-function fakeTools(o: { opAt: Record<string, number>; chapters?: Record<string, number> }) {
+function fakeTools(o: { opAt: Record<string, number>; chapters?: Record<string, string[]>; prelude?: number }) {
   const op = noise(sec(74), 7);
+  const music = noise(sec(60), 33);
   const ed = noise(sec(67), 8);
   const written: { file: string; text: string }[] = [];
   const fpCalls: string[] = [];
   const tools: IntroTools = {
     available: async () => true,
     duration: async () => 1450,
-    chapterCount: async (f) => o.chapters?.[path.basename(f)] ?? 0,
+    chapterTitles: async (f) => o.chapters?.[path.basename(f)] ?? [],
     async fingerprint(file, start, dur) {
       fpCalls.push(`${path.basename(file)}@${start}`);
       const seed = [...path.basename(file)].reduce((a, c) => a * 31 + c.charCodeAt(0), 7);
@@ -54,6 +55,8 @@ function fakeTools(o: { opAt: Record<string, number>; chapters?: Record<string, 
       const at = o.opAt[path.basename(file)];
       if (at !== undefined) full.set(op, sec(at));
       full.set(ed, sec(1450 - 130));
+      // общее вступление с 0: куски общей музыки по 3 с через 4 с своего голоса
+      if (o.prelude) for (let i = 0; i < sec(o.prelude); i++) if (Math.floor(i / sec(1)) % 7 < 3) full[i] = music[i];
       return full.slice(sec(start), sec(start) + sec(dur));
     },
     async setChapters(file, chaptersFile) {
@@ -91,9 +94,10 @@ test('сезон: опенинг и эндинг найдены у всех, г�
   const rows = db.select().from(episodeFiles).all();
   expect(rows.every((f) => f.introState === 'marked')).toBe(true);
   // значение отпечатка описывает ~2 с звука от своей позиции — к найденному прибавляется LAG (по прогону в образе)
-  expect(Math.abs(rows[0].introStart! - (113 + LAG) * 1000)).toBeLessThan(300);
+  // к началу — LAG_START, к концу — LAG (сверка с главами AniDUB, проверка владельца на «Клевере» и синтетика в образе)
+  expect(Math.abs(rows[0].introStart! - (113 + LAG_START) * 1000)).toBeLessThan(300);
   expect(Math.abs(rows[0].introEnd! - (187 + LAG) * 1000)).toBeLessThan(300);
-  expect(Math.abs(rows[0].creditsStart! - (1320 + LAG) * 1000)).toBeLessThan(300);
+  expect(Math.abs(rows[0].creditsStart! - (1320 + LAG_START) * 1000)).toBeLessThan(300);
   expect(written).toHaveLength(5);
   expect(written[0].text).toContain('NAME=Intro');
   expect(written[0].text).toContain('NAME=Credits');
@@ -104,7 +108,7 @@ test('свои главы и не mkv — пропуск; одна серия в
   const m = mediaWith(db, 3, () => 100);
   db.update(episodeFiles).set({ path: 'Клевер/Season 01/E3.avi' }).where(eq(episodeFiles.number, 3)).run();
   writeFileSync(path.join(m.media, 'Клевер/Season 01/E3.avi'), 'v');
-  const { tools } = fakeTools({ opAt: m.at, chapters: { 'E2.mkv': 6 } });
+  const { tools } = fakeTools({ opAt: m.at, chapters: { 'E2.mkv': ['Chapter 01', 'Chapter 02'] } });
   await processSeason(db, tools, { media: m.media, cacheDir: m.cacheDir, now: 1 });
   const by = (n: number) => db.select().from(episodeFiles).where(eq(episodeFiles.number, n)).get()!;
   expect(by(2)).toMatchObject({ introState: 'skipped', introNote: 'свои главы' });
@@ -213,4 +217,43 @@ test('серию удалили из веба, пока шла копия, — �
   };
   await processSeason(db, tools, { media: m.media, cacheDir: m.cacheDir, now: 1, disk: async () => ({ pct: 10, free: 1e12 }) });
   expect(existsSync(target)).toBe(false);
+});
+
+test('свои главы Dublyarr (есть «Серия») — не «главы релиза»: файл размечается заново', async () => {
+  const db = testDb();
+  const m = mediaWith(db, 3, () => 100);
+  const ours = ['Начало', 'Intro', 'Серия', 'Credits', 'После титров'];
+  const { tools, written } = fakeTools({ opAt: m.at, chapters: { 'E1.mkv': ours, 'E2.mkv': ours, 'E3.mkv': ours } });
+  await processSeason(db, tools, { media: m.media, cacheDir: m.cacheDir, now: 1 });
+  expect(db.select().from(episodeFiles).all().map((f) => f.introState)).toEqual(['marked', 'marked', 'marked']);
+  expect(written).toHaveLength(3);
+});
+
+test('вступление 0–30: перед опенингом через сцену — две главы Intro; сразу перед опенингом — одна', async () => {
+  const db = testDb();
+  const m = mediaWith(db, 4, (n) => [113, 90, 113, 144][n - 1]);
+  const { tools, written } = fakeTools({ opAt: m.at, prelude: 30 });
+  await processSeason(db, tools, { media: m.media, cacheDir: m.cacheDir, now: 1 });
+  const f = db.select().from(episodeFiles).where(eq(episodeFiles.number, 1)).get()!;
+  expect(f.preludeStart).toBe(0);
+  expect(f.preludeEnd!).toBeGreaterThan(24_000);
+  expect(f.preludeEnd!).toBeLessThan(31_000);
+  expect(written[0].text.match(/NAME=Intro/g)).toHaveLength(2);
+
+  const db2 = testDb();
+  const m2 = mediaWith(db2, 4, () => 30.5);
+  const t2 = fakeTools({ opAt: m2.at, prelude: 30 });
+  await processSeason(db2, t2.tools, { media: m2.media, cacheDir: m2.cacheDir, now: 1 });
+  const g = db2.select().from(episodeFiles).where(eq(episodeFiles.number, 1)).get()!;
+  expect(g).toMatchObject({ introStart: 0, preludeStart: null });
+  expect(t2.written[0].text.match(/NAME=Intro/g)).toHaveLength(1);
+});
+
+test('перерасчёт сезона по запросу: берётся он, а не самый старый в очереди', async () => {
+  const db = testDb();
+  const old = seriesWithFiles(db, 2);
+  const m = mediaWith(db, 3, () => 100);
+  const r = await processSeason(db, fakeTools({ opAt: m.at }).tools, { media: m.media, cacheDir: m.cacheDir, now: 1, target: { titleId: m.t.id, season: 1 } });
+  expect(r).toMatchObject({ titleId: m.t.id, season: 1 });
+  expect(db.select().from(episodeFiles).where(eq(episodeFiles.titleId, old.t.id)).all().every((f) => f.introState === null)).toBe(true);
 });

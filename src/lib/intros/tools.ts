@@ -7,7 +7,8 @@ export type IntroTools = {
   available(): Promise<boolean>;
   fingerprint(file: string, start: number, dur: number): Promise<Uint32Array>;
   duration(file: string): Promise<number | null>;
-  chapterCount(file: string): Promise<number>;
+  /** названия глав файла (пусто — глав нет) */
+  chapterTitles(file: string): Promise<string[]>;
   setChapters(file: string, chaptersFile: string): Promise<void>;
 };
 
@@ -43,10 +44,10 @@ export const systemIntroTools: IntroTools = {
     const d = Number(r.stdout.toString().trim());
     return r.code === 0 && Number.isFinite(d) && d > 0 ? d : null;
   },
-  async chapterCount(file) {
+  async chapterTitles(file) {
     const r = await run('ffprobe', ['-v', 'error', '-print_format', 'json', '-show_chapters', file], 60_000);
     if (r.code !== 0) throw new Error('ffprobe: файл не читается');
-    return (JSON.parse(r.stdout.toString()) as { chapters?: unknown[] }).chapters?.length ?? 0;
+    return ((JSON.parse(r.stdout.toString()) as { chapters?: { tags?: { title?: string } }[] }).chapters ?? []).map((c) => c.tags?.title ?? '');
   },
   async setChapters(file, chaptersFile) {
     // кодировка явно: в образе локаль POSIX, без неё кириллица в названиях глав пропадает

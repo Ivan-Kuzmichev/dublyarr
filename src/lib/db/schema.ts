@@ -364,6 +364,9 @@ export const episodeFiles = sqliteTable(
     introEnd: integer('intro_end'),
     creditsStart: integer('credits_start'),
     creditsEnd: integer('credits_end'),
+    // общее вступление с первой секунды, если отдельной главой (вплотную к опенингу — входит в intro_*)
+    preludeStart: integer('prelude_start'),
+    preludeEnd: integer('prelude_end'),
     introCheckedAt: ts('intro_checked_at'),
   },
   (t) => [uniqueIndex('episode_files_title_season_number').on(t.titleId, t.season, t.number)],

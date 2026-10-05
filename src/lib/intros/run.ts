@@ -9,16 +9,25 @@ import { logger } from '../log';
 import { diskUsage } from '../storage';
 import { getRetention } from '../retention-settings';
 import { TMP_DIR } from '../media/process';
-import { LAG, commonSegment } from './fingerprint';
-import { agree, nearest, windows, type Seg } from './detect';
-import { buildChapters, decideWrite } from './chapters';
+import { LAG, LAG_START, PRELUDE_MIN, commonSegment, preludeRun } from './fingerprint';
+import { agree, combineIntros, nearest, windows, type Seg } from './detect';
+import { BODY_CHAPTER, buildChapters, decideWrite } from './chapters';
 import { getIntroSettings } from './settings';
 import type { IntroTools } from './tools';
 
 // Разметка заставок по сезону: выбор сезона, отпечатки, согласие соседей, запись глав.
 
 /** Поля разметки — в null: импорт (новый файл или замена) пишет их вместе с остальными. */
-export const INTRO_FIELDS_RESET = { introState: null, introNote: null, introStart: null, introEnd: null, creditsStart: null, creditsEnd: null, introCheckedAt: null } as const;
+export const INTRO_FIELDS_RESET = { introState: null, introNote: null, introStart: null, introEnd: null, creditsStart: null, creditsEnd: null, preludeStart: null, preludeEnd: null, introCheckedAt: null } as const;
+
+/** Перерасчёт по запросу: всё, кроме файлов с главами релиза, — снова в очередь; season — только он. Возвращает сезоны и число файлов. */
+export function requeueIntros(db: Db, titleId: number, season?: number): { seasons: number[]; files: number } {
+  const where = and(eq(episodeFiles.titleId, titleId), season === undefined ? undefined : eq(episodeFiles.season, season));
+  const rows = db.select().from(episodeFiles).where(where).all();
+  const files = rows.filter((f) => f.introState !== null && f.introState !== 'skipped');
+  for (const f of files) db.update(episodeFiles).set({ introState: null, introNote: null }).where(eq(episodeFiles.id, f.id)).run();
+  return { seasons: [...new Set(rows.map((f) => f.season))].sort((a, b) => a - b), files: files.length };
+}
 
 /** Новая серия в сезоне — новый сосед: «не нашлось» проверяется заново. */
 export function resetIntroMarks(db: Db, titleId: number, season: number) {
@@ -84,12 +93,14 @@ export async function processSeason(
     disk?: () => Promise<{ pct: number; free: number } | null>;
     budgetMs?: number;
     clock?: () => number;
+    /** перерасчёт по запросу (API): этот сезон, а не следующий по очереди */
+    target?: { titleId: number; season: number };
   },
 ) {
   const clock = o.clock ?? Date.now;
   const started = clock();
   const disk = o.disk ?? (() => diskUsage(o.media).catch(() => null));
-  const next = nextSeason(db, o.now);
+  const next = o.target ?? nextSeason(db, o.now);
   if (!next) return null;
   const files = db.select().from(episodeFiles).where(and(eq(episodeFiles.titleId, next.titleId), eq(episodeFiles.season, next.season))).orderBy(asc(episodeFiles.number)).all();
   const set = (id: number, v: Partial<EpisodeFile>) => db.update(episodeFiles).set({ introCheckedAt: o.now, ...v }).where(eq(episodeFiles.id, id)).run();
@@ -106,7 +117,9 @@ export async function processSeason(
         continue;
       }
       await stat(absOf(f));
-      if ((await tools.chapterCount(absOf(f))) > 0 && f.introState !== 'marked') {
+      // главы релиз-группы не трогаем; свои (с главой «Серия») — можно переписать
+      const titles = await tools.chapterTitles(absOf(f));
+      if (titles.length > 0 && !titles.includes(BODY_CHAPTER) && f.introState !== 'marked') {
         if (own) set(f.id, { introState: 'skipped', introNote: 'свои главы' });
         continue;
       }
@@ -134,15 +147,24 @@ export async function processSeason(
       }
       const heads: Seg[] = [];
       const tails: Seg[] = [];
+      const preludes: Seg[] = [];
       for (const n of nearest(usable, f)) {
         const other = await printOf(n);
         if (!other) continue;
         const h = commonSegment(mine.head, other.head);
-        if (h) heads.push([h.a[0] + LAG, h.a[1] + LAG]);
+        if (h) heads.push([h.a[0] + LAG_START, h.a[1] + LAG]);
+        // общее вступление с первой секунды (музыка одна, голос свой)
+        const p = preludeRun(mine.head, other.head);
+        if (p) preludes.push(p);
         const t = commonSegment(mine.tail, other.tail);
-        if (t) tails.push([mine.tailStart + t.a[0] + LAG, Math.min(mine.duration, mine.tailStart + t.a[1] + LAG)]);
+        if (t) tails.push([mine.tailStart + t.a[0] + LAG_START, Math.min(mine.duration, mine.tailStart + t.a[1] + LAG)]);
       }
-      const intro = agree(heads, usable.length);
+      const op = agree(heads, usable.length);
+      const pre = agree(preludes, usable.length);
+      const intros = combineIntros(pre && pre[1] - pre[0] > PRELUDE_MIN ? pre : null, op);
+      // глава опенинга — последняя Intro; отдельное вступление — первая, если их две
+      const intro = intros.at(-1) ?? null;
+      const prelude = intros.length > 1 ? intros[0] : null;
       const credits = agree(tails, usable.length);
       if (!intro && !credits) {
         set(f.id, { introState: 'none', introNote: usable.length < 2 ? 'мало серий' : 'не нашлось' });
@@ -161,7 +183,7 @@ export async function processSeason(
       const tmpDir = path.join(o.media, TMP_DIR);
       await mkdir(tmpDir, { recursive: true });
       const chFile = path.join(tmpDir, `.dy-ch-${randomBytes(4).toString('hex')}.txt`);
-      await writeFile(chFile, buildChapters({ intro, credits, duration: mine.duration, ...settings }));
+      await writeFile(chFile, buildChapters({ intros, credits, duration: mine.duration, ...settings }));
       try {
         if (mode === 'inplace') await tools.setChapters(abs, chFile);
         else {
@@ -184,7 +206,8 @@ export async function processSeason(
       }
       const [introStart, introEnd] = ms(intro);
       const [creditsStart, creditsEnd] = ms(credits);
-      set(f.id, { introState: 'marked', introNote: null, introStart, introEnd, creditsStart, creditsEnd, ...(mode === 'copy' ? { method: 'copy' as const } : {}) });
+      const [preludeStart, preludeEnd] = ms(prelude);
+      set(f.id, { introState: 'marked', introNote: null, introStart, introEnd, creditsStart, creditsEnd, preludeStart, preludeEnd, ...(mode === 'copy' ? { method: 'copy' as const } : {}) });
       marked++;
     } catch (e) {
       log.warn({ file: f.path, err: e instanceof Error ? e.message : String(e) }, 'intro mark failed');

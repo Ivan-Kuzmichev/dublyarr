@@ -94,10 +94,13 @@ function telegramFor(db: Db) {
 export const buildHandlers = (db: Db): Record<string, Handler> => ({
   'downloads.sync': () => syncJob(db),
   // заставки и титры: один сезон за проход (главы для VidHub)
-  'intros.tick': async () => {
+  // payload { titleId, season } — перерасчёт по запросу (API), иначе следующий сезон по очереди
+  'intros.tick': async (payload) => {
     const media = getSetting<Paths>(db, 'paths')?.media;
     if (!media || !getIntroSettings(db).on || !(await systemIntroTools.available())) return;
-    const r = await processSeason(db, systemIntroTools, { media, cacheDir: path.join(getConfig().dataDir, 'cache', 'fp'), now: Date.now() });
+    const p = payload as { titleId?: number; season?: number } | undefined;
+    const target = Number.isInteger(p?.titleId) && Number.isInteger(p?.season) ? { titleId: p!.titleId!, season: p!.season! } : undefined;
+    const r = await processSeason(db, systemIntroTools, { media, cacheDir: path.join(getConfig().dataDir, 'cache', 'fp'), now: Date.now(), target });
     if (r) log.info(r, 'intros season');
   },
   // открыли страницу сериала/фильма — найти раздачи (окно подписки покажет найденные студии)
