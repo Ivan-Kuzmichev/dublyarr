@@ -30,3 +30,15 @@ test('ближайшие соседи: по 2 с каждой стороны, и
 test('ничья групп: берётся более длинный отрезок (голос другой студии режет опенинг на куски)', () => {
   expect(agree([[120, 150], [121, 151], [100, 175], [100.5, 175.5]], 6)).toEqual([100, 175]);
 });
+
+test('вступление и опенинг: подряд (разрыв ≤ 12 с — хвост вступления с голосом) — одна глава, иначе две; вступление внутри опенинга — только опенинг', async () => {
+  const { combineIntros } = await import('@/lib/intros/detect');
+  expect(combineIntros([0, 30], [31, 130])).toEqual([[0, 130]]);
+  expect(combineIntros([0, 19], [30, 130])).toEqual([[0, 130]]); // E08 «Клевера»
+  expect(combineIntros([0, 19], [45, 130])).toEqual([[0, 19], [45, 130]]);
+  expect(combineIntros([0, 30], [91, 189])).toEqual([[0, 30], [91, 189]]);
+  expect(combineIntros([0, 20], [0, 90])).toEqual([[0, 90]]);
+  expect(combineIntros(null, [91, 189])).toEqual([[91, 189]]);
+  expect(combineIntros([0, 30], null)).toEqual([[0, 30]]);
+  expect(combineIntros(null, null)).toEqual([]);
+});

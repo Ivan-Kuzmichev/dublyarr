@@ -14,6 +14,7 @@ import { syncMovie } from '../movies';
 import { downloadRelease } from '../manual-download';
 import { answerMatch, assignStudio } from '../manual-search';
 import { controlDownload } from '../activity';
+import { requeueIntros } from '../intros/run';
 import type { Paths } from '../downloads';
 import { parseSourceForm } from '../source-form';
 import { saveSource } from '../source-save';
@@ -25,7 +26,7 @@ import { ApiError, type ApiCtx, type Route } from './types';
 
 // Изменение через API: те же функции, что у server actions; ошибки — текстом, как на экране.
 
-const JOBS = new Set(['subscriptions.search', 'downloads.sync', 'cleanup.run', 'retention.run', 'tmdb.refresh-all', 'laya.train-now']);
+const JOBS = new Set(['subscriptions.search', 'downloads.sync', 'cleanup.run', 'retention.run', 'tmdb.refresh-all', 'laya.train-now', 'intros.tick']);
 
 const id = (v: string) => {
   const n = Number(v);
@@ -102,6 +103,19 @@ export const WRITE_ROUTES: Route[] = [
       if (t.kind === 'movie') await syncMovie(c.db, tmdb, t.tmdbId);
       else await syncTitle(c.db, tmdb, t.tmdbId, { allSeasons: true });
       return { ok: 'Обновлено' };
+    },
+  },
+  {
+    // перерасчёт заставок и титров: сброс (кроме глав релиза) и разметка этих сезонов в ближайший проход
+    method: 'POST',
+    pattern: 'titles/:kind/:tmdbId/intros',
+    run: (c) => {
+      const t = titleOf(c);
+      const season = c.body.season === undefined ? undefined : Number(c.body.season);
+      if (season !== undefined && !Number.isInteger(season)) throw new ApiError(400, 'season — номер сезона');
+      const r = requeueIntros(c.db, t.id, season);
+      for (const s of r.seasons) enqueue(c.db, 'intros.tick', { titleId: t.id, season: s });
+      return { ok: 'Перерасчёт поставлен', ...r };
     },
   },
   {

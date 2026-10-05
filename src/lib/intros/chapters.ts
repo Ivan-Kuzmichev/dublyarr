@@ -14,12 +14,15 @@ function stamp(sec: number) {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${s}`;
 }
 
-export function buildChapters(o: { intro: Seg | null; credits: Seg | null; duration: number; introName: string; creditsName: string }): string {
+export function buildChapters(o: { intros: Seg[]; credits: Seg | null; duration: number; introName: string; creditsName: string }): string {
   const parts: [number, number, string][] = [];
-  const bodyStart = o.intro ? o.intro[1] : 0;
   const bodyEnd = o.credits ? o.credits[0] : o.duration;
-  if (o.intro) parts.push([0, o.intro[0], 'Начало'], [o.intro[0], o.intro[1], o.introName]);
-  parts.push([bodyStart, bodyEnd, BODY_CHAPTER]);
+  let at = 0;
+  o.intros.forEach((intro, i) => {
+    parts.push([at, intro[0], i === 0 ? 'Начало' : BODY_CHAPTER], [intro[0], intro[1], o.introName]);
+    at = intro[1];
+  });
+  parts.push([at, bodyEnd, BODY_CHAPTER]);
   if (o.credits) parts.push([o.credits[0], o.credits[1], o.creditsName], [o.credits[1], o.duration, 'После титров']);
   const kept = parts.filter(([a, b]) => b - a >= MIN);
   return (

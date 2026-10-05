@@ -4,6 +4,8 @@
 export const STEP = 4096 / 3 / 11025; // секунд на кадр
 /** Значение отпечатка описывает ~2 с звука от своей позиции: найденный конец раньше настоящего примерно на секунду (замер в образе и по главам AniDUB). */
 export const LAG = 1;
+/** Начало: по главам AniDUB точно, по «Клеверу» и синтетике — на 1–2 с раньше; середина — +0,5 с. */
+export const LAG_START = 0.5;
 const MAX_BITS = 8;
 const MAX_GAP = 3;
 const MIN_LEN = 15;
@@ -71,4 +73,53 @@ export function commonSegment(a: Uint32Array, b: Uint32Array): { a: [number, num
   if (len < MIN_LEN || len > MAX_LEN) return null;
   const [i0, i1] = best.run;
   return { a: [i0 * STEP, i1 * STEP], b: [(i0 - best.s) * STEP, (i1 - best.s) * STEP] };
+}
+
+const PRE_PIECE = Math.round(1 / STEP); // кусок общей музыки — от 1 с
+const PRE_GAP = Math.round(6 / STEP); // между кусками — голос, до 6 с
+const PRE_MAX_START = Math.round(3 / STEP);
+const PRE_SHIFT = Math.round(1 / STEP); // у разных серий вступление сдвинуто на доли секунды
+/** Вступление короче — не глава (решение владельца: только больше 5 с). */
+export const PRELUDE_MIN = 5;
+
+/** Общее вступление с первой секунды: куски общей музыки от 1 с через разрывы (голос) до 6 с, первый — в первые 3 с,
+ *  при сдвиге между сериями до ±1 с; координаты — в a; null — нет или ≤ 5 с. */
+export function preludeRun(a: Uint32Array, b: Uint32Array): [number, number] | null {
+  let best: [number, number] | null = null;
+  for (let s = -PRE_SHIFT; s <= PRE_SHIFT; s++) {
+    const r = preludeAt(a, b, s);
+    if (r && (!best || r[1] - r[0] > best[1] - best[0])) best = r;
+  }
+  return best;
+}
+
+/** То же при сдвиге s: кадр i в a ↔ i - s в b. */
+function preludeAt(a: Uint32Array, b: Uint32Array, shift: number): [number, number] | null {
+  const to = Math.min(a.length, b.length + shift);
+  let chain: [number, number] | null = null;
+  let start = -1;
+  let lastGood = -1;
+  const close = (): boolean => {
+    // кусок [start, lastGood] закончен: продолжает цепочку или (первый) открывает её; false — дальше искать незачем
+    if (start < 0 || lastGood + 1 - start < PRE_PIECE) return true;
+    if (!chain) {
+      if (start > PRE_MAX_START) return false;
+      chain = [start, lastGood + 1];
+    } else if (start - chain[1] <= PRE_GAP) chain[1] = lastGood + 1;
+    else return false;
+    return true;
+  };
+  for (let i = Math.max(0, shift); i < to; i++) {
+    if (popcount((a[i] ^ b[i - shift]) >>> 0) > MAX_BITS) continue;
+    if (start < 0 || i - lastGood > MAX_GAP + 1) {
+      if (!close()) break;
+      if (chain && i - (chain as [number, number])[1] > PRE_GAP) break;
+      start = i;
+    }
+    lastGood = i;
+  }
+  close();
+  if (!chain) return null;
+  const r: [number, number] = [(chain as [number, number])[0] * STEP, (chain as [number, number])[1] * STEP];
+  return r[1] - r[0] > PRELUDE_MIN ? r : null;
 }

@@ -42,3 +42,13 @@ export function nearest<T extends { number: number }>(all: T[], self: T, n = 4):
   }
   return out;
 }
+
+const ADJ = 12; // «подряд»: хвост вступления (голос поверх музыки) совпадает слабо — разрыв до 12 с, как внутри опенинга
+
+/** Главы Intro: вступление и опенинг подряд (или одно внутри другого) — одна, иначе две по порядку. */
+export function combineIntros(prelude: Seg | null, intro: Seg | null): Seg[] {
+  if (!prelude) return intro ? [intro] : [];
+  if (!intro) return [prelude];
+  if (prelude[1] + ADJ >= intro[0] && intro[1] + ADJ >= prelude[0]) return [[Math.min(prelude[0], intro[0]), Math.max(prelude[1], intro[1])]];
+  return [prelude, intro].sort((x, y) => x[0] - y[0]);
+}

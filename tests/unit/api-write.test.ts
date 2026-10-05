@@ -73,3 +73,26 @@ test('раздача: неизвестная — 404', async () => {
   expect((await call('POST', 'releases/999/answer', { match: true })).status).toBe(404);
   expect((await call('POST', 'releases/999/download', {})).status).toBe(404);
 });
+
+test('перерасчёт заставок: сброс сезона (кроме глав релиза) и задача на этот сезон', async () => {
+  const { call, db } = api();
+  const t = title(db);
+  const { episodeFiles } = await import('@/lib/db/schema');
+  const ef = (season: number, number: number, introState: 'marked' | 'none' | 'skipped' | 'error') =>
+    db.insert(episodeFiles).values({ titleId: t.id, season, number, path: `S${season}E${number}.mkv`, size: 1, method: 'hardlink', importedAt: 1, introState, introNote: 'x' }).run();
+  ef(1, 1, 'marked');
+  ef(1, 2, 'none');
+  ef(1, 3, 'skipped');
+  ef(2, 1, 'error');
+  const r = await call('POST', 'titles/series/1399/intros', { season: 1 });
+  expect(r).toEqual({ status: 200, body: { ok: 'Перерасчёт поставлен', seasons: [1], files: 2 } });
+  expect(db.select().from(episodeFiles).all().map((f) => [f.season, f.number, f.introState])).toEqual([[1, 1, null], [1, 2, null], [1, 3, 'skipped'], [2, 1, 'error']]);
+  expect(db.select().from(jobs).all().filter((j) => j.type === 'intros.tick').map((j) => JSON.parse(j.payload))).toEqual([{ titleId: t.id, season: 1 }]);
+  // без сезона — все сезоны сериала
+  expect((await call('POST', 'titles/series/1399/intros', {})).body).toMatchObject({ seasons: [1, 2], files: 1 });
+});
+
+test('задача intros.tick ставится и через jobs', async () => {
+  const { call } = api();
+  expect((await call('POST', 'jobs/intros.tick')).status).toBe(200);
+});

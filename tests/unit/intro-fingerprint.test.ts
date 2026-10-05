@@ -1,5 +1,5 @@
-import { expect, test } from 'vitest';
-import { STEP, commonSegment, popcount } from '@/lib/intros/fingerprint';
+import { describe, expect, test } from 'vitest';
+import { STEP, commonSegment, popcount, preludeRun } from '@/lib/intros/fingerprint';
 
 // псевдослучайный, но повторяемый «звук»
 function noise(n: number, seed: number) {
@@ -70,4 +70,44 @@ test('разрыв длиннее 12 с — два разных куска, бе
   b.set(noise(sec(20), 22), sec(40 + 16));
   const r = commonSegment(a, b)!;
   expect(r.a[0]).toBeCloseTo(136, 0);
+});
+
+describe('общее вступление с первой секунды (prelude)', () => {
+  // как у «Чёрного клевера»: общая музыка кусками по 3 с, между ними 4 с голоса — в каждой серии своего
+  function halfShared(seconds: number, seedA: number, seedB: number) {
+    const music = noise(sec(seconds), 31);
+    const vA = noise(sec(seconds), seedA);
+    const vB = noise(sec(seconds), seedB);
+    const pick = (v: Uint32Array) => music.map((m, i) => (Math.floor(i / sec(1)) % 7 < 3 ? m : v[i]));
+    return [pick(vA), pick(vB)] as const;
+  }
+  test('общие куски музыки через голос 30 с от начала — вступление 0–30', () => {
+    const [pa, pb] = halfShared(30, 41, 42);
+    const a = noise(sec(600), 1);
+    const b = noise(sec(600), 2);
+    a.set(pa, 0);
+    b.set(pb, 0);
+    const r = preludeRun(a, b)!;
+    expect(r[0]).toBeLessThan(1);
+    expect(r[1]).toBeGreaterThan(24);
+    expect(r[1]).toBeLessThan(31);
+  });
+  test('вступление в другой серии сдвинуто на долю секунды — всё равно находится', () => {
+    const [pa, pb] = halfShared(30, 41, 42);
+    const a = noise(sec(600), 1);
+    const b = noise(sec(600), 2);
+    a.set(pa, 0);
+    b.set(pb, 3); // на 3 кадра (~0,4 с) позже
+    const r = preludeRun(a, b)!;
+    expect(r[1]).toBeGreaterThan(24);
+  });
+  test('5 секунд и меньше — не вступление; разные начала — нет', () => {
+    const [pa, pb] = halfShared(5, 41, 42);
+    const a = noise(sec(600), 1);
+    const b = noise(sec(600), 2);
+    a.set(pa, 0);
+    b.set(pb, 0);
+    expect(preludeRun(a, b)).toBeNull();
+    expect(preludeRun(noise(sec(600), 1), noise(sec(600), 2))).toBeNull();
+  });
 });
