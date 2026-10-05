@@ -36,6 +36,17 @@ test('вопрос «тот ли сериал» — с кнопками и сс�
   ]);
 });
 
+test('серия уже ждёт ответа, а вопрос сменился на другую раздачу — новое сообщение; та же раздача — нет', async () => {
+  const { setWanted } = await import('@/lib/wanted');
+  const { db, t, s: src, r, all } = setup();
+  const r2 = db.insert(releases).values({ titleId: t.id, sourceId: src.id, trackerName: 'bitru', title: 'Игра престолов 1 сезон (1-10 из 10)', size: 1, firstSeenAt: 1, lastSeenAt: 1, parsed: r.parsed, match: r.match }).returning().get();
+  const ep = { season: 1, number: 3 };
+  setWanted(db, t.id, ep, 'ask', 'Сомнительное совпадение', null, 5, r.id);
+  setWanted(db, t.id, ep, 'ask', 'Сомнительное совпадение', null, 6, r.id);
+  setWanted(db, t.id, ep, 'ask', 'Сомнительное совпадение', null, 7, r2.id);
+  expect(all().map((n) => n.text.split('\n')[1])).toEqual(['Игра престолов S01 [сомнительно]', 'Игра престолов 1 сезон (1-10 из 10)']);
+});
+
 test('вышел оригинал — если событие включено', () => {
   const { db, t, all } = setup();
   notifyWanted(db, { titleId: t.id, season: 1, number: 4, state: 'waiting', reason: 'Рано', releaseId: null, until: '2026-10-02' }, null, 5);

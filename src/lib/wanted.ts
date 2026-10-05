@@ -10,7 +10,7 @@ const log = logger('downloads');
 
 export function setWanted(db: Db, titleId: number, ep: EpisodeRef, state: 'waiting' | 'missing' | 'ask', reason: string, until: string | null, now: number, releaseId: number | null = null) {
   const prev = db
-    .select({ state: wantedState.state })
+    .select({ state: wantedState.state, releaseId: wantedState.releaseId })
     .from(wantedState)
     .where(and(eq(wantedState.titleId, titleId), eq(wantedState.season, ep.season), eq(wantedState.number, ep.number)))
     .get();
@@ -21,7 +21,8 @@ export function setWanted(db: Db, titleId: number, ep: EpisodeRef, state: 'waiti
     .values(row)
     .onConflictDoUpdate({ target: [wantedState.titleId, wantedState.season, wantedState.number], set: row })
     .run();
-  notifyWanted(db, row, prev?.state ?? null, now);
+  // вопрос по другой раздаче — тоже новость, хотя серия и так «ждёт ответа»
+  notifyWanted(db, row, prev && prev.state === state && state === 'ask' && prev.releaseId !== releaseId ? null : (prev?.state ?? null), now);
 }
 export const clearWanted = (db: Db, titleId: number, ep: EpisodeRef) =>
   db.delete(wantedState).where(and(eq(wantedState.titleId, titleId), eq(wantedState.season, ep.season), eq(wantedState.number, ep.number))).run();
