@@ -135,7 +135,7 @@ export function dubLabel(d: DubPosition, studioName: (id: number) => string | un
 }
 
 export function describeProfile(p: Profile, studioName: (id: number) => string | undefined) {
-  const chain = p.dubs.map((d, i) => dubLabel(d, studioName) + (i > 0 ? ` (через ${d.waitDays} дн)` : '')).join(' → ');
+  const chain = p.dubs.map((d, i) => dubLabel(d, studioName) + (i > 0 ? ` (через ${d.waitDays} дн)` : '')).join(' → ') || 'Озвучка не выбрана';
   const q = p.quality;
   const quality = [
     `${q.target}p${q.allowLower ? ', иначе ниже' : ''}`,

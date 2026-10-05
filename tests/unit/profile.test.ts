@@ -183,3 +183,8 @@ test('ожидания не убывают сверху вниз', () => {
     ),
   ).toEqual({ ok: false, error: 'Ожидание не может быть меньше, чем у позиции выше' });
 });
+
+test('сводка без выбранных озвучек — «Озвучка не выбрана», а не пустое начало', () => {
+  const p = { ...builtinProfile(testDb(), 'series'), dubs: [] };
+  expect(describeProfile(p, () => undefined).chain).toBe('Озвучка не выбрана');
+});
