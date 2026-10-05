@@ -8,7 +8,7 @@ import { useFound } from '@/components/subscribe/useFound';
 import type { Profile } from '@/lib/profile-core';
 import { saveSubscriptionAction } from './subscribe-actions';
 
-type Props = { tmdbId: number; subscribed: boolean; title: string; subtitle: string; studios: StudioOption[]; names: Record<number, string>; profile: Profile; basis?: Record<number, string> };
+type Props = { tmdbId: number; subscribed: boolean; title: string; subtitle: string; studios: StudioOption[]; names: Record<number, string>; profile: Profile; delays?: Record<number, string> };
 
 export function SubscribeButton(p: Props) {
   const [open, setOpen] = useState(false);
@@ -31,11 +31,11 @@ export function SubscribeButton(p: Props) {
 }
 
 /** Окно с подсказкой «что нашлось на трекерах» (опрос, пока идёт поиск). */
-function Dialog({ tmdbId, subscribed, title, subtitle, studios, names, profile, basis, onClose }: Props & { onClose: () => void }) {
+function Dialog({ tmdbId, subscribed, title, subtitle, studios, names, profile, delays, onClose }: Props & { onClose: () => void }) {
   const found = useFound(tmdbId, 'tv');
   return (
     <SubscribeDialog
-      basis={basis}
+      delays={delays}
       open
       onClose={onClose}
       mode={subscribed ? 'edit' : 'subscribe'}

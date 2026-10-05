@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { testDb } from './helpers';
-import { episodeStatuses, todayData, calendarWeek, mondayOf, seriesDubColumns, speedBlock, delayBasis, attentionFor } from '@/lib/dashboard';
+import { episodeStatuses, todayData, calendarWeek, mondayOf, speedBlock, subscribeDelays, attentionFor } from '@/lib/dashboard';
 import { setSetting } from '@/lib/settings';
 import { eq } from 'drizzle-orm';
 import { downloads, episodeFiles, episodes, notices, oldCopies, seasons, studioSightings, studios, subscriptions, titles, wantedState } from '@/lib/db/schema';
@@ -124,15 +124,10 @@ test('календарь: прогноз озвучки — отдельное �
   expect(w.days[5].events).toEqual([expect.objectContaining({ code: 'S01E03', kind: 'forecast', sub: 'HDrezka ≈ +2,5 д' })]);
 });
 
-test('карточка: колонки студий, скорость озвучки, основания', () => {
+test('карточка: скорость озвучки в боковой колонке; окно подписки — средняя задержка студии коротко', () => {
   const { db, t, hd } = withForecast();
-  const c = seriesDubColumns(db, t.id, 1, today);
-  expect(c.columns).toEqual(['HDrezka', 'Любая']);
-  expect(c.cells.get(1)).toEqual([{ kind: 'done', text: '+2д' }, { kind: 'done', text: '+2д' }]);
-  expect(c.cells.get(3)).toEqual([{ kind: 'expected', text: '26 сент' }, { kind: 'none', text: '—' }]);
-  expect(c.cells.get(5)).toEqual([{ kind: 'none', text: '—' }, { kind: 'none', text: '—' }]);
   expect(speedBlock(db, t.id)).toEqual([{ name: 'HDrezka', text: '+2,5 дня', width: '100%' }]);
-  expect(delayBasis(db, t.id)).toEqual({ [hd.id]: 'по 2 сериям' });
+  expect(subscribeDelays(db)).toEqual({ [hd.id]: '≈+3 д' });
 });
 
 test('«Требует внимания»: старые копии ждут подтверждения правила', () => {

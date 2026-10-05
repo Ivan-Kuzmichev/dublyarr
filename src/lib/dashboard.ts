@@ -5,8 +5,8 @@ import type { Db } from './db/client';
 import { downloads, episodeFiles, episodes, studios, subscriptions, titles, wantedState, type Download } from './db/schema';
 import type { Paths } from './downloads';
 import { digitalReleased } from './movies';
-import { forecastEpisode, formatDelay, studioDelays, titleSightings, type EpisodeForecast, type StudioDelay } from './forecast';
-import { dubLabel, type Profile } from './profile-core';
+import { approxDelay, forecastEpisode, formatDelay, globalStudioDelays, studioDelays, titleSightings, type EpisodeForecast, type StudioDelay } from './forecast';
+import type { Profile } from './profile-core';
 import { wantedEpisodes } from './subscriptions';
 import { addDays, formatAirDate, formatShortDate } from './dates';
 import { formatSize } from './format';
@@ -339,45 +339,6 @@ export function calendarWeek(db: Db, monday: string, today: string) {
   return { monday, days };
 }
 
-export type DubCell = { kind: 'done' | 'expected' | 'none'; text: string };
-const NONE: DubCell = { kind: 'none', text: '—' };
-const DAY_MS = 86_400_000;
-const diffDays = (a: string, b: string) => Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / DAY_MS);
-
-/** «сег.», «завтра», «пт» на этой неделе, иначе «3 окт». */
-function expectedText(date: string, today: string) {
-  const d = diffDays(date, today);
-  if (d === 0) return 'сег.';
-  if (d === 1) return 'завтра';
-  if (d > 1 && d <= 6) return WEEKDAYS[new Date(`${date}T00:00:00Z`).getUTCDay()];
-  return formatShortDate(date, today);
-}
-
-/** Колонки озвучек профиля (до 3) в карточке сериала: вышла у студии — «+1д», ждём — дата прогноза. */
-export function seriesDubColumns(db: Db, titleId: number, season: number, today: string): { columns: string[]; cells: Map<number, DubCell[]> } {
-  const sub = db.select().from(subscriptions).where(eq(subscriptions.titleId, titleId)).get();
-  const cells = new Map<number, DubCell[]>();
-  if (!sub || isMovieProfile(sub.profile)) return { columns: [], cells };
-  const name = studioNames(db);
-  const dubs = sub.profile.dubs.filter((d) => d.kind !== 'original').slice(0, 3);
-  const delays = studioDelays(db, titleId);
-  const sightings = titleSightings(db, titleId).filter((x) => x.season === season);
-  for (const e of db.select().from(episodes).where(and(eq(episodes.titleId, titleId), eq(episodes.season, season))).all()) {
-    cells.set(
-      e.number,
-      dubs.map((d) => {
-        if (!e.airDate) return NONE;
-        const seen = sightings.filter((x) => x.number === e.number && (d.kind === 'any' || (d.kind === 'studio' && x.studioId === d.studioId))).sort((a, b) => a.seenAt - b.seenAt)[0];
-        if (seen) return { kind: 'done', text: `+${Math.max(0, diffDays(new Date(seen.seenAt).toISOString().slice(0, 10), e.airDate))}д` };
-        const days = d.kind === 'studio' ? delays.get(d.studioId)?.days : null;
-        if (e.airDate <= today && days !== null && days !== undefined) return { kind: 'expected', text: expectedText(addDays(e.airDate, Math.ceil(days)), today) };
-        return NONE;
-      }),
-    );
-  }
-  return { columns: dubs.map((d) => dubLabel(d, name)), cells };
-}
-
 /** «Скорость озвучки»: студии профиля и замеченные у сериала. */
 export function speedBlock(db: Db, titleId: number): { name: string; text: string; width: string }[] {
   const sub = db.select().from(subscriptions).where(eq(subscriptions.titleId, titleId)).get();
@@ -391,9 +352,9 @@ export function speedBlock(db: Db, titleId: number): { name: string; text: strin
   });
 }
 
-/** Основание прогноза по студиям — для окна подписки. */
-export function delayBasis(db: Db, titleId: number): Record<number, string> {
-  return Object.fromEntries([...studioDelays(db, titleId).values()].map((d) => [d.studioId, d.basisText]));
+/** Средняя задержка студий по всем сериалам — коротко для окна подписки («≈+3 д»). */
+export function subscribeDelays(db: Db): Record<number, string> {
+  return Object.fromEntries([...globalStudioDelays(db)].map(([id, d]) => [id, approxDelay(d)]));
 }
 
 /** «Требует внимания» для учётки: вопросы о раздачах — с правом ответа, уборка и старые копии — с хранилищем, настройки — админу. */

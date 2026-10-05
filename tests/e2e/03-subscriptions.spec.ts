@@ -18,7 +18,7 @@ test('подписка → карточка → библиотека → пра�
   // подписка с изменённым порядком и качеством
   await page.getByRole('button', { name: 'Подписаться' }).click();
   const dialog = page.getByRole('dialog');
-  await dialog.getByRole('button', { name: /^1\s*LostFilm\s*прогноз/ }).click(); // убрать LostFilm из порядка
+  await dialog.getByRole('button', { name: /^1\s*LostFilm/ }).click(); // убрать LostFilm из порядка
   await dialog.getByRole('radio', { name: '1080p' }).click();
   await dialog.getByRole('button', { name: 'Подписаться' }).click();
   await expect(dialog).toBeHidden();
@@ -56,6 +56,10 @@ test('подписка → карточка → библиотека → пра�
   await page.goto('/series/1399');
   await page.getByRole('button', { name: 'Подписка', exact: true }).click();
   await expect(dialog.getByRole('button', { name: 'Paravozik' })).toBeVisible();
+  // «Сбросить выбранное» — порядок озвучек пуст
+  await dialog.getByRole('button', { name: 'Сбросить выбранное' }).click();
+  await expect(dialog.getByText('нажми, чтобы задать порядок')).toBeVisible();
+  await expect(dialog.getByRole('button', { name: /^1\s/ })).toHaveCount(0);
   await dialog.getByRole('button', { name: 'Отписаться' }).click();
   await dialog.getByRole('button', { name: 'Точно отписаться' }).click();
   await expect(dialog).toBeHidden();

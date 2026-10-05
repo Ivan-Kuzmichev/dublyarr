@@ -20,11 +20,11 @@ type Props = {
   initial: Profile;
   hidden: Record<string, string>;
   action: (prev: DialogState, form: FormData) => Promise<DialogState>;
-  basis?: Record<number, string>;
+  delays?: Record<number, string>;
   found?: { studios: Record<number, number>; searching: boolean } | null;
 };
 
-export function SubscribeDialog({ open, onClose, mode, title, subtitle, studios, names: allNames, initial, hidden, action, basis, found }: Props) {
+export function SubscribeDialog({ open, onClose, mode, title, subtitle, studios, names: allNames, initial, hidden, action, delays, found }: Props) {
   const titleId = useId();
   const [profile, setProfile] = useState(initial);
   const [confirmUnsub, setConfirmUnsub] = useState(false);
@@ -54,7 +54,7 @@ export function SubscribeDialog({ open, onClose, mode, title, subtitle, studios,
           </button>
         </header>
         <div className="min-h-0 overflow-y-auto px-5 py-5 md:px-7">
-          <ProfileEditor studios={studios} names={allNames} value={profile} onChange={setProfile} basis={basis} found={found} />
+          <ProfileEditor studios={studios} names={allNames} value={profile} onChange={setProfile} delays={delays} found={found} />
         </div>
         <footer className="flex flex-col gap-3 border-t border-line px-5 py-4 md:px-7">
           <p className="m-0 text-[13px] leading-normal text-muted">

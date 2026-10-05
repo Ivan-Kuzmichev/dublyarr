@@ -47,6 +47,19 @@ test('классы: отдельные «видели» > «по датам ра
   expect(studioDelays(db, t.id).get(c)!.basisText).toBe('по 1 серии');
 });
 
+test('старый каталог (увидели через годы после эфира) — не скорость студии: в задержку не входит', () => {
+  const { db, t, st, see } = setup();
+  const a = st('AniLibria');
+  // серии эфира 2017 года, впервые увиденные в 2026-м (как у «Чёрного клевера»)
+  db.insert(episodes).values({ titleId: t.id, season: 2, number: 1, name: 'old', airDate: '2017-10-03' }).run();
+  db.insert(studioSightings).values({ titleId: t.id, studioId: a, season: 2, number: 1, seenAt: at('2026-10-01'), basis: 'seen', fromPack: false }).run();
+  expect(studioDelays(db, t.id).get(a)).toMatchObject({ days: null, basis: 'none', basisText: 'нет данных' });
+  see(a, 1, at('2026-09-03')); // свежая серия: +2,5
+  expect(studioDelays(db, t.id).get(a)).toMatchObject({ days: 2.5, count: 1, basis: 'seen' });
+  see(a, 2, at('2026-12-01')); // через 84 дня — ещё считается (студия бывает медленной)
+  expect(studioDelays(db, t.id).get(a)!.count).toBe(2);
+});
+
 test('formatDelay', () => {
   expect(formatDelay(0)).toBe('в день эфира');
   expect(formatDelay(1)).toBe('+1 день');
@@ -99,4 +112,20 @@ test('строка запасного варианта: сегодня и зав
   const f = (today: string) => forecastEpisode(p, { season: 1, number: 4, airDate: '2026-09-29' }, new Map([delay(1, 2)]), [], name, today).fallbackNote;
   expect(f('2026-10-01')).toBe('Если HDrezka не выйдет сегодня — возьму LostFilm, потом заменю.');
   expect(f('2026-09-30')).toBe('Если HDrezka не выйдет до завтра — возьму LostFilm, потом заменю.');
+});
+
+test('средняя задержка студии по всем сериалам — только свежие серии; короткий формат для окна подписки', async () => {
+  const { globalStudioDelays, approxDelay } = await import('@/lib/forecast');
+  const { db, st, see } = setup();
+  const a = st('LostFilm');
+  see(a, 1, at('2026-09-02')); // +1,5
+  see(a, 2, at('2026-09-11')); // +3,5
+  // второй сериал той же студии
+  const t2 = db.insert(titles).values({ tmdbId: 2, kind: 'series', nameRu: 'B', nameOriginal: 'B', originalLanguage: 'en', status: 'returning', createdAt: 1, refreshedAt: 1 }).returning().get();
+  db.insert(episodes).values({ titleId: t2.id, season: 1, number: 1, name: 'x', airDate: '2026-09-01' }).run();
+  db.insert(episodes).values({ titleId: t2.id, season: 1, number: 2, name: 'old', airDate: '2018-01-01' }).run();
+  db.insert(studioSightings).values({ titleId: t2.id, studioId: a, season: 1, number: 1, seenAt: at('2026-09-04'), basis: 'seen', fromPack: false }).run(); // +3,5
+  db.insert(studioSightings).values({ titleId: t2.id, studioId: a, season: 1, number: 2, seenAt: at('2026-09-04'), basis: 'seen', fromPack: false }).run(); // старый каталог
+  expect(globalStudioDelays(db).get(a)).toBe(3.5); // медиана 1,5 · 3,5 · 3,5
+  expect([0, 0.5, 3, 13.5, 14, 30, 59, 60, 95].map(approxDelay)).toEqual(['≈ в день эфира', '≈+1 д', '≈+3 д', '≈+14 д', '≈+2 нед', '≈+4 нед', '≈+8 нед', '≈+2 мес', '≈+3 мес']);
 });

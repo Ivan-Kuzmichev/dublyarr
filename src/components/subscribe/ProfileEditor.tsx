@@ -12,7 +12,8 @@ type Props = {
   names: Record<number, string>;
   value: Profile;
   onChange: (p: Profile) => void;
-  basis?: Record<number, string>;
+  /** средняя задержка студии по всем сериалам: «≈+3 д» */
+  delays?: Record<number, string>;
   /** Студии, чьи раздачи этого сериала уже нашлись (studioId → сколько), и идёт ли поиск. */
   found?: { studios: Record<number, number>; searching: boolean } | null;
 };
@@ -46,7 +47,7 @@ export function Choice<T extends string | number>({ options, value, onChange, la
 type Item = { key: string; label: string; pos: DubPosition };
 
 /** Редактор профиля: окно подписки и профили по умолчанию. */
-export function ProfileEditor({ studios, names, value: p, onChange, basis, found }: Props) {
+export function ProfileEditor({ studios, names, value: p, onChange, delays, found }: Props) {
   const [filter, setFilter] = useState('');
   const set = (patch: Partial<Profile>) => onChange({ ...p, ...patch });
 
@@ -76,7 +77,16 @@ export function ProfileEditor({ studios, names, value: p, onChange, basis, found
   return (
     <div className="flex flex-col gap-7">
       <section className="flex flex-col gap-3">
-        <H note="нажми, чтобы задать порядок">Озвучки</H>
+        <div className="flex items-baseline justify-between gap-3">
+          <h3 className="m-0 text-base font-semibold">Озвучки</h3>
+          {p.dubs.length > 0 ? (
+            <button type="button" onClick={() => set({ dubs: [] })} className="cursor-pointer text-[13px] text-faint hover:text-text">
+              Сбросить выбранное
+            </button>
+          ) : (
+            <span className="text-[13px] text-faint">нажми, чтобы задать порядок</span>
+          )}
+        </div>
         <div className="flex flex-col gap-2">
           {p.dubs.map((d, i) => (
             <div key={keyOf(d)} className={`${row} border-accent bg-surface-2`}>
@@ -84,7 +94,7 @@ export function ProfileEditor({ studios, names, value: p, onChange, basis, found
                 <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-accent font-mono text-xs font-semibold text-on-accent">{i + 1}</span>
                 <span className="flex flex-col">
                   <span className="text-[15px] font-medium">{labelOf(d)}</span>
-                  {basis && d.kind === 'studio' && <span className="text-xs text-faint">прогноз: {basis[d.studioId] ?? 'нет данных'}</span>}
+                  {delays && d.kind === 'studio' && delays[d.studioId] && <span className="text-xs text-faint">обычно {delays[d.studioId]} после эфира</span>}
                 </span>
               </button>
               {i === 0 ? (
@@ -132,6 +142,7 @@ export function ProfileEditor({ studios, names, value: p, onChange, basis, found
                 className={`h-11 cursor-pointer rounded-[10px] border px-3 text-sm hover:text-text ${c ? 'border-accent text-text' : 'border-line text-text-2 hover:border-line-strong'}`}
               >
                 {item.label}
+                {item.pos.kind === 'studio' && delays?.[item.pos.studioId] && <span className="ml-1.5 text-xs text-faint">{delays[item.pos.studioId]}</span>}
                 {c > 0 && <span className="ml-1.5 font-mono text-xs text-accent">{c}</span>}
               </button>
             );

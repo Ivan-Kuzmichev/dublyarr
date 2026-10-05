@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { episodeStatuses, seriesDubColumns, speedBlock, delayBasis, type EpisodeStatus, type DubCell } from '@/lib/dashboard';
+import { episodeStatuses, speedBlock, subscribeDelays, type EpisodeStatus } from '@/lib/dashboard';
 import { notFound } from 'next/navigation';
 import { PageTitle } from '@/components/shell/PageTitle';
 import { buttonClass } from '@/components/ui/Button';
@@ -38,12 +38,6 @@ const EP_TONE: Record<EpisodeStatus['state'], string> = {
   skipped: 'text-faint',
 };
 
-/** Прогноз — пунктирная янтарная рамка; вышла — светлая заливка. */
-function DubBadge({ cell }: { cell: DubCell }) {
-  if (cell.kind === 'none') return <span className="text-[13px] text-dim">—</span>;
-  const cls = cell.kind === 'done' ? 'bg-text-2 text-bg' : 'border-[1.5px] border-dashed border-accent text-accent';
-  return <span className={`inline-flex h-7 min-w-11 items-center justify-center rounded-md px-1.5 font-mono text-xs ${cls}`}>{cell.text}</span>;
-}
 
 export const dynamic = 'force-dynamic';
 
@@ -96,9 +90,8 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
   const current = seasons.some((s) => String(s.number) === seasonParam) ? Number(seasonParam) : pickDefaultSeason(seasons, today);
   const eps = listEpisodes(db, t.id, current);
   const statuses = episodeStatuses(db, t.id, today);
-  const dubCols = seriesDubColumns(db, t.id, current, today);
-  const basis = delayBasis(db, t.id);
-  const cols = `48px minmax(120px,1fr) ${dubCols.columns.map(() => '60px').join(' ')} 150px 110px`;
+  const delays = subscribeDelays(db);
+  const cols = '48px minmax(120px,1fr) 150px 110px';
   const regular = seasons.filter((s) => s.number > 0).length;
   const ordered = [...seasons.filter((s) => s.number > 0), ...seasons.filter((s) => s.number === 0)];
   const backdrop = imageUrl('w1280', t.backdropPath);
@@ -148,7 +141,7 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
               studios={studios}
               names={studioNames}
               profile={sub && !isMovieProfile(sub.profile) ? sub.profile : getDefaultProfile(db, t.kind)}
-              basis={basis}
+              delays={delays}
             />
             )}
             {may.look && (
@@ -226,11 +219,6 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
             >
               <span>№</span>
               <span>Серия</span>
-              {dubCols.columns.map((c) => (
-                <span key={c} className="truncate max-lg:hidden">
-                  {c}
-                </span>
-              ))}
               <span className="max-lg:hidden">Статус</span>
               <span>Эфир</span>
             </div>
@@ -248,11 +236,6 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
                     <span className={`truncate ${future ? '' : 'font-medium text-text'}`}>{e.name}</span>
                     {st && <span className={`truncate text-xs lg:hidden ${EP_TONE[st.state]}`}>{[st.text, st.detail].filter(Boolean).join(' · ')}</span>}
                   </span>
-                  {(dubCols.cells.get(e.number) ?? dubCols.columns.map(() => null)).map((c, i) => (
-                    <span key={i} className="max-lg:hidden">
-                      {c && <DubBadge cell={c} />}
-                    </span>
-                  ))}
                   <span className="flex min-w-0 flex-col gap-0.5 max-lg:hidden">
                     {st && <span className={`text-[13px] ${EP_TONE[st.state]}`}>{st.text}</span>}
                     {st?.detail && <span className="truncate text-xs text-faint" title={st.detail}>{st.detail}</span>}

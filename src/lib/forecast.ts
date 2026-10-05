@@ -9,6 +9,8 @@ import { plural } from './plural';
 // Задержка студии после эфира и прогноз озвучки (spec §9).
 
 const DAY = 86_400_000;
+/** Серии, впервые увиденные позже, — старый каталог (серии 2017 года, найденные в 2026-м), в задержку студии не входят. */
+const BACKLOG_DAYS = 90;
 const dayOf = (iso: string) => Date.parse(`${iso}T00:00:00Z`);
 const daysBetween = (a: string, b: string) => Math.round((dayOf(a) - dayOf(b)) / DAY);
 const isoOf = (ms: number) => new Date(ms).toISOString().slice(0, 10);
@@ -38,7 +40,8 @@ export function studioDelays(db: Db, titleId: number): Map<number, StudioDelay> 
     const a = air.get(`${s.season}:${s.number}`);
     if (!a) continue;
     const d = (s.seenAt - dayOf(a)) / DAY;
-    if (d < 0) continue;
+    // раньше эфира — ошибка даты; позже 90 дней — догоняем старый каталог, это не скорость студии
+    if (d < 0 || d > BACKLOG_DAYS) continue;
     byStudio.get(s.studioId)!.push({ d, basis: s.basis, pack: s.fromPack });
   }
   for (const [studioId, list] of byStudio) {
@@ -147,4 +150,30 @@ export function eagerTitles(db: Db, today: string): Set<number> {
     if (f.eta && f.eta <= today) out.add(w.titleId);
   }
   return out;
+}
+
+/** Средняя (медиана) задержка студии по всем сериалам — для окна подписки. Только свежие серии (≤ 90 дней после эфира);
+ *  отдельные серии, а если их нет — паки. */
+export function globalStudioDelays(db: Db): Map<number, number> {
+  const air = new Map(db.select().from(episodes).all().map((e) => [`${e.titleId}:${e.season}:${e.number}`, e.airDate]));
+  const by = new Map<number, { single: number[]; packs: number[] }>();
+  for (const s of db.select().from(studioSightings).all()) {
+    const a = air.get(`${s.titleId}:${s.season}:${s.number}`);
+    if (!a) continue;
+    const d = (s.seenAt - dayOf(a)) / DAY;
+    if (d < 0 || d > BACKLOG_DAYS) continue;
+    if (!by.has(s.studioId)) by.set(s.studioId, { single: [], packs: [] });
+    by.get(s.studioId)![s.fromPack ? 'packs' : 'single'].push(d);
+  }
+  const out = new Map<number, number>();
+  for (const [id, x] of by) out.set(id, median(x.single.length ? x.single : x.packs));
+  return out;
+}
+
+/** Коротко для окна подписки: «≈+3 д», «≈+2 нед», «≈+1 мес». */
+export function approxDelay(days: number): string {
+  if (days <= 0) return '≈ в день эфира';
+  if (days < 14) return `≈+${Math.max(1, Math.round(days))} д`;
+  if (days < 60) return `≈+${Math.round(days / 7)} нед`;
+  return `≈+${Math.round(days / 30)} мес`;
 }
