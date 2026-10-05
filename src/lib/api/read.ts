@@ -1,3 +1,4 @@
+import { notificationsDebug } from '../notify';
 import { desc, eq, inArray } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { downloads, episodeFiles, titles, wantedState, type Title } from '../db/schema';
@@ -88,6 +89,8 @@ export const READ_ROUTES: Route[] = [
       return { version: c.deps.version, services: serviceStatuses(c.db, c.deps.now), jobs: jobsSummary(c.db), disk };
     },
   },
+  // диагностика уведомлений: получатели и последние события с доставками
+  { method: 'GET', pattern: 'notifications', run: (c) => notificationsDebug(c.db, Math.min(100, Number(c.query.get('limit')) || 30)) },
   {
     method: 'GET',
     pattern: 'logs',

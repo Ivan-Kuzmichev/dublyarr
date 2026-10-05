@@ -66,3 +66,22 @@ test('журнал запросов API: имя токена видно (не м
   expect(row).toMatchObject({ tokenName: 'claude', status: 200 });
   expect(JSON.stringify(lines)).not.toContain(token);
 });
+
+test('notifications: последние события с доставками и получатели (чат и события учёток)', async () => {
+  const { call, db } = api();
+  const { users } = await import('@/lib/db/schema');
+  const { notify } = await import('@/lib/notify');
+  const u = db.insert(users).values({ username: 'admin', passwordHash: 'x', telegramChatId: '42', createdAt: 1, updatedAt: 1 }).returning().get();
+  db.insert(users).values({ username: 'anya', passwordHash: 'x', role: 'user', permissions: {}, createdAt: 1, updatedAt: 1 }).run();
+  notify(db, { key: 'import:1', kind: 'downloaded', text: '📥 A · S01E01' }, 5);
+  const r = await call('GET', 'notifications');
+  expect(r.status).toBe(200);
+  expect(r.body).toMatchObject({
+    recipients: [
+      { user: 'admin', chat: '42', disabled: false, events: { downloaded: true, ask: true } },
+      { user: 'anya', chat: null },
+    ],
+    notifications: [{ key: 'import:1', kind: 'downloaded', text: '📥 A · S01E01', createdAt: 5, sentAt: null, deliveries: [{ user: 'admin', chatId: '42', sentAt: null, error: null, attempts: 0 }] }],
+  });
+  expect(u.id).toBeGreaterThan(0);
+});

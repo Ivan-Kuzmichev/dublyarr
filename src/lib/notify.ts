@@ -1,4 +1,4 @@
-import { and, asc, eq, isNotNull, isNull, lte } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lte } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { notificationDeliveries, notifications, users } from './db/schema';
 import { can, type Permission } from './auth/permissions';
@@ -107,4 +107,26 @@ export async function sendPending(db: Db, tg: Telegram, now = Date.now()) {
 
 export function parseEventsForm(form: FormData): Record<NotifyKind, boolean> {
   return Object.fromEntries((Object.keys(DEFAULT_EVENTS) as NotifyKind[]).map((k) => [k, form.get(k) === 'on'])) as Record<NotifyKind, boolean>;
+}
+
+/** Для диагностики (API): получатели — чат, выключена ли учётка, события; последние события с доставками. */
+export function notificationsDebug(db: Db, limit = 30) {
+  const people = db.select().from(users).all();
+  const name = new Map(people.map((u) => [u.id, u.username]));
+  const recent = db.select().from(notifications).orderBy(desc(notifications.id)).limit(limit).all();
+  const deliveries = recent.length ? db.select().from(notificationDeliveries).where(inArray(notificationDeliveries.notificationId, recent.map((n) => n.id))).all() : [];
+  return {
+    recipients: people.map((u) => ({ user: u.username, chat: u.telegramChatId, disabled: u.disabled, events: eventsOf(u) })),
+    notifications: recent.map((n) => ({
+      id: n.id,
+      key: n.key,
+      kind: n.kind,
+      text: n.text,
+      createdAt: n.createdAt,
+      sentAt: n.sentAt,
+      deliveries: deliveries
+        .filter((d) => d.notificationId === n.id)
+        .map((d) => ({ user: name.get(d.userId) ?? null, chatId: d.chatId, nextAt: d.nextAt, sentAt: d.sentAt, error: d.error, attempts: d.attempts })),
+    })),
+  };
 }
