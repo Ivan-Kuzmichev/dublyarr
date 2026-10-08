@@ -76,3 +76,11 @@ test('названия в скобках через запятую — отде�
   // пометка страны или года в скобках — не название
   expect(parseNames('Shameless (US) / S01E01 [2011, WEB-DL 1080p]').names).toEqual(['Shameless (US)']);
 });
+
+test('названия: baibako «A /B /s02e01-12 /…», bitru «A 4 сезон (1-8 из 10) / B (2026) …» — без сезона, качества и подписей', () => {
+  expect(parseNames('Тед Лассо /Ted Lasso /s02e01-12 /HD720p WEBRip /Полный 2 сезон')).toEqual({ names: ['Тед Лассо', 'Ted Lasso'], year: null });
+  expect(parseNames('Тед Лассо 4 сезон (1-8 из 10) / Ted Lasso (2026) WEB-DL | от Ultradox')).toEqual({ names: ['Тед Лассо', 'Ted Lasso'], year: 2026 });
+  expect(parseNames('Фонари 1 сезон (1-8 из 8) / Lanterns (2026) WEB-DL | 4К, HDR10+, 10-bit | от Мастер 5')).toEqual({ names: ['Фонари', 'Lanterns'], year: 2026 });
+  // «AC/DC» без пробела перед слешем — одно название
+  expect(parseNames('AC/DC: Live at River Plate [2011, BDRip]').names).toEqual(['AC/DC: Live at River Plate']);
+});
