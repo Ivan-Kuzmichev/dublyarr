@@ -8,6 +8,7 @@
     "dev": "next dev",
     "build": "next build && node esbuild.mjs",
     "start": "node dist/supervisor.cjs",
+    "laya:labels": "esbuild scripts/laya-labels.ts --bundle --platform=node --target=node24 --format=cjs --external:better-sqlite3 --external:@node-rs/argon2 --external:pino --external:undici --alias:@=./src --outfile=laya-train/data/labels.cjs --log-level=error && node laya-train/data/labels.cjs",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",

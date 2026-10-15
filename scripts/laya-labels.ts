@@ -26,7 +26,7 @@ function bytes(s: string): number {
   const k = { КБ: 1024, МБ: 1024 ** 2, ГБ: 1024 ** 3, ТБ: 1024 ** 4 }[m[2] as 'ГБ'];
   return Math.round(Number(m[1].replace(',', '.')) * k);
 }
-const tracker = (t: string) => (/AniLiberty/.test(t) ? 'Anilibria' : /^\S.*\(Lost[Ff]ilm\)$/.test(t) || / - rus /.test(t) ? 'LostFilm.tv' : /Полный S\d|\(Обновляемая\)/.test(t) ? 'RUDUB' : /\[RUS\] \[HDTV/.test(t) ? 'AniDUB' : 'RuTracker.org');
+const tracker = (t: string) => (/AniLiberty/.test(t) ? 'Anilibria' : / - RUSSIAN…?$/.test(t) ? 'Kinozal' : /^\S.*\(Lost[Ff]ilm\)$/.test(t) || / - rus /.test(t) ? 'LostFilm.tv' : /Полный S\d|\(Обновляемая\)/.test(t) ? 'RUDUB' : /\[RUS\] \[HDTV/.test(t) ? 'AniDUB' : 'RuTracker.org');
 
 const db = openDb(':memory:');
 migrateDb(db);
