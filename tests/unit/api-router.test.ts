@@ -85,3 +85,12 @@ test('notifications: последние события с доставками �
   });
   expect(u.id).toBeGreaterThan(0);
 });
+
+test('laya/dataset: обучающий набор строками (задача, сериал, вопрос, ответ)', async () => {
+  const { call, db } = api();
+  const { layaExamples } = await import('@/lib/db/schema');
+  db.insert(layaExamples).values({ task: 'match', key: 'tv:1|RuTracker|x|1', input: { state: { сериал: 'A' }, question: { type: 'noul', instructions: '?' }, features: [] }, label: true, source: 'match-answer', createdAt: 1 }).run();
+  const r = await call('GET', 'laya/dataset');
+  expect(r.status).toBe(200);
+  expect((r.body as { rows: unknown[] }).rows).toEqual([{ task: 'match', group: 'tv:1', source: 'user', state: { сериал: 'A' }, question: { type: 'noul', instructions: '?' }, target: true }]);
+});
