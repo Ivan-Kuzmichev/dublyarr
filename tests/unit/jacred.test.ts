@@ -64,3 +64,20 @@ test('трекер JacRed с другим именем — тот же, что �
   const [r] = await jacredSearch(src(), 'x', 'series', { fetchImpl, sleep: nosleep });
   expect(r).toMatchObject({ indexerId: 'anilibria', indexerName: 'aniliberty' });
 });
+
+test('запрос — с User-Agent браузера: jac.red отвечает 403 «голому» fetch Node (2.5.1)', async () => {
+  let ua: string | null = null;
+  const fetchImpl = (async (_u: string, init?: RequestInit) => {
+    ua = new Headers(init?.headers).get('user-agent');
+    return json([]);
+  }) as unknown as typeof fetch;
+  await jacredSearch(src(), 'x', 'series', { fetchImpl, sleep: nosleep });
+  expect(ua).toMatch(/^Mozilla\/5\.0 /);
+});
+
+test('403 от веб-сервера (HTML) — «отказал в доступе», а не «неверный ключ»; 401 — неверный ключ', async () => {
+  const html = (async () => new Response('<html><body>403 Forbidden</body></html>', { status: 403, headers: { 'content-type': 'text/html' } })) as unknown as typeof fetch;
+  await expect(jacredSearch(src(), 'x', 'series', { fetchImpl: html, sleep: nosleep })).rejects.toThrow('JacRed отказал в доступе (403)');
+  const auth = (async () => json({}, 401)) as unknown as typeof fetch;
+  await expect(jacredSearch(src(), 'x', 'series', { fetchImpl: auth, sleep: nosleep })).rejects.toThrow('Неверный ключ JacRed');
+});

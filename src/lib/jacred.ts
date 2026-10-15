@@ -12,6 +12,8 @@ const log = logger('search');
 const sleepMs = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const GAP_MS = 1000;
 const MAX_RETRY_MS = 10_000;
+// jac.red (nginx) отвечает 403 на запросы без браузерного User-Agent — в том числе на fetch Node (2.5.1)
+const HEADERS = { 'user-agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0 Safari/537.36 Dublyarr', accept: 'application/json' };
 const TYPES: Record<'series' | 'anime' | 'movie', string[]> = {
   series: ['serial', 'tvshow', 'multserial', 'docuserial'],
   anime: ['anime', 'serial', 'tvshow', 'multserial'],
@@ -40,7 +42,7 @@ async function get(src: Src, query: string, o: Opts): Promise<unknown> {
   for (let attempt = 0; attempt < 2; attempt++) {
     let res: Response;
     try {
-      res = await fetchImpl(url, { signal: AbortSignal.timeout(src.timeoutMs) });
+      res = await fetchImpl(url, { headers: HEADERS, signal: AbortSignal.timeout(src.timeoutMs) });
     } catch (e) {
       if (e instanceof Error && (e.name === 'TimeoutError' || e.name === 'AbortError'))
         throw new TorznabError(`Нет ответа за ${String(src.timeoutMs / 1000).replace('.', ',')} с`, 'timeout');
@@ -53,6 +55,9 @@ async function get(src: Src, query: string, o: Opts): Promise<unknown> {
       await sleep(wait);
       continue;
     }
+    // 403 страницей веб-сервера — отказ по адресу или клиенту, а не ответ API о ключе
+    if (res.status === 403 && (res.headers.get('content-type') ?? '').includes('text/html'))
+      throw new TorznabError('JacRed отказал в доступе (403) — сервер не пускает этот адрес или клиент', 'http');
     if (res.status === 401 || res.status === 403) throw new TorznabError('Неверный ключ JacRed', 'auth');
     if (!res.ok) throw new TorznabError(`HTTP ${res.status}`, 'http');
     try {
