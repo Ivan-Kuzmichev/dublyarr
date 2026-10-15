@@ -6,6 +6,9 @@ LAYA_STUB=1 — без модели: предсказуемые ответы д�
 
 GET  /health -> {"status": "downloading|loading|ready|error", "runtime", "laya", "model", "error"?}
 POST /ask    {"state": ..., "questions": {...}} -> {"answers": {id: {"choice", "probabilities"} | {"noul"}}, "ms"}
+POST /reload — перечитать модель (включили/выключили дообученные головы)
+
+Дообученные головы (laya/heads_util.py): ${LAYA_DIR}/heads важнее, чем laya/heads из образа; ${LAYA_DIR}/heads.disabled — базовая модель.
 """
 import argparse
 import json
@@ -17,6 +20,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 MODEL = os.environ.get("LAYA_MODEL", "convaiinnovations/laya-multilingual")
 STUB = os.environ.get("LAYA_STUB") == "1"
 LAYA_DIR = os.environ.get("LAYA_DIR", "/data/laya")
+IMAGE_HEADS = os.environ.get("LAYA_HEADS_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "heads"))
 RETRY_AFTER_ERROR = 3600
 
 state = {"status": "loading", "runtime": None, "laya": None, "model": None, "error": None}
@@ -41,6 +45,57 @@ def stub_answers(st, questions):
     return out
 
 
+def log(msg, **kw):
+    print(json.dumps({"level": 30, "area": "laya", "msg": msg, **kw}, ensure_ascii=False), flush=True)
+
+
+def attach_heads(loaded, version, revision):
+    """Подменить головы дообученными, если они есть и подходят; вернуть пометку для model («+heads-<дата>»)."""
+    from heads_util import CALIBRATION, apply_heads, pick_heads_dir
+
+    d = pick_heads_dir(LAYA_DIR, IMAGE_HEADS)
+    if not d:
+        return ""
+    ok, why = apply_heads(loaded.model, d, {"laya": version, "model": MODEL, "revision": revision})
+    log("дообученные головы" if ok else "дообученные головы не подошли — базовая модель", dir=d, detail=why)
+    if not ok:
+        return ""
+    cal = os.path.join(d, CALIBRATION)
+    if os.path.exists(cal):
+        loaded.load_calibration(cal)
+    with open(os.path.join(d, "meta.json")) as f:
+        return "+heads-" + str(json.load(f).get("createdAt", ""))
+
+
+base = {}  # исходные головы и калибровка — вернуть их при выключении без перезагрузки энкодера
+
+
+def remember_base(loaded):
+    import copy
+
+    from heads_util import HEAD_KEYS, _is_head
+
+    base["weights"] = {k: v.detach().clone() for k, v in loaded.model.state_dict().items() if _is_head(k, HEAD_KEYS)}
+    base["temperature"] = copy.deepcopy(loaded.temperature)
+    base["temperature_by_options"] = copy.deepcopy(loaded.temperature_by_options)
+
+
+def reattach():
+    """Переключили головы: вернуть исходные и наложить дообученные заново (энкодер не перезагружается)."""
+    import torch
+
+    import laya
+
+    own = agent.model.state_dict()
+    with torch.no_grad():
+        for k, v in base["weights"].items():
+            own[k].copy_(v)
+    agent.temperature = base["temperature"]
+    agent.temperature_by_options = base["temperature_by_options"]
+    revision = laya.PINNED_REVISIONS.get(MODEL)
+    state["model"] = f"{MODEL}@{(revision or 'main')[:12]}" + attach_heads(agent, laya.__version__, revision)
+
+
 def load_model():
     """Скачать (если нужно) и загрузить модель; при ошибке — повтор через час."""
     global agent
@@ -57,7 +112,10 @@ def load_model():
             import torch
 
             torch.set_num_threads(max(1, os.cpu_count() or 1))
-            agent = laya.load(MODEL, device="cpu", revision=revision)
+            loaded = laya.load(MODEL, device="cpu", revision=revision)
+            remember_base(loaded)
+            state["model"] = f"{MODEL}@{(revision or 'main')[:12]}" + attach_heads(loaded, laya.__version__, revision)
+            agent = loaded
             state.update(status="ready", runtime="torch")
             return
         except Exception as e:  # сеть, диск, несовместимость — без Laya всё работает
@@ -108,6 +166,12 @@ class Handler(BaseHTTPRequestHandler):
         self.send(404, {})
 
     def do_POST(self):
+        if self.path == "/reload":
+            if STUB or agent is None:
+                return self.send(200, {"model": state["model"]})
+            with ask_lock:  # не посреди ответа
+                reattach()
+            return self.send(200, {"model": state["model"]})
         if self.path != "/ask":
             return self.send(404, {})
         if state["status"] != "ready":
