@@ -9,6 +9,7 @@ import { setSetting } from '@/lib/settings';
 import { parseLayaForm } from '@/lib/laya/settings';
 import { createLayaClient } from '@/lib/laya/client';
 import { rollback } from '@/lib/laya/versions';
+import { reloadLaya, setHeadsEnabled } from '@/lib/laya/heads';
 import { layaExamples } from '@/lib/db/schema';
 import { enqueue } from '@/worker/jobs';
 import path from 'node:path';
@@ -56,4 +57,16 @@ export async function deleteExampleAction(form: FormData) {
   const id = Number(form.get('id'));
   if (Number.isInteger(id)) getDb().delete(layaExamples).where(eq(layaExamples.id, id)).run();
   revalidatePath('/settings/ai/training');
+}
+
+/** «Дообученная Laya»: включить/выключить головы из репозитория и перечитать их в laya-serve. */
+export async function setHeadsAction(_prev: FormState, form: FormData): Promise<FormState> {
+  if (!(await guard('admin'))) return { error: DENIED };
+  const on = form.get('on') === 'on';
+  const cfg = getConfig();
+  setHeadsEnabled(cfg.dataDir, on);
+  const model = await reloadLaya(cfg.layaPort);
+  revalidatePath('/settings/ai');
+  if (!model) return { ok: on ? 'Включено · применится, когда Laya запустится' : 'Выключено · применится, когда Laya запустится' };
+  return { ok: model.includes('+heads') ? 'Дообученная Laya включена' : on ? 'Дообученных голов для этой модели нет — работает базовая' : 'Работает базовая Laya' };
 }

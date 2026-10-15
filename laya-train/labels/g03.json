@@ -1,0 +1,57 @@
+[
+{"titles": {"reacher": ["Ричер", "Reacher", 2022], "jack": ["Джек Ричер", "Jack Reacher", 2012, "movie"], "jack2": ["Джек Ричер 2: Никогда не возвращайся", "Jack Reacher: Never Go Back", 2016, "movie"]},
+ "releases": [
+  ["Reacher / S4E1-8 of 8 [2026, WEB-DL 1080p] 5x MVO (HDrezka, Red Head Sound, LostFilm, TVS…", "27,4 ГБ", "reacher"],
+  ["Reacher / S4E1-8 of 8 [2026, WEB-DL] MVO (LostFilm) + Original + Sub (Rus, Eng)", "5,2 ГБ", "reacher"],
+  ["Reacher / S4E1-8 of 8 [2026, HDR10, HDR10+ Dolby Vision, WEB-DL 2160p] [Hybrid] 5x MVO (H…", "52,9 ГБ", "reacher"],
+  ["Lee Child - « / Jack Reacher» [1997-2022, FB2, RTF, RUS]", "98,3 МБ", ""],
+  ["Jack Reacher [2012, UHD BDRemux 2160p, HDR10, Dolby Vision] Dub + 5x AVO + Original (Eng)…", "72,1 ГБ", "jack"],
+  ["Ричер (Reacher)S4E01-08 (WEBRip XviD) Полный S4", "4,3 ГБ", "reacher"],
+  ["Jack Reacher: Never Go Back [2016, BDRip] AVO", "2,1 ГБ", "jack2"],
+  ["Jack Reacher: Never Go Back [2016, HDTV] [Open Matte] Dub", "1,4 ГБ", "jack2"],
+  ["Child Lee / - Better Off Dead (Jack Reacher 26) / - [Jeff Harding, 2021, MP3, 128 kbps]", "497,4 МБ", ""],
+  ["Reacher - S4E8 - Cut - rus 1080p WEBDL (LostFilm)", "3 ГБ", "reacher"]
+ ]},
+{"titles": {"live": ["One Piece. Большой куш", "One Piece", 2023], "anime": ["Ван-Пис", "ワンピース", 1999, "anime"], "strong": ["Ван-Пис: Фильм десятый", "ONE PIECE FILM STRONG WORLD", 2009, "movie"]},
+ "releases": [
+  ["One Piece / S2E1-8 of 8 [2026, WEB-DL 1080p] Dub (Videofilm Int.) + Dub (Ukr) + Original …", "23,3 ГБ", "live"],
+  ["[Nintendo Switch] One Piece Odyssey Deluxe edition [NSZ][RUS/Multi8]", "9,9 ГБ", ""],
+  ["One Piece / S2E1-8 of 8 [2026, WEB-DL] MVO (LostFilm) + Original + Sub (Rus, Eng)", "6,7 ГБ", "live"],
+  ["One Piece / - [TV] [1123-1155 XX] [JAP+Sub] [1999, WEB-DL] [1080p]", "44,3 ГБ", "anime"],
+  ["One Piece / [TV] [1086-1122 XXX] [JAP+Sub] [1999, WEB-DL] [720p]", "25,6 ГБ", "anime"],
+  ["Oda Eichiro - / One Piece [manga] [0-1181 + 20 specials] [1997, ] [incomplete]", "17,3 ГБ", ""],
+  ["One Piece / - [TV] [264-325 1000+] [RUS(int)] [1999, WEBRip] [1080p]", "79,2 ГБ", "anime"],
+  ["One Piece Film: Strong World / -: [Movie] [RUS(int)] [2009, BDRip] [1080p]", "6,7 ГБ", "strong"],
+  ["One Piece. Большой куш (One Piece)S2E01-08 (HD 720p WEBRip) Полный S2", "13,8 ГБ", "live"],
+  ["One Piece: Heroines S01E01-E01 [RUS] [HDTV 1080p]", "913 МБ", ""],
+  ["One Piece - S2 - rus 1080p WEBDL (LostFilm)", "24,7 ГБ", "live"],
+  ["ONE PIECE BURNING BLOOD [2016] v 1.09", "10,6 ГБ", ""],
+  ["ONE PIECE World Seeker [2019] v 1.4.0 + все DLC - Deluxe Edition", "13,7 ГБ", ""]
+ ]},
+{"titles": {"fallout": ["Фоллаут", "Fallout", 2024], "mi": ["Миссия невыполнима: Последствия", "Mission: Impossible - Fallout", 2018, "movie"]},
+ "releases": [
+  ["Fallout / S2E1-8 of 8 [2025, WEB-DL 1080p] MVO (Jaskier) + Original + Sub (Rus, Eng)", "29,7 ГБ", "fallout"],
+  ["Fallout / S2E1-8 of 8 [2025, Dolby Vision, HDR10+ WEB-DL 2160p] Dub (Red Head Sound, HDre…", "66,7 ГБ", "fallout"],
+  ["[CD] Fallout 2 [P] [RUS / RUS + ENG] (1998, RPG) (1.02d) [Expansion Version, 19.03.26, Mo…", "1,1 ГБ", ""],
+  ["Fallout 4 [ - ] (1.01 + FH 1.2 + NW 1.1) [COOL-GAMES]", "5,3 ГБ", ""],
+  ["Mission: Impossible - Fallout [2018, BDRip-AVC] [IMAX] MVO (HDRezka Studio)", "1,4 ГБ", "mi"],
+  ["Fallout / S1E1-8 of 8 [2024, UHD BDRemux 2160p, Dolby Vision, HDR10, HDR10+, 4k] [Hybrid]…", "283,2 ГБ", "fallout"],
+  ["Фоллаут (Fallout)S1E01-08 (WEBRip XviD) Полный S1", "5,7 ГБ", "fallout"],
+  ["Fallout - S2 - rus 1080p WEBDL (LostFilm)", "22,4 ГБ", "fallout"],
+  ["Fallout: the Frontier [2020] v 1.4.0.525(a) - Ultimate Edition", "17,4 ГБ", ""],
+  ["Fallout: New Vegas [2010] v 1.4.0.525 + все DLC - Ultimate Edition", "9,1 ГБ", ""]
+ ]},
+{"titles": {"tlou": ["Одни из нас", "The Last of Us", 2023]},
+ "releases": [
+  ["[DL] The Last of Us Part II (2) Remastered [P] [RUS + ENG + 22 / RUS + ENG + 10] (2025, A…", "116 ГБ", ""],
+  ["The Last of Us / S2E1-7 of 7 [2025, WEB-DL] MVO (LostFilm) + Original + Sub (Rus, Eng)", "5,3 ГБ", "tlou"],
+  ["The Last of Us / S2E1-7 of 7 [2025, WEB-DL 1080p] 3 x Dub + 8 x MVO ( HDrezka, NewComers,…", "39,6 ГБ", "tlou"],
+  ["The Last of Us / S2E1-7 of 7 [2025, WEB-DL 720p] Dub (Red Head Sound) + Sub (Rus, Eng) + …", "13,7 ГБ", "tlou"],
+  ["(Score) [CD/WEB] The Last of Us Soundtrack Collection (Gustavo Santaolalla, V.A) - 2013 -…", "848,8 МБ", ""],
+  ["Ging tin 12 siu si / Hard Boiled 2: The Last Blood / The Last Blood / 12 Hours of Terror …", "17,3 ГБ", ""],
+  ["The Last of Us. Part I [HD] 1080p [RUS]", "105 ГБ", ""],
+  ["Одни из нас (The Last of Us)S2E01-07 (HD 1080p WEBRip) Полный S2", "21,1 ГБ", "tlou"],
+  ["The Last of Us - S2 - rus 1080p WEBDL (LostFilm)", "20,5 ГБ", "tlou"],
+  ["The Last Oricru [2022] v 1.3 - Final Cut", "16,4 ГБ", ""]
+ ]}
+]

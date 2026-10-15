@@ -83,6 +83,7 @@ describe('действия без права', () => {
     expect(await dl.saveQbitAction({}, f())).toMatchObject(DENIED);
     const ai = await import('@/app/(app)/settings/ai/actions');
     expect(await ai.saveLayaAction({}, f())).toMatchObject(DENIED);
+    expect(await ai.setHeadsAction({}, f({ on: 'off' }))).toMatchObject(DENIED);
     const studios = await import('@/app/(app)/settings/studios/actions');
     expect(await studios.saveStudioAction({}, f())).toMatchObject(DENIED);
     const sec = await import('@/app/(app)/settings/security/actions');

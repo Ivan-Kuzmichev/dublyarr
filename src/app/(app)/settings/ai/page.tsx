@@ -6,6 +6,9 @@ import { getLayaSettings } from '@/lib/laya/settings';
 import { layaHealthInfo } from '@/lib/laya/adapter';
 import { exampleStats } from '@/lib/laya/examples';
 import { LayaForm, LayaStatus } from './LayaForm';
+import { HeadsCard } from './HeadsCard';
+import { headsEnabled } from '@/lib/laya/heads';
+import { getConfig } from '@/lib/config';
 import { requirePage } from '@/lib/auth/current';
 
 export const metadata = { title: 'AI · Dublyarr' };
@@ -16,7 +19,7 @@ const STATUS: Record<string, string> = { ready: 'Модель загружена
 export default async function AiSettingsPage() {
   await requirePage('admin');
   const db = getDb();
-  const h = layaHealthInfo(db) as { status?: string; runtime?: string; error?: string };
+  const h = layaHealthInfo(db) as { status?: string; runtime?: string; error?: string; model?: string };
   const bench = getSetting<{ mean: number }>(db, 'laya.bench');
   const stats = exampleStats(db);
   const sub = [STATUS[h.status ?? ''] ?? 'Нет данных', bench ? `в среднем ${String(Math.round(bench.mean / 100) / 10).replace('.', ',')} с на вопрос` : null, h.status === 'error' ? h.error : null].filter(Boolean).join(' · ');
@@ -35,6 +38,7 @@ export default async function AiSettingsPage() {
           Дообучение
         </Link>
       </Card>
+      <HeadsCard on={headsEnabled(getConfig().dataDir)} active={!!h.model?.includes('+heads')} />
       <LayaForm value={getLayaSettings(db)} />
     </>
   );
