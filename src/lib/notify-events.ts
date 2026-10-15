@@ -5,6 +5,11 @@ import { notificationDeliveries, notifications, releases, sources, titles, type 
 import { notify } from './notify';
 import { getTelegramSettings, type InlineButton } from './telegram';
 import { formatShortDate, todayIso } from './dates';
+import { formatSize, qualityLabel } from './format';
+import { plural } from './plural';
+import { parsedLine } from './laya/context';
+import { listStudios } from './studios';
+import type { Release, Title } from './db/schema';
 
 // События для Telegram (spec §12): тексты и ключи от повторов.
 
@@ -73,6 +78,30 @@ export function notifyGone(db: Db, d: Download, now = Date.now()) {
   if (t) notify(db, { key: `gone:${d.id}`, kind: 'stuck', text: `⚠️ Раздача пропала из qBittorrent: ${t.nameRu} · ${codeRange(d.episodes)}`, buttons: linkButton(db, '/activity') }, now);
 }
 
+const GENERIC = /^(?:DUB|MVO|DVO|VO|AVO)$/i;
+const pct = (p: number) => `${Math.round(p * 100)} %`;
+
+/** Вопрос «тот ли сериал» — всё, что нужно для решения прямо в Telegram, без перехода в Dublyarr. */
+function askText(db: Db, t: Title, r: Release, head: string): string {
+  const last = t.kind !== 'movie' && t.lastAirDate ? Number(t.lastAirDate.slice(0, 4)) : null;
+  const years = t.year ? (last && last !== t.year ? `${t.year}–${last}` : String(t.year)) : null;
+  const extra = [t.nameOriginal && t.nameOriginal !== t.nameRu ? t.nameOriginal : null, years].filter(Boolean).join(', ');
+  const why = [...r.match.reasons];
+  if (r.match.laya && !why.some((x) => x.startsWith('Laya'))) why.push(r.match.laya.answer ? `Laya думает, что тот же · ${pct(r.match.laya.p)}` : `Laya думает, что не тот · ${pct(1 - r.match.laya.p)}`);
+  const names = new Map(listStudios(db).map((s) => [s.id, s.name]));
+  const dubs = r.parsed.dubs.map((d) => (d.studioId !== null ? (names.get(d.studioId) ?? d.label) : GENERIC.test(d.label) ? d.label : `${d.label} (нет в словаре)`));
+  const quality = qualityLabel(r.parsed);
+  return [
+    `❓ ${t.nameRu}${extra ? ` (${extra})` : ''}${head}`,
+    ...(why.length ? [`Почему: ${why.join(' · ')}`] : []),
+    '',
+    r.title,
+    [r.trackerName, formatSize(r.size), r.seeders !== null ? `${r.seeders} ${plural(r.seeders, 'сид', 'сида', 'сидов')}` : null, quality !== '—' ? quality : null].filter(Boolean).join(' · '),
+    `В раздаче: ${parsedLine(r.parsed)}`,
+    `Озвучка: ${dubs.length ? [...new Set(dubs)].join(', ') : 'не распознана'}`,
+  ].join('\n');
+}
+
 /** Серия перешла в «нужен ответ» (кнопки «Это он» / «Не тот сериал») или впервые ждёт озвучку. */
 export function notifyWanted(db: Db, w: Pick<WantedState, 'titleId' | 'season' | 'number' | 'state' | 'reason' | 'releaseId' | 'until'>, prev: WantedState['state'] | null, now = Date.now()) {
   if (prev === w.state) return;
@@ -87,7 +116,7 @@ export function notifyWanted(db: Db, w: Pick<WantedState, 'titleId' | 'season' |
       {
         key: `ask:${w.titleId}:${w.season}:${w.number}:${r.id}`,
         kind: 'ask',
-        text: `❓ ${t.nameRu}${t.kind === 'movie' ? '' : ` · ${code}`}: ${w.reason}\n${r.title}`,
+        text: askText(db, t, r, `${t.kind === 'movie' ? '' : ` · ${code}`}: ${w.reason}`),
         buttons: [
           [
             { text: 'Это он', data: `m:${r.id}` },

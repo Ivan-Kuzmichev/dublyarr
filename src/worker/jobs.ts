@@ -1,4 +1,4 @@
-import { and, eq, lt } from 'drizzle-orm';
+import { and, eq, inArray, lt } from 'drizzle-orm';
 import type { Db } from '../lib/db/client';
 import { jobs } from '../lib/db/schema';
 import { logger } from '../lib/log';
@@ -79,3 +79,11 @@ export const requeueStale = (db: Db) => db.update(jobs).set({ status: 'queued' }
 /** Выполненные задачи старше суток не нужны (синхронизация ставит задачу каждую минуту). */
 export const pruneJobs = (db: Db, now = Date.now()) =>
   db.delete(jobs).where(and(eq(jobs.status, 'done'), lt(jobs.updatedAt, now - 86_400_000))).run();
+
+/** Типы задач, которых больше нет (2.5): опрос Telegram — свой цикл, дообучение Laya — на компьютере. */
+const RETIRED = ['telegram.poll', 'laya.train', 'laya.train-now'];
+
+/** При старте воркера: такие задачи из очереди убрать, иначе они упадут с «Неизвестный тип задачи». */
+export function dropRetiredJobs(db: Db) {
+  db.delete(jobs).where(and(inArray(jobs.type, RETIRED), inArray(jobs.status, ['queued', 'running']))).run();
+}

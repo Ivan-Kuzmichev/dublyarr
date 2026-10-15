@@ -29,11 +29,34 @@ test('вопрос «тот ли сериал» — с кнопками и сс�
   expect(all()).toEqual([
     expect.objectContaining({
       kind: 'ask',
-      text: '❓ Игра престолов · S01E03: Похоже, но год не совпадает\nИгра престолов S01 [сомнительно]',
+      text: '❓ Игра престолов (GoT) · S01E03: Похоже, но год не совпадает\n\nИгра престолов S01 [сомнительно]\nRuTracker · 1 Б · 1080p\nВ раздаче: сезон 1\nОзвучка: не распознана',
       buttons: [[{ text: 'Это он', data: `m:${r.id}` }, { text: 'Не тот сериал', data: `r:${r.id}` }], [{ text: 'Открыть', url: 'http://nas:3000/search/1399?s=1&e=3' }]],
       ref: { releaseId: r.id, titleId: t.id },
     }),
   ]);
+});
+
+test('вопрос — всё, что нужно для решения: годы, причины правил и Laya, трекер, размер, сиды, качество, разбор, озвучка', () => {
+  const { db, s: src, all } = setup();
+  const t = db.insert(titles).values({ tmdbId: 97546, kind: 'series', nameRu: 'Тед Лассо', nameOriginal: 'Ted Lasso', year: 2020, lastAirDate: '2026-08-01', originalLanguage: 'en', status: 'returning', createdAt: 1, refreshedAt: 1 }).returning().get();
+  const parsed = { base: 'x', names: [], year: 2023, seasons: [3], episodes: { from: 1, to: 12 }, totalInSeason: 12, absolute: false, pack: true, resolution: 1080, source: 'webdl', hdr: false, dv: false, screener: false, dubs: [{ kind: 'mvo', studioId: null, label: 'EniaHD', by: 'title' }], original: false, subs: false } as ParsedRelease;
+  const r = db
+    .insert(releases)
+    .values({ titleId: t.id, sourceId: src.id, trackerName: 'bitru', title: 'Тед Лассо 3 сезон (1-12 из 12) / Ted Lasso (2023) WEB-DL | EniaHD', size: 54 * 1024 ** 3, seeders: 24, firstSeenAt: 1, lastSeenAt: 1, parsed, match: { score: 0.62, level: 'doubt', reasons: ['Год не совпадает'], laya: { p: 0.28, answer: false } } })
+    .returning()
+    .get();
+  notifyWanted(db, { titleId: t.id, season: 4, number: 10, state: 'ask', reason: 'Сомнительное совпадение', releaseId: r.id, until: null }, null, 5);
+  expect(all().at(-1)!.text).toBe(
+    [
+      '❓ Тед Лассо (Ted Lasso, 2020–2026) · S04E10: Сомнительное совпадение',
+      'Почему: Год не совпадает · Laya думает, что не тот · 72 %',
+      '',
+      'Тед Лассо 3 сезон (1-12 из 12) / Ted Lasso (2023) WEB-DL | EniaHD',
+      'bitru · 54 ГБ · 24 сида · 1080p · WEB-DL',
+      'В раздаче: сезон 3, серии 1–12 из 12, год 2023',
+      'Озвучка: EniaHD (нет в словаре)',
+    ].join('\n'),
+  );
 });
 
 test('серия уже ждёт ответа, а вопрос сменился на другую раздачу — новое сообщение; та же раздача — нет', async () => {
@@ -44,7 +67,7 @@ test('серия уже ждёт ответа, а вопрос сменился 
   setWanted(db, t.id, ep, 'ask', 'Сомнительное совпадение', null, 5, r.id);
   setWanted(db, t.id, ep, 'ask', 'Сомнительное совпадение', null, 6, r.id);
   setWanted(db, t.id, ep, 'ask', 'Сомнительное совпадение', null, 7, r2.id);
-  expect(all().map((n) => n.text.split('\n')[1])).toEqual(['Игра престолов S01 [сомнительно]', 'Игра престолов 1 сезон (1-10 из 10)']);
+  expect(all().map((n) => n.text.split('\n')[2])).toEqual(['Игра престолов S01 [сомнительно]', 'Игра престолов 1 сезон (1-10 из 10)']);
 });
 
 test('вышел оригинал — если событие включено', () => {

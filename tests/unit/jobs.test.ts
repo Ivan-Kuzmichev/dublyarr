@@ -54,3 +54,15 @@ test('старые выполненные задачи удаляются, ош�
   pruneJobs(db, 2 * DAY);
   expect(db.select().from(jobs).all().map((j) => j.type).sort()).toEqual(['b', 'c']);
 });
+
+test('задачи удалённых типов (опрос Telegram, дообучение на NAS) убираются из очереди при старте — без ошибки «Неизвестный тип»', async () => {
+  const { dropRetiredJobs, enqueue } = await import('@/worker/jobs');
+  const { jobs } = await import('@/lib/db/schema');
+  const { testDb } = await import('./helpers');
+  const db = testDb();
+  enqueue(db, 'telegram.poll');
+  enqueue(db, 'laya.train');
+  enqueue(db, 'downloads.sync');
+  dropRetiredJobs(db);
+  expect(db.select().from(jobs).all().map((j) => j.type)).toEqual(['downloads.sync']);
+});

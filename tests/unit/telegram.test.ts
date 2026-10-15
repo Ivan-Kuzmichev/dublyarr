@@ -32,6 +32,8 @@ test('отправка с кнопками, правка, ответ на наж
   expect(f.log[3]).toMatchObject({ method: 'answerCallbackQuery', body: { callback_query_id: 'cb1', text: 'Отмечено' } });
   expect(await tg.getUpdates(5)).toEqual([{ update_id: 5 }]);
   expect(f.log[4].body).toMatchObject({ offset: 5, timeout: 0 });
+  await tg.getUpdates(6, 25); // long polling: Telegram держит запрос до 25 с и отвечает сразу на нажатие
+  expect(f.log[5].body).toMatchObject({ offset: 6, timeout: 25 });
 });
 
 test('ошибки: токен, блокировка, лимит, сеть — без токена в тексте', async () => {

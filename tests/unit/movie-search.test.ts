@@ -187,7 +187,7 @@ describe('исправления по ревью 3c', () => {
     const n = s.db.select().from(notifications).all().find((x) => x.kind === 'ask')!;
     expect(JSON.stringify(n.buttons)).toContain('Не тот фильм');
     expect(JSON.stringify(n.buttons)).toContain('/search/603?type=movie');
-    expect(n.text).toMatch(/^❓ Матрица: /);
+    expect(n.text).toMatch(/^❓ Матрица \(The Matrix, 1999\): /);
   });
 });
 

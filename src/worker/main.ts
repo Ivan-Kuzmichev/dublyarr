@@ -2,8 +2,9 @@ import { getDb } from '../lib/db/client';
 import { getConfig } from '../lib/config';
 import { logger } from '../lib/log';
 import { beat, startWorkerHeartbeat } from '../lib/heartbeat';
-import { runOnce, requeueStale, pruneJobs, currentJobType } from './jobs';
-import { buildHandlers } from './handlers';
+import { runOnce, requeueStale, pruneJobs, currentJobType, dropRetiredJobs } from './jobs';
+import { buildHandlers, telegramFor } from './handlers';
+import { telegramLoop } from '../lib/telegram-updates';
 import { getSchedule } from '../lib/schedule';
 
 // поиск по расписанию: раз в 5 минут решается, каким подпискам пора
@@ -36,6 +37,7 @@ async function checkLaya() {
 
 async function loop() {
   requeueStale(db);
+  dropRetiredJobs(db);
   try {
     const media = getSetting<{ media: string }>(db, 'paths')?.media;
     if (media) await cleanRemuxTmp(media); // недоделанные пересборки после падения
@@ -49,6 +51,7 @@ async function loop() {
   }
   log.info('worker started');
   startWorkerHeartbeat(db, currentJobType); // по таймеру: долгая задача не делает воркер «не отвечающим»
+  void telegramLoop(db, { telegram: () => telegramFor(db), stopped: () => stopping }); // кнопки Telegram — сразу, вне очереди задач
   while (!stopping) {
     // Пока Laya не отвечает (например, ещё стартует) — проверяем чаще.
     if (Date.now() - lastLaya > (layaOk ? 60_000 : 10_000)) {
@@ -61,9 +64,7 @@ async function loop() {
     scheduleEvery(db, 'cleanup.run', 60 * 60_000);
     scheduleEvery(db, 'intros.tick', 10 * 60_000);
     scheduleEvery(db, 'retention.tick', TICK_EVERY);
-    scheduleEvery(db, 'laya.train', 30 * 60_000);
     scheduleEvery(db, 'telegram.send', 15_000);
-    scheduleEvery(db, 'telegram.poll', 15_000);
     if (getSchedule(db).packChecks) scheduleEvery(db, 'packs.check', PACK_CHECK_EVERY);
     pruneJobs(db);
     while (!stopping && (await runOnce(db, handlers))) {

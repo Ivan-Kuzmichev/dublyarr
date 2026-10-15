@@ -1,7 +1,7 @@
 import { expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { testDb } from './helpers';
-import { pollUpdates } from '@/lib/telegram-updates';
+import { pollUpdates, telegramLoop } from '@/lib/telegram-updates';
 import { saveTelegramSettings, type Telegram, type TgUpdate } from '@/lib/telegram';
 import { notificationDeliveries, notifications, releaseRules, releases, sources, titles, jobs, users } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
@@ -72,7 +72,7 @@ function withQuestion() {
 test('«Не тот сериал» кнопкой — правило, поиск в очереди, сообщение исправлено', async () => {
   const { db, tg, calls, push, r } = withQuestion();
   push(cb(10, 777, `r:${r.id}`));
-  expect(await pollUpdates(db, tg, 1)).toEqual({ handled: 1 });
+  expect(await pollUpdates(db, tg, 1)).toEqual({ handled: 1, updates: 1 });
   expect(db.select().from(releaseRules).all()).toEqual([expect.objectContaining({ verdict: 'reject', trackerName: 'RuTracker' })]);
   expect(db.select().from(jobs).all().map((j) => j.type)).toContain('subscriptions.search');
   expect(calls).toContain('answer:Отмечено');
@@ -104,4 +104,37 @@ test('Telegram ID вручную: число (группа — с минусом
   expect([chatOf(admin.id), chatOf(anya.id)]).toEqual(['123456', '-100777']);
   setUserChat(db, anya.id, '123456');
   expect([chatOf(admin.id), chatOf(anya.id)]).toEqual([null, '123456']);
+});
+
+test('свой цикл опроса (не в очереди воркера): long polling 25 с, нажатие обрабатывается сразу; нет бота — ждёт; сбой — пауза', async () => {
+  const { db, admin } = setup();
+  db.update(users).set({ telegramChatId: '777' }).where(eq(users.id, admin.id)).run();
+  const waits: number[] = [];
+  const sleeps: number[] = [];
+  let step = 0;
+  const answers: string[] = [];
+  const tg = {
+    async getUpdates(_offset: number, wait: number) {
+      waits.push(wait);
+      step++;
+      if (step === 2) throw new Error('сеть');
+      return step === 1 ? [cb(1, 777, 'm:999')] : [];
+    },
+    async answerCallback(_id: string, text: string) {
+      answers.push(text);
+    },
+  } as unknown as Telegram;
+  let bot: Telegram | null = null;
+  let rounds = 0;
+  await telegramLoop(db, {
+    telegram: () => bot,
+    stopped: () => rounds++ >= 4,
+    sleep: async (ms) => {
+      sleeps.push(ms);
+      bot = tg; // бот появился в настройках
+    },
+  });
+  expect(waits).toEqual([25, 25, 25]);
+  expect(answers).toEqual(['Раздачи уже нет']); // нажатие обработано в том же круге
+  expect(sleeps).toEqual([15_000, 5_000, 1_000]); // нет бота · сбой · пустой ответ сразу (заглушка без ожидания)
 });

@@ -22,10 +22,11 @@ export function setUserChat(db: Db, userId: number, raw: string): { ok: true } |
   return { ok: true };
 }
 
-export async function pollUpdates(db: Db, tg: Telegram, _now = Date.now()) {
-  const res = { handled: 0 };
+export async function pollUpdates(db: Db, tg: Telegram, _now = Date.now(), wait = 0) {
+  const res = { handled: 0, updates: 0 };
   let offset = getSetting<number>(db, 'telegram.offset') ?? 0;
-  const updates = await tg.getUpdates(offset);
+  const updates = await tg.getUpdates(offset, wait);
+  res.updates = updates.length;
   for (const u of updates) {
     offset = Math.max(offset, u.update_id + 1);
     try {
@@ -37,6 +38,32 @@ export async function pollUpdates(db: Db, tg: Telegram, _now = Date.now()) {
   }
   setSetting(db, 'telegram.offset', offset);
   return res;
+}
+
+const WAIT = 25;
+
+/**
+ * Свой цикл опроса Telegram в воркере, вне очереди задач: долгая задача (поиск, разметка) не задерживает кнопки,
+ * а long polling отвечает на нажатие сразу, а не через 15 с.
+ */
+export async function telegramLoop(db: Db, o: { telegram: () => Telegram | null; stopped: () => boolean; sleep?: (ms: number) => Promise<void> }) {
+  const sleep = o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  while (!o.stopped()) {
+    const tg = o.telegram();
+    if (!tg) {
+      await sleep(15_000);
+      continue;
+    }
+    const started = Date.now();
+    try {
+      const r = await pollUpdates(db, tg, started, WAIT);
+      // пусто и сразу — сервер не держит запрос (заглушка, прокси): не крутить впустую
+      if (!r.updates && Date.now() - started < 1000) await sleep(1000);
+    } catch (e) {
+      log.warn({ err: e instanceof Error ? e.message : String(e) }, 'telegram poll failed');
+      await sleep(5_000);
+    }
+  }
 }
 
 /** Любое сообщение боту (/start): непривязанному чату — его Telegram ID и куда вписать, привязанному — к какой учётке. */

@@ -38,20 +38,20 @@ export function createTelegram(s: Pick<TelegramSettings, 'token' | 'proxy'>, opt
   const fetchImpl = opts.fetchImpl ?? proxiedFetch(s.proxy);
   const base = (opts.base ?? process.env.TELEGRAM_API_BASE ?? 'https://api.telegram.org').replace(/\/+$/, '');
 
-  async function call<T>(method: string, body: Record<string, unknown> = {}): Promise<T> {
+  async function call<T>(method: string, body: Record<string, unknown> = {}, timeoutMs = 15_000): Promise<T> {
     let res: Response;
     try {
       res = await fetchImpl(`${base}/bot${s.token}/${method}`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(body),
-        signal: AbortSignal.timeout(15_000),
+        signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (e) {
       throw new TelegramError(`Telegram недоступен — проверьте прокси (${maskToken(e instanceof Error ? e.message : String(e))})`, 'network');
     }
     const data = (await res.json().catch(() => ({}))) as { ok?: boolean; result?: T; error_code?: number; description?: string; parameters?: { retry_after?: number } };
-    // getUpdates — раз в 15 с, только в подробном журнале; токен в адресе — никогда в журнал
+    // getUpdates — постоянно (long polling), только в подробном журнале; токен в адресе — никогда в журнал
     tgLog[data.ok || method === 'getUpdates' ? 'debug' : 'warn']({ method, ok: !!data.ok, status: data.error_code ?? res.status, ...(data.ok ? {} : { description: maskToken(data.description ?? '') }) }, 'telegram call');
     if (data.ok) return data.result as T;
     const status = data.error_code ?? res.status;
@@ -77,7 +77,8 @@ export function createTelegram(s: Pick<TelegramSettings, 'token' | 'proxy'>, opt
     async answerCallback(id: string, text: string) {
       await call('answerCallbackQuery', { callback_query_id: id, text });
     },
-    getUpdates: (offset: number) => call<TgUpdate[]>('getUpdates', { offset, timeout: 0, allowed_updates: ['message', 'callback_query'] }),
+    /** wait — long polling: Telegram держит запрос до wait секунд и отвечает, как только что-то пришло. */
+    getUpdates: (offset: number, wait = 0) => call<TgUpdate[]>('getUpdates', { offset, timeout: wait, allowed_updates: ['message', 'callback_query'] }, (wait + 15) * 1000),
   };
 }
 export type Telegram = ReturnType<typeof createTelegram>;
