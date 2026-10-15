@@ -44,7 +44,7 @@ function Row({ row, tmdbId, studios, season, episode, movie = false, numbering, 
   const canConfirm = r.match.level !== 'match' || r.match.rule === 'reject';
   return (
     <div
-      className={`grid grid-cols-1 gap-2 border-t border-line-soft px-4 py-3 text-sm lg:grid-cols-[minmax(0,1fr)_170px_150px_80px_64px_190px_170px] lg:items-center lg:gap-3.5 lg:px-[18px] ${v.best ? 'bg-[rgba(240,164,66,0.06)]' : ''}`}
+      className={`grid grid-cols-1 gap-2 border-t border-line-soft px-4 py-3 text-sm @min-[1150px]:grid-cols-[minmax(0,1fr)_170px_150px_80px_64px_190px_170px] @min-[1150px]:items-center @min-[1150px]:gap-3.5 @min-[1150px]:px-[18px] ${v.best ? 'bg-[rgba(240,164,66,0.06)]' : ''}`}
     >
       <div className={`flex min-w-0 flex-col gap-1 ${dim}`}>
         <span className="font-mono text-xs leading-snug break-words text-text">{r.title}</span>
@@ -75,12 +75,12 @@ function Row({ row, tmdbId, studios, season, episode, movie = false, numbering, 
         </span>
         <span className="text-xs text-faint">{BY[recognizedBy(dubs)]}</span>
       </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1 lg:contents">
+      <div className="flex flex-wrap gap-x-4 gap-y-1 @min-[1150px]:contents">
         <span className={`text-[13px] text-text-3 ${dim}`}>{qualityLabel(r.parsed)}</span>
         <span className={`font-mono text-[13px] text-text-3 ${dim}`}>{formatSize(r.size)}</span>
         <span className={`font-mono text-[13px] ${r.seeders === 0 ? 'text-danger' : 'text-text-3'} ${dim}`}>
           {r.seeders ?? '—'}
-          <span className="lg:hidden"> сид.</span>
+          <span className="@min-[1150px]:hidden"> сид.</span>
         </span>
       </div>
       <span className={`text-[13px] ${TONE[v.tone]}`}>{v.reason}</span>
@@ -190,8 +190,8 @@ function Results({ may, result, pending = false, tmdbId, studios, season, episod
               <p className="m-0 text-[15px] text-muted">{result.sources.some((s) => s.ok) ? 'Раздач не нашлось.' : 'Ни один источник не ответил.'}</p>
             </Card>
           ) : (
-            <div className="overflow-hidden rounded-2xl border border-line">
-              <div className="hidden gap-3.5 bg-surface px-[18px] py-3 text-[11px] font-semibold tracking-[0.06em] text-faint uppercase lg:grid lg:grid-cols-[minmax(0,1fr)_170px_150px_80px_64px_190px_170px]">
+            <div className="@container overflow-hidden rounded-2xl border border-line">
+              <div className="hidden gap-3.5 bg-surface px-[18px] py-3 text-[11px] font-semibold tracking-[0.06em] text-faint uppercase @min-[1150px]:grid @min-[1150px]:grid-cols-[minmax(0,1fr)_170px_150px_80px_64px_190px_170px]">
                 <span>Раздача</span>
                 <span>Озвучка</span>
                 <span>Качество</span>
