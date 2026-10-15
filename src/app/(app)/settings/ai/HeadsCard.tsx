@@ -23,8 +23,8 @@ export function HeadsCard({ on, active, available }: { on: boolean; active: bool
           <h3 className="m-0 text-base font-semibold">Дообученная Laya</h3>
           <span className="text-[13px] text-muted">{active ? 'работает' : 'не используется'}</span>
         </div>
-        <Checkbox name="on" defaultChecked={on} label="Использовать модель, дообученную на раздачах русских трекеров" />
-        <p className="m-0 text-[13px] text-faint">Учтены ремейки, спин-оффы, фильмы против сериалов и подписи студий. Выключите, чтобы вернуться к базовой Laya.</p>
+        <Checkbox name="on" defaultChecked={on} label="Использовать Laya, дообученную на ваших ответах" />
+        <p className="m-0 text-[13px] text-faint">«Тот ли сериал»: поверх Laya — надстройка, обученная на «Это он» / «Не тот сериал», поэтому сомнительные раздачи чаще решаются без вопроса. Выключите, чтобы вернуться к базовой Laya.</p>
         {state.error && (
           <p role="alert" className="m-0 text-sm text-danger">
             {state.error}

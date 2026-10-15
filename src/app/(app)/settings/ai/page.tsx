@@ -36,7 +36,7 @@ export default async function AiSettingsPage() {
           Примеры
         </Link>
       </Card>
-      <HeadsCard on={headsEnabled(getConfig().dataDir)} active={!!h.model?.includes('+heads')} available={headsAvailable(getConfig().dataDir)} />
+      <HeadsCard on={headsEnabled(getConfig().dataDir)} active={/\+(heads|probe)-/.test(h.model ?? '')} available={headsAvailable(getConfig().dataDir)} />
       <LayaForm value={getLayaSettings(db)} />
     </>
   );

@@ -259,6 +259,15 @@ Self-hosted сервис для дома (администратор + поль�
   laya-serve: `model` с суффиксом `+heads-<дата>` (кэш ответов по имени модели), `POST /reload` — без перезагрузки энкодера. «Дообученная Laya» в «Настройки → AI» — `src/lib/laya/heads.ts` (`heads.disabled`, `headsAvailable`), `setHeadsAction`.
 - Jackett RuTracker с «Strip Russian letters» срезает русские названия — сериалы только с русским названием в заголовке не находятся.
 
+## Решения (2.6 — надстройка над Laya)
+
+- Дообучение — не головы (на наших объёмах «схлопываются», issue #963 у авторов Laya), а надстройка: логистическая регрессия поверх logit(p «да») базовой Laya и эмбеддинга вопроса тем же энкодером
+  (`laya.shortlist.embed_fn_from_agent`, 768). Общий код — `laya/probe_util.py` (`text_of`, `features`, `apply`, `load_probes`: модель/ревизия/версия laya/формат/размер), веса — `laya/probe/<задача>.json` (свои — `${DATA_DIR}/laya/probe`).
+- Обучение на Mac: `laya-train/probe.py --data … [--save ../laya/probe/match.json]` (веса классов поровну, L2 по калибровочной части; группы — по названию сериала, иначе ручная разметка и выгрузка с NAS пересекаются).
+  Данные — ручная разметка + `GET /api/v1/laya/dataset`. Замер на непросмотренных сериалах, ваши ответы «тот ли сериал»: точность 76 → 88 %, уверенное «да» верно 7 → 20 %, ошибок 1 → 0 %.
+- laya-serve: `POST /ask` с `probe: {id: "match"}` — к ответу «да/нет» применяется надстройка (`noul` — пересчитанная, `base` — Laya); `model` — с суффиксом `+probe-<дата>` (кэш ответов сбрасывается при смене весов);
+  `heads.disabled` выключает и её. Node: `decideMany` ставит пометку задачам из `PROBE_TASKS` (пока `match`). Вопрос с надстройкой — примерно вдвое дольше (ещё один проход энкодера).
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.

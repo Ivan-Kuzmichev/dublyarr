@@ -51,6 +51,18 @@ describe('решение Laya', () => {
   });
 });
 
+describe('надстройка над Laya (2.6)', () => {
+  test('«тот ли сериал» — с пометкой probe (laya-serve пересчитывает уверенность); другие задачи — без неё', async () => {
+    const db = testDb();
+    const seen: unknown[] = [];
+    const client = { ask: async (_s: unknown, q: Record<string, unknown>, o?: { probe?: Record<string, string> }) => (seen.push(o?.probe ?? null), { answers: Object.fromEntries(Object.keys(q).map((k) => [k, { noul: 0.9 }])), ms: 5 }), health: async () => null, last: () => 5 } as unknown as LayaClient;
+    await decide(db, 'match', input('m1'), { budget: budget(), client });
+    await decide(db, 'final', input('f1'), { budget: budget(), client });
+    await decideMany(db, 'match', [input('m2'), { ...input('m3'), state: { a: 'm2' } }], { budget: budget(), client }); // одно состояние — один запрос из двух вопросов
+    expect(seen).toEqual([{ q: 'match' }, null, { q0: 'match', q1: 'match' }]);
+  });
+});
+
 describe('без адаптера NAS', () => {
   test('старая версия адаптера в базе не меняет ответ: вероятность — как у Laya', async () => {
     const db = testDb();

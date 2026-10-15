@@ -39,4 +39,9 @@ test('есть ли дообученные головы: свои в {DATA_DIR}/
   mkdirSync(path.join(data2, 'laya', 'heads'), { recursive: true });
   writeFileSync(path.join(data2, 'laya', 'heads', 'heads.safetensors'), 'x');
   expect(headsAvailable(data2, mkdtempSync(path.join(tmpdir(), 'dy-app-')))).toBe(true);
+  // надстройка (2.6) — тоже дообучение: laya/probe/<задача>.json
+  const app3 = mkdtempSync(path.join(tmpdir(), 'dy-app-'));
+  mkdirSync(path.join(app3, 'laya', 'probe'), { recursive: true });
+  writeFileSync(path.join(app3, 'laya', 'probe', 'match.json'), '{}');
+  expect(headsAvailable(mkdtempSync(path.join(tmpdir(), 'dy-heads-')), app3)).toBe(true);
 });

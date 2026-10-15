@@ -17,6 +17,17 @@ describe('клиент Laya', () => {
     expect(calls).toEqual(['POST http://127.0.0.1:1/ask']);
     expect(c.last()).toBe(420);
   });
+  test('надстройка (2.6): пометка задачи у вопросов уходит в laya-serve полем probe', async () => {
+    const bodies: unknown[] = [];
+    const c = createLayaClient({ port: 1, fetchImpl: (async (_u: string, init?: RequestInit) => {
+      bodies.push(JSON.parse(String(init?.body)));
+      return Response.json({ answers: { m: { noul: 0.9, base: 0.4 } }, ms: 9 });
+    }) as typeof fetch });
+    await c.ask({ a: 1 }, Q, { probe: { m: 'match' } });
+    await c.ask({ a: 1 }, Q);
+    expect(bodies[0]).toMatchObject({ probe: { m: 'match' } });
+    expect(bodies[1]).not.toHaveProperty('probe');
+  });
   test('неполный ответ, 503, ошибка сети — недоступна (null)', async () => {
     const r = (body: unknown, status = 200) => createLayaClient({ port: 1, fetchImpl: (async () => Response.json(body, { status })) as typeof fetch });
     expect(await r({ answers: {} }).ask({}, Q)).toBeNull();

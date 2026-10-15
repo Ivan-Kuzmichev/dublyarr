@@ -5,10 +5,12 @@
 LAYA_STUB=1 — без модели: предсказуемые ответы для тестов и разработки.
 
 GET  /health -> {"status": "downloading|loading|ready|error", "runtime", "laya", "model", "error"?}
-POST /ask    {"state": ..., "questions": {...}} -> {"answers": {id: {"choice", "probabilities"} | {"noul"}}, "ms"}
+POST /ask    {"state": ..., "questions": {...}, "probe"?: {id: "match"}} -> {"answers": {id: {"choice", "probabilities"} | {"noul", "base"?}}, "ms"}
 POST /reload — перечитать модель (включили/выключили дообученные головы)
 
 Дообученные головы (laya/heads_util.py): ${LAYA_DIR}/heads важнее, чем laya/heads из образа; ${LAYA_DIR}/heads.disabled — базовая модель.
+Надстройка (laya/probe_util.py, 2.6): для вопросов с пометкой probe — уверенность пересчитывается по ответу Laya и эмбеддингу вопроса;
+веса — laya/probe/<задача>.json (свои — ${LAYA_DIR}/probe), выключается тем же heads.disabled.
 """
 import argparse
 import json
@@ -21,10 +23,13 @@ MODEL = os.environ.get("LAYA_MODEL", "convaiinnovations/laya-multilingual")
 STUB = os.environ.get("LAYA_STUB") == "1"
 LAYA_DIR = os.environ.get("LAYA_DIR", "/data/laya")
 IMAGE_HEADS = os.environ.get("LAYA_HEADS_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "heads"))
+IMAGE_PROBE = os.environ.get("LAYA_PROBE_DIR", os.path.join(os.path.dirname(os.path.abspath(__file__)), "probe"))
 RETRY_AFTER_ERROR = 3600
 
 state = {"status": "loading", "runtime": None, "laya": None, "model": None, "error": None}
 agent = None
+probes = {}  # задача → веса надстройки (probe_util.load_probes)
+embed = None  # эмбеддинг вопроса тем же энкодером (laya.shortlist.embed_fn_from_agent)
 ask_lock = threading.Lock()  # один вопрос за раз: CPU NAS и память
 
 
@@ -67,6 +72,24 @@ def attach_heads(loaded, version, revision):
         return "+heads-" + str(json.load(f).get("createdAt", ""))
 
 
+def attach_probes(loaded, version, revision):
+    """Надстройки, которые подходят к загруженной модели; вернуть пометку для model («+probe-<дата>»)."""
+    global probes, embed
+    from laya.shortlist import embed_fn_from_agent
+    from probe_util import load_probes, pick_dir
+
+    d = pick_dir(LAYA_DIR, IMAGE_PROBE)
+    found = load_probes(d, {"laya": version, "model": MODEL, "revision": revision}, int(loaded.model.encoder.config.hidden_size))
+    skipped = found.pop("skipped", {})
+    if skipped:
+        log("надстройка не подошла — без неё", dir=d, detail=skipped)
+    probes = found
+    embed = embed_fn_from_agent(loaded, max_length=512, batch_size=8) if probes else None
+    if probes:
+        log("надстройка", dir=d, tasks=sorted(probes))
+    return "+probe-" + max(str(p.get("createdAt", "")) for p in probes.values()) if probes else ""
+
+
 base = {}  # исходные головы и калибровка — вернуть их при выключении без перезагрузки энкодера
 
 
@@ -93,7 +116,7 @@ def reattach():
     agent.temperature = base["temperature"]
     agent.temperature_by_options = base["temperature_by_options"]
     revision = laya.PINNED_REVISIONS.get(MODEL)
-    state["model"] = f"{MODEL}@{(revision or 'main')[:12]}" + attach_heads(agent, laya.__version__, revision)
+    state["model"] = f"{MODEL}@{(revision or 'main')[:12]}" + attach_heads(agent, laya.__version__, revision) + attach_probes(agent, laya.__version__, revision)
 
 
 def load_model():
@@ -114,7 +137,7 @@ def load_model():
             torch.set_num_threads(max(1, os.cpu_count() or 1))
             loaded = laya.load(MODEL, device="cpu", revision=revision)
             remember_base(loaded)
-            state["model"] = f"{MODEL}@{(revision or 'main')[:12]}" + attach_heads(loaded, laya.__version__, revision)
+            state["model"] = f"{MODEL}@{(revision or 'main')[:12]}" + attach_heads(loaded, laya.__version__, revision) + attach_probes(loaded, laya.__version__, revision)
             agent = loaded
             state.update(status="ready", runtime="torch")
             return
@@ -123,17 +146,29 @@ def load_model():
             time.sleep(RETRY_AFTER_ERROR)
 
 
+def adjust(st, questions, answers, probe):
+    """Надстройка: для «да/нет» с пометкой задачи — уверенность по ответу Laya и эмбеддингу вопроса."""
+    from probe_util import apply, text_of
+
+    want = [qid for qid, task in probe.items() if task in probes and answers.get(qid, {}).get("type") == "noul"]
+    if not want or embed is None:
+        return {}
+    vecs = embed([text_of(st, questions[qid].get("instructions", "")) for qid in want])
+    return {qid: round(apply(probes[probe[qid]], answers[qid]["noul"], vec), 4) for qid, vec in zip(want, vecs)}
+
+
 class Busy(Exception):
     """Вопрос простоял в очереди дольше, чем клиент готов ждать: считать незачем."""
 
 
-def ask(st, questions, max_wait):
+def ask(st, questions, max_wait, probe=None):
     if STUB:
         return stub_answers(st, questions)
     if not ask_lock.acquire(timeout=max(0.0, max_wait)):
         raise Busy()
     try:
         r = agent.system_one(st, questions)
+        adjusted = adjust(st, questions, r["answers"], probe or {})
     finally:
         ask_lock.release()
     out = {}
@@ -141,7 +176,7 @@ def ask(st, questions, max_wait):
         if a.get("type") == "choice":
             out[qid] = {"choice": a["choice"], "probabilities": a["probabilities"]}
         elif a.get("type") == "noul":
-            out[qid] = {"noul": a["noul"]}
+            out[qid] = {"noul": adjusted[qid], "base": a["noul"]} if qid in adjusted else {"noul": a["noul"]}
         else:
             out[qid] = {"score": a.get("score"), "probabilities": a.get("probabilities")}
     return out
@@ -180,7 +215,7 @@ class Handler(BaseHTTPRequestHandler):
             body = json.loads(self.rfile.read(int(self.headers.get("Content-Length", 0))))
             max_wait = float(body.get("maxWaitMs", 20000)) / 1000
             t = time.time()
-            answers = ask(body["state"], body["questions"], max_wait)
+            answers = ask(body["state"], body["questions"], max_wait, body.get("probe"))
             self.send(200, {"answers": answers, "ms": round((time.time() - t) * 1000)})
         except Busy:
             self.send(503, {"error": "busy"})

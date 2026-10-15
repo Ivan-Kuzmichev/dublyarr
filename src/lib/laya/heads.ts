@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 
 // Дообученные головы Laya (laya/heads из образа или {DATA_DIR}/laya/heads): включение — отсутствие файла heads.disabled;
@@ -8,9 +8,11 @@ const flag = (dataDir: string) => path.join(dataDir, 'laya', 'heads.disabled');
 
 export const headsEnabled = (dataDir: string) => !existsSync(flag(dataDir));
 
-/** Есть ли что включать: свои головы ({DATA_DIR}/laya/heads) или из образа (laya/heads рядом с приложением). */
+/** Есть ли что включать: головы (heads.safetensors) или надстройка (probe/*.json, 2.6) — свои в {DATA_DIR}/laya или из образа (laya/ рядом с приложением). */
 export const headsAvailable = (dataDir: string, appDir = process.cwd()) =>
-  [path.join(dataDir, 'laya', 'heads'), path.join(appDir, 'laya', 'heads')].some((d) => existsSync(path.join(d, 'heads.safetensors')));
+  [path.join(dataDir, 'laya'), path.join(appDir, 'laya')].some(
+    (d) => existsSync(path.join(d, 'heads', 'heads.safetensors')) || (existsSync(path.join(d, 'probe')) && readdirSync(path.join(d, 'probe')).some((n) => n.endsWith('.json'))),
+  );
 
 export function setHeadsEnabled(dataDir: string, on: boolean) {
   if (on) rmSync(flag(dataDir), { force: true });

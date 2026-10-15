@@ -20,8 +20,16 @@ test('Laya: статус и проверка → ответ «Не тот сер
   await page.reload();
   await expect(page.getByRole('group', { name: 'Порог уверенности' })).toContainText('86%');
 
-  // «Дообученная Laya»: в этой версии голов нет — работает базовая, переключателя нет
-  await expect(page.getByText(/^В этой версии Dublyarr дообученной модели нет/)).toBeVisible();
+  // «Дообученная Laya»: надстройка в образе есть; переключается без перезапуска (заглушка — без дообучения, работает базовая)
+  const tuned = page.getByRole('checkbox', { name: 'Использовать Laya, дообученную на ваших ответах' });
+  await tuned.uncheck();
+  await page.getByRole('button', { name: 'Применить' }).click();
+  await expect(page.getByText('Работает базовая Laya')).toBeVisible();
+  await page.reload();
+  await expect(tuned).not.toBeChecked();
+  await tuned.check();
+  await page.getByRole('button', { name: 'Применить' }).click();
+  await expect(page.getByText('Дообучения для этой модели нет — работает базовая')).toBeVisible();
 
   // ответ в ручном поиске — пример для дообучения
   await page.goto('/search/1399?s=1');

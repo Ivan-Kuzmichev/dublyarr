@@ -52,5 +52,5 @@ export async function setHeadsAction(_prev: FormState, form: FormData): Promise<
   const model = await reloadLaya(cfg.layaPort);
   revalidatePath('/settings/ai');
   if (!model) return { ok: on ? 'Включено · применится, когда Laya запустится' : 'Выключено · применится, когда Laya запустится' };
-  return { ok: model.includes('+heads') ? 'Дообученная Laya включена' : on ? 'Дообученных голов для этой модели нет — работает базовая' : 'Работает базовая Laya' };
+  return { ok: /\+(heads|probe)-/.test(model) ? 'Дообученная Laya включена' : on ? 'Дообучения для этой модели нет — работает базовая' : 'Работает базовая Laya' };
 }

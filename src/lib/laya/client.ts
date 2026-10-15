@@ -5,7 +5,7 @@ const llog = logger('laya');
 
 export type LayaHealth = { status: 'downloading' | 'loading' | 'ready' | 'error'; runtime?: 'torch' | 'stub'; laya?: string; model?: string; error?: string };
 export type Question = { type: 'choice'; instructions: string; criteria: Record<string, string> } | { type: 'noul'; instructions: string };
-export type Answer = { choice?: string; probabilities?: Record<string, number>; noul?: number };
+export type Answer = { choice?: string; probabilities?: Record<string, number>; noul?: number; base?: number };
 export type AskResult = { answers: Record<string, Answer>; ms: number };
 
 // всего ждём ответ 30 с: до 20 с в очереди laya-serve (вопросы — по одному) + до 10 с на сам ответ
@@ -30,10 +30,11 @@ export function createLayaClient(o: { port: number; fetchImpl?: typeof fetch; ti
         return null;
       }
     },
-    async ask(state: unknown, questions: Record<string, Question>): Promise<AskResult | null> {
+    /** probe — задача надстройки по вопросам (2.6): laya-serve пересчитывает уверенность по ответу и эмбеддингу вопроса. */
+    async ask(state: unknown, questions: Record<string, Question>, opts: { probe?: Record<string, string> } = {}): Promise<AskResult | null> {
       if (now() < pausedUntil) return null;
       try {
-        const r = await f(`${base}/ask`, { method: 'POST', body: JSON.stringify({ state, questions, maxWaitMs: Math.max(0, (o.timeoutMs ?? TIMEOUT_MS) - ANSWER_MS) }), signal: AbortSignal.timeout(o.timeoutMs ?? TIMEOUT_MS) });
+        const r = await f(`${base}/ask`, { method: 'POST', body: JSON.stringify({ state, questions, ...(opts.probe ? { probe: opts.probe } : {}), maxWaitMs: Math.max(0, (o.timeoutMs ?? TIMEOUT_MS) - ANSWER_MS) }), signal: AbortSignal.timeout(o.timeoutMs ?? TIMEOUT_MS) });
         // 503 «занята» (долго в очереди) или «загружает модель» — не зависание: паузы не будет
         timeouts = 0;
         if (!r.ok) return null;

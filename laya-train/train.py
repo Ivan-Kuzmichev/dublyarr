@@ -40,6 +40,16 @@ def load_rows(path):
     return [json.loads(line) for line in text.splitlines() if line.strip()]
 
 
+def act_options(row):
+    """При каком ответе Dublyarr действует сам: «да/нет» — только «да», выбор с `act` — только он, иначе — любой."""
+    q = row["question"]
+    if q["type"] == "noul":
+        return {1}
+    if row.get("act"):
+        return {list(q["criteria"].keys()).index(row["act"])}
+    return set(range(len(q["criteria"])))
+
+
 def metrics(agent, rows, items):
     """По задачам: log-loss, точность, «решает сама» (уверенность ≥ 0,85; у «да/нет» — только «да») и «сама и верно»."""
     out = defaultdict(lambda: {"n": 0, "loss": 0.0, "right": 0, "auto": 0, "auto_right": 0})
@@ -51,7 +61,7 @@ def metrics(agent, rows, items):
         m["loss"] += -math.log(max(1e-9, float(p[y])))
         m["right"] += int(int(p.argmax()) == y)
         # «да/нет»: сама решает только уверенное «да» — уверенное «нет» в Dublyarr уходит вопросом пользователю или к следующей раздаче
-        if p.max() >= THRESHOLD and (row["question"]["type"] != "noul" or int(p.argmax()) == 1):
+        if p.max() >= THRESHOLD and int(p.argmax()) in act_options(row):
             m["auto"] += 1
             m["auto_right"] += int(int(p.argmax()) == y)
     res = {t: {"n": m["n"], "logloss": m["loss"] / m["n"], "accuracy": m["right"] / m["n"], "auto": m["auto"] / m["n"],
@@ -164,6 +174,7 @@ def main():
     ap.add_argument("--l2sp", type=float, default=0.0)
     ap.add_argument("--no-calibrate", action="store_true", help="не подбирать температуры заново — базовые")
     ap.add_argument("--eval-only", action="store_true", help="только оценить базовую модель на проверочной части")
+    ap.add_argument("--all-rows", action="store_true", help="с --eval-only: на всём наборе")
     ap.add_argument("--distill", type=float, default=0.0, help="вес удержания ответов базовой модели на вопросах выбора")
     ap.add_argument("--balance", action="store_true", help="уравнять задачи в обучении повтором строк (не больше ×8)")
     a = ap.parse_args()
@@ -195,7 +206,13 @@ def main():
         tr_i = [it for v in by_task.values() for it in v * min(8, max(1, round(top / len(v))))]
         log("обучение после уравнивания: " + ", ".join(f"{t} ×{min(8, max(1, round(top / len(v))))}" for t, v in by_task.items()))
 
+    if a.eval_only and a.all_rows:
+        te, te_i = rows, enc(rows)  # без обучения разбиение не нужно — весь набор
     base = metrics(agent, te, te_i)
+    base_by = {}
+    for src in {r.get("source", "") for r in te if r["task"] == "match"}:
+        pairs = [(r, it) for r, it in zip(te, te_i) if r["task"] == "match" and r.get("source", "") == src]
+        base_by[src] = metrics(agent, [p[0] for p in pairs], [p[1] for p in pairs])["match"]
     if a.eval_only:
         for t, m in sorted(base.items()):
             log(f"| {t} | {m['n']} | {m['logloss']:.3f} | {m['accuracy']:.0%} | {m['auto_correct']:.0%} | {m['auto_wrong']:.0%} | {m['cost']:.2f} |")
@@ -219,6 +236,21 @@ def main():
         ok &= better or not checked
         mark = "не проверено" if not checked else ("✓" if better else "хуже")
         log(f"| {t} | {b['n']} | {b['logloss']:.3f} → {n['logloss']:.3f} | {b['accuracy']:.0%} → {n['accuracy']:.0%} | {b['auto_correct']:.0%} → {n['auto_correct']:.0%} | {b['auto_wrong']:.0%} → {n['auto_wrong']:.0%} | {b['cost']:.2f} → {n['cost']:.2f} | {mark} |")
+
+    # по источникам строк «тот ли сериал»: ответы пользователя важнее всего (ровно то, что Laya видит в бою)
+    srcs = sorted({r.get("source", "") for r in te if r["task"] == "match"})
+    if len(srcs) > 1:
+        sub = lambda src: [(r, it) for r, it in zip(te, te_i) if r["task"] == "match" and r.get("source", "") == src]  # noqa: E731
+        log("\n| тот ли сериал · источник | строк | точность | сама и верно | сама и ошиблась | цена |\n|---|---|---|---|---|---|")
+        tuned_by = {}
+        for src in srcs:
+            pairs = sub(src)
+            if pairs:
+                tuned_by[src] = metrics(agent, [p[0] for p in pairs], [p[1] for p in pairs])["match"]
+        for src, m in tuned_by.items():
+            b0 = base_by.get(src)
+            fmt = lambda k, f="{:.0%}": f"{f.format(b0[k])} → {f.format(m[k])}" if b0 else f.format(m[k])  # noqa: E731
+            log(f"| {src} | {m['n']} | {fmt('accuracy')} | {fmt('auto_correct')} | {fmt('auto_wrong')} | {fmt('cost', '{:.2f}')} |")
 
     report = "\n".join(lines) + "\n"
     if not ok or not improved:

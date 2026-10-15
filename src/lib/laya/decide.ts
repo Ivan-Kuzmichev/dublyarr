@@ -35,6 +35,9 @@ function fromRaw<T>(db: Db, answer: string | boolean, raw: number): Decision<T> 
 /** Формат вопроса (laya_answers.version): 2 — с контекстом (тип, годы, сезоны, разбор, трекер; 2.5). Ответы на прежний формат не годятся. */
 export const QUESTION_VERSION = 2;
 
+/** Задачи, у которых есть надстройка над Laya (laya/probe/<задача>.json). */
+const PROBE_TASKS = new Set<LayaTask>(['match']);
+
 const cachedRaw = (db: Db, task: LayaTask, key: string) =>
   db
     .select()
@@ -83,7 +86,10 @@ export async function decideMany<T extends string | boolean>(db: Db, task: LayaT
   for (const i of ask) groups.set(JSON.stringify(inputs[i].state), [...(groups.get(JSON.stringify(inputs[i].state)) ?? []), i]);
   for (const idx of groups.values()) {
     const questions = Object.fromEntries(idx.map((i, n) => [`q${n}`, inputs[i].question]));
-    const r = await (o.client ?? layaClient()).ask(inputs[idx[0]].state, idx.length === 1 ? { q: inputs[idx[0]].question } : questions);
+    const ids = idx.length === 1 ? ['q'] : idx.map((_, n) => `q${n}`);
+    // «тот ли сериал» — с надстройкой (2.6): laya-serve пересчитывает уверенность, если веса для модели есть
+    const probe = PROBE_TASKS.has(task) ? { probe: Object.fromEntries(ids.map((id) => [id, task])) } : {};
+    const r = await (o.client ?? layaClient()).ask(inputs[idx[0]].state, idx.length === 1 ? { q: inputs[idx[0]].question } : questions, probe);
     // долгий проход с вопросами к Laya — воркер жив (иначе «Воркер не отвечает»)
     if (process.env.DUBLYARR_PROCESS === 'worker') beat(db, 'worker', true);
     idx.forEach((i, n) => {
