@@ -1,10 +1,9 @@
 import type { Db } from '../db/client';
 import type { Release, Title } from '../db/schema';
 import type { Verdict } from '../evaluate';
-import { formatSize } from '../format';
 import type { LayaClient } from './client';
 import { decide, type Budget, type DecideInput } from './decide';
-import { richState, type TitleContext } from './review';
+import { richState, titleContext, type TitleContext } from './review';
 
 // Финальная проверка перед загрузкой (spec §3): «это S01E03 сериала X в озвучке Y?» — до трёх лучших раздач.
 
@@ -17,20 +16,11 @@ const pct = (p: number) => `${Math.round(p * 100)} %`;
  */
 export type FinalTarget = { title: Title; codeOf: (r: Release) => string; what: string; dubOf: (v: Verdict, r: Release) => string; today: string };
 
-export function finalInput(t: { title: Title; code: string; what: string; dub: string }, r: Release, ctx?: TitleContext): DecideInput {
-  if (ctx) {
-    const { раздача, ...rest } = richState(t.title, r, ctx);
-    return {
-      key: `final|${t.title.tmdbType}:${t.title.tmdbId}|${t.code}|${t.dub}|${r.trackerName}|${r.title}|${r.size}`,
-      state: { нужно: `${t.what} в озвучке ${t.dub}`, раздача, ...rest },
-      question: { type: 'noul', instructions: `Это ${t.what} ${t.title.kind === 'movie' ? 'фильма' : 'сериала'} «${t.title.nameRu}» в озвучке ${t.dub}?` },
-      features: [r.match.score],
-    };
-  }
-  const name = `${t.title.nameRu}${t.title.nameOriginal && t.title.nameOriginal !== t.title.nameRu ? ` (${t.title.nameOriginal})` : ''}${t.title.year ? `, ${t.title.year}` : ''}`;
+export function finalInput(t: { title: Title; code: string; what: string; dub: string }, r: Release, ctx: TitleContext): DecideInput {
+  const { раздача, ...rest } = richState(t.title, r, ctx);
   return {
     key: `final|${t.title.tmdbType}:${t.title.tmdbId}|${t.code}|${t.dub}|${r.trackerName}|${r.title}|${r.size}`,
-    state: { [t.title.kind === 'movie' ? 'фильм' : 'сериал']: name, нужно: `${t.what} в озвучке ${t.dub}`, раздача: r.title, размер: formatSize(r.size) },
+    state: { нужно: `${t.what} в озвучке ${t.dub}`, раздача, ...rest },
     question: { type: 'noul', instructions: `Это ${t.what} ${t.title.kind === 'movie' ? 'фильма' : 'сериала'} «${t.title.nameRu}» в озвучке ${t.dub}?` },
     features: [r.match.score],
   };
@@ -46,11 +36,12 @@ export async function finalChecks(db: Db, verdicts: Verdict[], byId: Map<number,
   const order = [best, ...verdicts.filter((v) => v.ok && v !== best)];
   const out = new Map(verdicts.map((v) => [v.releaseId, { ...v }]));
   const failed: number[] = [];
+  const ctx = titleContext(db, t.title);
   for (const v of order.slice(0, MAX_CHECKS)) {
     const r = byId.get(v.releaseId);
     if (!r) continue;
     const dub = t.dubOf(v, r);
-    const d = await decide<boolean>(db, 'final', finalInput({ title: t.title, code: t.codeOf(r), what: t.what, dub }, r), o);
+    const d = await decide<boolean>(db, 'final', finalInput({ title: t.title, code: t.codeOf(r), what: t.what, dub }, r, ctx), o);
     if (d.by === 'budget') {
       // вопросы на этот проход кончились — непроверенное не качаем, проверим на следующем поиске
       for (const x of out.values()) if (x.ok) Object.assign(x, { ok: false, best: false, tone: 'wait' as const, until: t.today, reason: 'Ждём проверку Laya' });

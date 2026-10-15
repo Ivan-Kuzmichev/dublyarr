@@ -38,11 +38,11 @@ describe('«Тот ли сериал»', () => {
     const unsure = setup();
     expect((await reviewMatches(unsure.db, unsure.t, unsure.rows, { client: client(0.7).client, budget: { left: 20 } }))[0].match).toMatchObject({ level: 'doubt', reasons: ['Название не похоже', 'Laya не уверена · 70 %'] });
   });
-  test('вопрос — по-русски, с сериалом, раздачей и размером', async () => {
+  test('вопрос — по-русски: сериал с типом и годами, раздача, что разобрано, размер, трекер', async () => {
     const s = setup();
     const c = client(0.9);
     await reviewMatches(s.db, s.t, s.rows, { client: c.client, budget: { left: 20 } });
-    expect(c.states[0]).toEqual({ сериал: 'Игра престолов (Game of Thrones), 2011', раздача: 'Game of Thrones S01 0 [2011, WEB-DL]', размер: '20 ГБ' });
+    expect(c.states[0]).toEqual({ сериал: 'Игра престолов (Game of Thrones), сериал, 2011', раздача: 'Game of Thrones S01 0 [2011, WEB-DL]', разобрано: 'сезон 1, год 2011', размер: '20 ГБ', трекер: 'RuTracker' });
   });
   test('правило пользователя важнее Laya; уверенные и отвергнутые — не спрашиваем', async () => {
     const s = setup();

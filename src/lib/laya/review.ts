@@ -10,6 +10,7 @@ import { reparseReleases, titleInfoOf } from '../search';
 import { addExample } from './examples';
 import type { MatchResult } from '../match-types';
 import { formatSize } from '../format';
+import { listSeasons } from '../catalog';
 import { parsedLine, seasonsLine, titleLine } from './context';
 import type { LayaClient } from './client';
 import { decide, type Budget, type Decision, type DecideInput } from './decide';
@@ -21,9 +22,10 @@ const pct = (p: number) => `${Math.round(p * 100)} %`;
 
 export const matchKey = (t: Pick<Title, 'tmdbType' | 'tmdbId'>, r: Pick<Release, 'trackerName' | 'title' | 'size'>) => `${t.tmdbType}:${t.tmdbId}|${r.trackerName}|${r.title}|${r.size}`;
 
-/** Вопрос «тот ли сериал»: формулировка, которая лучше всего различала на замере (см. ledger фазы 4). */
-/** Расширенный контекст (опыт 2.5): сезоны сериала по TMDB — тогда в вопросе тип, годы, сезоны, разбор и трекер. */
+/** Контекст вопроса (2.5): сезоны сериала по TMDB — в вопросе тип, годы, сезоны, разбор заголовка и трекер. */
 export type TitleContext = { seasons: { number: number; episodeCount: number }[] };
+
+export const titleContext = (db: Db, t: Title): TitleContext => ({ seasons: t.kind === 'movie' ? [] : listSeasons(db, t.id) });
 
 export function richState(t: Title, r: Pick<Release, 'trackerName' | 'title' | 'size' | 'parsed'>, ctx: TitleContext): Record<string, string> {
   const s = seasonsLine(ctx.seasons);
@@ -37,19 +39,11 @@ export function richState(t: Title, r: Pick<Release, 'trackerName' | 'title' | '
   };
 }
 
-export function matchInput(t: Title, r: Pick<Release, 'trackerName' | 'title' | 'size' | 'match' | 'parsed'>, ctx?: TitleContext): DecideInput {
-  if (ctx) {
-    return {
-      key: matchKey(t, r),
-      state: richState(t, r, ctx),
-      question: { type: 'noul', instructions: t.kind === 'movie' ? 'Эта раздача — тот же фильм?' : 'Эта раздача — тот же сериал?' },
-      features: [r.match.score],
-    };
-  }
-  const name = `${t.nameRu}${t.nameOriginal && t.nameOriginal !== t.nameRu ? ` (${t.nameOriginal})` : ''}${t.year ? `, ${t.year}` : ''}`;
+/** Вопрос «тот ли сериал»: формулировка, которая лучше всего различала на замере (см. ledger фазы 4); с 2.5 — с контекстом. */
+export function matchInput(t: Title, r: Pick<Release, 'trackerName' | 'title' | 'size' | 'match' | 'parsed'>, ctx: TitleContext): DecideInput {
   return {
     key: matchKey(t, r),
-    state: { [t.kind === 'movie' ? 'фильм' : 'сериал']: name, раздача: r.title, размер: formatSize(r.size) },
+    state: richState(t, r, ctx),
     question: { type: 'noul', instructions: t.kind === 'movie' ? 'Эта раздача — тот же фильм?' : 'Эта раздача — тот же сериал?' },
     features: [r.match.score],
   };
@@ -73,12 +67,13 @@ export function applyMatchDecision(m: MatchResult, d: Decision<boolean> | null):
 /** Спросить Laya о сомнительных раздачах (в пределах бюджета) и записать решения. */
 export async function reviewMatches(db: Db, t: Title, rows: Release[], o: { budget: Budget; client?: LayaClient }): Promise<Release[]> {
   const out: Release[] = [];
+  const ctx = titleContext(db, t);
   for (const r of rows) {
     if (r.match.level !== 'doubt' || r.match.rule || r.match.laya) {
       out.push(r);
       continue;
     }
-    const d = await decide<boolean>(db, 'match', matchInput(t, r), o);
+    const d = await decide<boolean>(db, 'match', matchInput(t, r, ctx), o);
     const match = applyMatchDecision(r.match, d);
     if (match !== r.match) db.update(releasesT).set({ match }).where(eq(releasesT.id, r.id)).run();
     out.push({ ...r, match });

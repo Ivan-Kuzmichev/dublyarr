@@ -521,7 +521,7 @@ export const layaAnswers = sqliteTable(
     id: integer('id').primaryKey({ autoIncrement: true }),
     task: text('task').notNull(),
     key: text('key').notNull(),
-    version: integer('version').notNull(), // не используется (кэш — по модели); оставлено для совместимости
+    version: integer('version').notNull(), // формат вопроса (QUESTION_VERSION в decide.ts): другой — ответ не годится
     model: text('model').notNull().default(''), // ревизия модели: ответ другой модели не годится
     answer: json<string | boolean>('answer').notNull(),
     p: real('p').notNull(), // после адаптера: P(true) для «да/нет», уверенность выбора для «выбора»

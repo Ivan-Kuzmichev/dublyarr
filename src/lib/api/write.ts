@@ -26,7 +26,7 @@ import { ApiError, type ApiCtx, type Route } from './types';
 
 // Изменение через API: те же функции, что у server actions; ошибки — текстом, как на экране.
 
-const JOBS = new Set(['subscriptions.search', 'downloads.sync', 'cleanup.run', 'retention.run', 'tmdb.refresh-all', 'laya.train-now', 'intros.tick']);
+const JOBS = new Set(['subscriptions.search', 'downloads.sync', 'cleanup.run', 'retention.run', 'tmdb.refresh-all', 'intros.tick']);
 
 const id = (v: string) => {
   const n = Number(v);

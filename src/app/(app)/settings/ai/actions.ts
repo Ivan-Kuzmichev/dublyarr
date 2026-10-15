@@ -8,11 +8,8 @@ import { getConfig } from '@/lib/config';
 import { setSetting } from '@/lib/settings';
 import { parseLayaForm } from '@/lib/laya/settings';
 import { createLayaClient } from '@/lib/laya/client';
-import { rollback } from '@/lib/laya/versions';
 import { reloadLaya, setHeadsEnabled } from '@/lib/laya/heads';
 import { layaExamples } from '@/lib/db/schema';
-import { enqueue } from '@/worker/jobs';
-import path from 'node:path';
 
 export type FormState = { ok?: string; error?: string };
 
@@ -39,24 +36,11 @@ export async function checkLayaAction(): Promise<FormState> {
   return { ok: `Laya отвечает · ${String(Math.round(r.ms / 100) / 10).replace('.', ',')} с` };
 }
 
-export async function trainNowAction(): Promise<FormState> {
-  if (!(await guard('admin'))) return { error: DENIED };
-  enqueue(getDb(), 'laya.train-now');
-  return { ok: 'Обучение запущено — займёт несколько секунд' };
-}
-
-export async function rollbackAction(form: FormData) {
-  if (!(await guard('admin'))) return;
-  const v = String(form.get('version'));
-  rollback(getDb(), path.join(getConfig().dataDir, 'laya'), v === 'base' ? 'base' : Number(v));
-  revalidatePath('/settings/ai/training');
-}
-
 export async function deleteExampleAction(form: FormData) {
   if (!(await guard('admin'))) return;
   const id = Number(form.get('id'));
   if (Number.isInteger(id)) getDb().delete(layaExamples).where(eq(layaExamples.id, id)).run();
-  revalidatePath('/settings/ai/training');
+  revalidatePath('/settings/ai/examples');
 }
 
 /** «Дообученная Laya»: включить/выключить головы из репозитория и перечитать их в laya-serve. */

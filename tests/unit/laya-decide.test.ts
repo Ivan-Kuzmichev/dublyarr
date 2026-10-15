@@ -1,7 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { testDb } from './helpers';
 import { decide, decideMany, type Budget } from '@/lib/laya/decide';
-import { applyAdapter, currentAdapters } from '@/lib/laya/adapter';
 import { setSetting } from '@/lib/settings';
 import { beat } from '@/lib/heartbeat';
 import { layaVersions } from '@/lib/db/schema';
@@ -52,25 +51,13 @@ describe('решение Laya', () => {
   });
 });
 
-describe('адаптер', () => {
-  test('без адаптера — вероятность Laya; с весами — сигмоида признаков', () => {
-    expect(applyAdapter(null, 0.7, [1])).toBe(0.7);
-    expect(applyAdapter({ w: [1, 0], b: 0 }, 0.7, [5])).toBeCloseTo(0.7, 6);
-    expect(applyAdapter({ w: [0, 2], b: -1 }, 0.5, [1])).toBeCloseTo(1 / (1 + Math.exp(-1)), 6);
-  });
-  test('текущая версия применяется, только если совместима с моделью; новая версия — новые вопросы', async () => {
+describe('без адаптера NAS', () => {
+  test('старая версия адаптера в базе не меняет ответ: вероятность — как у Laya', async () => {
     const db = testDb();
     db.insert(layaVersions).values({ number: 1, createdAt: 1, examples: 40, laya: '0.3.22', model: 'm@1', current: true, adapters: { match: { w: [0, 3], b: 0 } }, metrics: {} }).run();
     beat(db, 'laya', true, JSON.stringify({ status: 'ready', laya: '0.3.22', model: 'm@1' }));
-    expect(currentAdapters(db)).toMatchObject({ version: 1, adapters: { match: { w: [0, 3], b: 0 } } });
     const f = fake({ noul: 0.5 });
-    const r = await decide(db, 'match', input('v', noul, [1]), { budget: budget(), client: f.client });
-    expect(r).toMatchObject({ raw: 0.5, sure: true, answer: true });
-    beat(db, 'laya', true, JSON.stringify({ status: 'ready', laya: '0.4.0', model: 'm@1' }));
-    expect(currentAdapters(db)).toEqual({ version: 0, adapters: {} }); // обновилась библиотека — базовая
-    // та же модель — ответ из кэша, но уже без адаптера
-    expect(await decide(db, 'match', input('v', noul, [1]), { budget: budget(), client: f.client })).toMatchObject({ raw: 0.5, sure: false });
-    expect(f.calls).toHaveLength(1);
+    expect(await decide(db, 'match', input('v', noul, [1]), { budget: budget(), client: f.client })).toMatchObject({ p: 0.5, raw: 0.5, sure: false });
   });
 });
 

@@ -15,11 +15,10 @@ import type { DatasetRow } from '../src/lib/laya/dataset';
 type Group = { titles: Record<string, [string, string, number, ('series' | 'anime' | 'movie')?]>; releases: [string, string, string][] };
 
 const DIR = path.resolve('laya-train/labels');
-// RICH=1 — расширенный контекст вопросов (опыт 2.5): сезоны и годы из labels/tmdb.json
-const RICH = process.env.RICH === '1';
-const OUT = path.resolve(RICH ? 'laya-train/data/labeled-rich.json' : 'laya-train/data/labeled.json');
+const OUT = path.resolve('laya-train/data/labeled.json');
+// сезоны и годы сериалов из TMDB — контекст вопросов, как в бою (titleContext)
 type Meta = { lastYear: number | null; seasons: Record<string, number> } | null;
-const META: Record<string, Meta> = RICH ? JSON.parse(readFileSync(path.join(DIR, 'tmdb.json'), 'utf8')) : {};
+const META: Record<string, Meta> = JSON.parse(readFileSync(path.join(DIR, 'tmdb.json'), 'utf8'));
 const hash = (s: string) => createHash('sha1').update(s).digest('hex');
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -58,7 +57,7 @@ groups.forEach((g, gi) => {
     ctxOf.set(t.id, { seasons: Object.entries(meta?.seasons ?? {}).map(([n, c]) => ({ number: Number(n), episodeCount: c })) });
   }
 });
-const ctx = (t: Title) => (RICH ? ctxOf.get(t.id) : undefined);
+const ctx = (t: Title) => ctxOf.get(t.id)!;
 const groupOf = (t: Title) => `${t.tmdbType}:${t.tmdbId}`;
 
 groups.forEach((g, gi) => {

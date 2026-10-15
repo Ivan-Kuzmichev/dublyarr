@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import type { Db } from '../db/client';
 import { layaAnswers, layaExamples } from '../db/schema';
 import { layaClient, type LayaClient, type Question } from './client';
-import { applyAdapter, currentAdapters, layaHealthInfo } from './adapter';
+import { layaHealthInfo } from './health';
 import { getLayaSettings, type LayaTaskId } from './settings';
 import { beat } from '../heartbeat';
 
@@ -24,19 +24,22 @@ function userDecision<T>(db: Db, task: LayaTask, key: string): Decision<T> | nul
   return { by: 'laya', answer: e.label as T, p, raw: p, sure: true, user: true };
 }
 
-/** Ответ модели → вероятность после адаптера текущей версии → уверенность по порогу. */
-function fromRaw<T>(db: Db, task: LayaTask, answer: string | boolean, raw: number, features: number[]): Decision<T> {
+/** Ответ модели → уверенность по порогу (дообучение — головы laya-serve, не здесь). */
+function fromRaw<T>(db: Db, answer: string | boolean, raw: number): Decision<T> {
   const { threshold } = getLayaSettings(db);
-  const p = applyAdapter(currentAdapters(db).adapters[task] ?? null, raw, features);
+  const p = raw;
   const a = typeof answer === 'boolean' ? p >= 0.5 : answer;
   return { by: 'laya', answer: a as T, p, raw, sure: (typeof a === 'boolean' ? Math.max(p, 1 - p) : p) >= threshold };
 }
+
+/** Формат вопроса (laya_answers.version): 2 — с контекстом (тип, годы, сезоны, разбор, трекер; 2.5). Ответы на прежний формат не годятся. */
+export const QUESTION_VERSION = 2;
 
 const cachedRaw = (db: Db, task: LayaTask, key: string) =>
   db
     .select()
     .from(layaAnswers)
-    .where(and(eq(layaAnswers.task, task), eq(layaAnswers.key, key), eq(layaAnswers.model, layaHealthInfo(db).model ?? '')))
+    .where(and(eq(layaAnswers.task, task), eq(layaAnswers.key, key), eq(layaAnswers.model, layaHealthInfo(db).model ?? ''), eq(layaAnswers.version, QUESTION_VERSION)))
     .get();
 
 /** Laya спрашивает только воркер: вопросы идут по одному каналу, без очереди из двух процессов (веб берёт кэш и ответы). */
@@ -48,15 +51,15 @@ function known<T>(db: Db, task: LayaTask, input: DecideInput): Decision<T> | nul
   const user = userDecision<T>(db, task, input.key);
   if (user) return user;
   const cached = cachedRaw(db, task, input.key);
-  return cached ? fromRaw<T>(db, task, cached.answer, cached.raw, input.features) : null;
+  return cached ? fromRaw<T>(db, cached.answer, cached.raw) : null;
 }
 
 function store<T>(db: Db, task: LayaTask, input: DecideInput, a: { choice?: string; probabilities?: Record<string, number>; noul?: number }, now: number): Decision<T> {
   const raw = input.question.type === 'noul' ? a.noul! : (a.probabilities?.[a.choice!] ?? 0);
   const answer = input.question.type === 'noul' ? raw >= 0.5 : a.choice!;
-  const row = { task, key: input.key, version: 0, model: layaHealthInfo(db).model ?? '', answer, p: raw, raw, input: { state: input.state, question: input.question, features: input.features }, at: now };
+  const row = { task, key: input.key, version: QUESTION_VERSION, model: layaHealthInfo(db).model ?? '', answer, p: raw, raw, input: { state: input.state, question: input.question, features: input.features }, at: now };
   db.insert(layaAnswers).values(row).onConflictDoUpdate({ target: [layaAnswers.task, layaAnswers.key, layaAnswers.model], set: row }).run();
-  return fromRaw<T>(db, task, answer, raw, input.features);
+  return fromRaw<T>(db, answer, raw);
 }
 
 export async function decide<T extends string | boolean>(db: Db, task: LayaTask, input: DecideInput, o: { budget: Budget; client?: LayaClient; now?: number }): Promise<Decision<T>> {
@@ -92,10 +95,10 @@ export async function decideMany<T extends string | boolean>(db: Db, task: LayaT
 }
 
 /** Уже известное решение (ответ пользователя или кэш модели) без запроса — для синхронного переразбора раздач. */
-export function cachedDecision<T extends string | boolean>(db: Db, task: LayaTask, key: string, features: number[] = []): Decision<T> | null {
+export function cachedDecision<T extends string | boolean>(db: Db, task: LayaTask, key: string, _features: number[] = []): Decision<T> | null {
   if (!getLayaSettings(db).tasks[task]) return null;
   const user = userDecision<T>(db, task, key);
   if (user) return user;
   const c = cachedRaw(db, task, key);
-  return c ? fromRaw<T>(db, task, c.answer, c.raw, c.input?.features ?? features) : null;
+  return c ? fromRaw<T>(db, c.answer, c.raw) : null;
 }

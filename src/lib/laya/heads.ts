@@ -8,6 +8,10 @@ const flag = (dataDir: string) => path.join(dataDir, 'laya', 'heads.disabled');
 
 export const headsEnabled = (dataDir: string) => !existsSync(flag(dataDir));
 
+/** Есть ли что включать: свои головы ({DATA_DIR}/laya/heads) или из образа (laya/heads рядом с приложением). */
+export const headsAvailable = (dataDir: string, appDir = process.cwd()) =>
+  [path.join(dataDir, 'laya', 'heads'), path.join(appDir, 'laya', 'heads')].some((d) => existsSync(path.join(d, 'heads.safetensors')));
+
 export function setHeadsEnabled(dataDir: string, on: boolean) {
   if (on) rmSync(flag(dataDir), { force: true });
   else {

@@ -34,10 +34,7 @@ const JOB_LABEL: Record<string, string> = {
   'retention.run': 'уборка медиатеки',
   'retention.tick': 'уборка медиатеки',
   'tmdb.refresh-all': 'обновление из TMDB',
-  'laya.train': 'дообучение Laya',
-  'laya.train-now': 'дообучение Laya',
   'telegram.send': 'Telegram',
-  'telegram.poll': 'Telegram',
 };
 
 export function serviceStatuses(db: Db, now = Date.now()): ServiceStatus[] {

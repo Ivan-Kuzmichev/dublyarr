@@ -7,8 +7,15 @@ import { Button } from '@/components/ui/Button';
 import { setHeadsAction, type FormState } from './actions';
 
 /** «Дообученная Laya»: головы, обученные на раздачах русских трекеров (лежат в Dublyarr), поверх базовой модели. */
-export function HeadsCard({ on, active }: { on: boolean; active: boolean }) {
+export function HeadsCard({ on, active, available }: { on: boolean; active: boolean; available: boolean }) {
   const [state, action, pending] = useActionState<FormState, FormData>(setHeadsAction, {});
+  if (!available)
+    return (
+      <Card className="flex min-w-0 flex-col gap-1">
+        <h3 className="m-0 text-base font-semibold">Дообученная Laya</h3>
+        <p className="m-0 text-[13px] text-muted">В этой версии Dublyarr дообученной модели нет — работает базовая. Ваши ответы копятся в «Примерах» для следующих версий.</p>
+      </Card>
+    );
   return (
     <form action={action}>
       <Card className="flex min-w-0 flex-col gap-3">
@@ -26,7 +33,7 @@ export function HeadsCard({ on, active }: { on: boolean; active: boolean }) {
         {state.ok && <p className="m-0 text-sm text-progress">{state.ok}</p>}
         <div>
           <Button type="submit" variant="secondary" disabled={pending}>
-            Сохранить
+            Применить
           </Button>
         </div>
       </Card>

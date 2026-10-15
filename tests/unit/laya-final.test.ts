@@ -7,7 +7,7 @@ import type { Release, Title } from '@/lib/db/schema';
 import type { LayaClient } from '@/lib/laya/client';
 
 const t = { id: 1, tmdbId: 1399, tmdbType: 'tv', kind: 'series', nameRu: 'Игра престолов', nameOriginal: 'Game of Thrones', year: 2011 } as Title;
-const rel = (id: number) => ({ id, title: `GoT S01E03 v${id}`, trackerName: 'RT', size: 2 * 1024 ** 3, match: { score: 0.9, level: 'match', reasons: [] } }) as unknown as Release;
+const rel = (id: number) => ({ id, title: `GoT S01E03 v${id}`, trackerName: 'RT', size: 2 * 1024 ** 3, parsed: { seasons: [1], episodes: { from: 3, to: 3 }, totalInSeason: null, absolute: false, year: null, dubs: [] }, match: { score: 0.9, level: 'match', reasons: [] } }) as unknown as Release;
 const byId = new Map([1, 2, 3, 4].map((i) => [i, rel(i)]));
 const v = (id: number, o: Partial<Verdict> = {}): Verdict => ({ releaseId: id, ok: true, best: id === 1, reason: 'Подходит', position: 0, tone: id === 1 ? 'best' : 'ok', ...o });
 const verdicts = () => [v(1), v(2), v(3), v(4), v(9, { ok: false, best: false, tone: 'reject', reason: 'Экранка' })];

@@ -2,7 +2,7 @@ import { isMovieProfile } from './movie-profile';
 import { and, eq, gte } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { layaExamples, releases, titles, type Release } from './db/schema';
-import { matchInput, studioInput } from './laya/review';
+import { matchInput, studioInput, titleContext } from './laya/review';
 import { addExample, lastLayaAnswer, markFinalAnswer } from './laya/examples';
 import { getTitleByTmdbId, listEpisodes, listSeasons } from './catalog';
 import { getSubscription } from './subscriptions';
@@ -115,7 +115,7 @@ export function answerMatch(db: Db, titleId: number, releaseId: number, verdict:
   if (!r || r.titleId !== titleId) throw new Error('Раздача не найдена');
   const title = db.select().from(titles).where(eq(titles.id, titleId)).get()!;
   // пример «тот ли сериал»: тот же вопрос, что у Laya (признаки — до правила пользователя: повторный ответ берёт прежние)
-  const fresh = matchInput(title, r);
+  const fresh = matchInput(title, r, titleContext(db, title));
   const prev = db.select().from(layaExamples).where(and(eq(layaExamples.task, 'match'), eq(layaExamples.key, fresh.key))).get();
   const input = prev?.input ?? { state: fresh.state, question: fresh.question, features: fresh.features };
   addExample(db, { task: 'match', key: fresh.key, input, label: verdict === 'match', laya: lastLayaAnswer(db, 'match', fresh.key)?.laya, source, title: r.title });

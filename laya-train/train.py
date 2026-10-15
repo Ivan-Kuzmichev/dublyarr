@@ -41,7 +41,7 @@ def load_rows(path):
 
 
 def metrics(agent, rows, items):
-    """По задачам: log-loss, точность, «решает сама» (уверенность ≥ 0,85) и «сама и верно»."""
+    """По задачам: log-loss, точность, «решает сама» (уверенность ≥ 0,85; у «да/нет» — только «да») и «сама и верно»."""
     out = defaultdict(lambda: {"n": 0, "loss": 0.0, "right": 0, "auto": 0, "auto_right": 0})
     for row, item, lg in zip(rows, items, logits_of(agent, items)):
         p = probs(agent, row, lg)
@@ -50,7 +50,8 @@ def metrics(agent, rows, items):
         m["n"] += 1
         m["loss"] += -math.log(max(1e-9, float(p[y])))
         m["right"] += int(int(p.argmax()) == y)
-        if p.max() >= THRESHOLD:
+        # «да/нет»: сама решает только уверенное «да» — уверенное «нет» в Dublyarr уходит вопросом пользователю или к следующей раздаче
+        if p.max() >= THRESHOLD and (row["question"]["type"] != "noul" or int(p.argmax()) == 1):
             m["auto"] += 1
             m["auto_right"] += int(int(p.argmax()) == y)
     res = {t: {"n": m["n"], "logloss": m["loss"] / m["n"], "accuracy": m["right"] / m["n"], "auto": m["auto"] / m["n"],
@@ -161,6 +162,7 @@ def main():
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--device", default="mps" if torch.backends.mps.is_available() else "cpu")
     ap.add_argument("--l2sp", type=float, default=0.0)
+    ap.add_argument("--no-calibrate", action="store_true", help="не подбирать температуры заново — базовые")
     ap.add_argument("--eval-only", action="store_true", help="только оценить базовую модель на проверочной части")
     ap.add_argument("--distill", type=float, default=0.0, help="вес удержания ответов базовой модели на вопросах выбора")
     ap.add_argument("--balance", action="store_true", help="уравнять задачи в обучении повтором строк (не больше ×8)")
@@ -199,7 +201,8 @@ def main():
             log(f"| {t} | {m['n']} | {m['logloss']:.3f} | {m['accuracy']:.0%} | {m['auto_correct']:.0%} | {m['auto_wrong']:.0%} | {m['cost']:.2f} |")
         return
     train(agent, keys, tr_i, cal_i, a.epochs, a.lr, a.batch, a.seed, log, a.l2sp, a.distill)
-    calibrate(agent, cal, cal_i)
+    if not a.no_calibrate:
+        calibrate(agent, cal, cal_i)
     tuned = metrics(agent, te, te_i)
 
     ok = True

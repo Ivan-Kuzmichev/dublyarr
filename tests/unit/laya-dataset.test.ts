@@ -2,7 +2,7 @@ import { expect, test } from 'vitest';
 import { randomBytes } from 'node:crypto';
 import { testDb } from './helpers';
 import { buildDataset } from '@/lib/laya/dataset';
-import { matchInput, studioInput } from '@/lib/laya/review';
+import { matchInput, studioInput, titleContext } from '@/lib/laya/review';
 import { finalInput } from '@/lib/laya/final';
 import { addRule } from '@/lib/release-rules';
 import { addExample } from '@/lib/laya/examples';
@@ -50,9 +50,18 @@ test('ответы пользователя — как есть: вопрос, �
   const { db, title, release } = setup();
   const t = title(1, 'Тед Лассо', 'Ted Lasso');
   const r = release(t.id, 'Ted Lasso S01E01');
-  const input = matchInput(t, r);
+  const input = matchInput(t, r, titleContext(db, t));
   addExample(db, { task: 'match', key: input.key, input: { state: input.state, question: input.question, features: input.features }, label: false, source: 'match-answer', title: r.title });
   expect(by(buildDataset(db), 'match', 'user')).toEqual([{ task: 'match', group: 'tv:1', source: 'user', state: input.state, question: input.question, target: false }]);
+});
+
+test('ответ на прежний, короткий вопрос (до 2.5) — в наборе вопрос в нынешнем виде, если раздача ещё в базе', () => {
+  const { db, title, release } = setup();
+  const t = title(11, 'Тед Лассо', 'Ted Lasso');
+  const r = release(t.id, 'Ted Lasso S01E02');
+  const now = matchInput(t, r, titleContext(db, t));
+  addExample(db, { task: 'match', key: now.key, input: { state: { сериал: 'Тед Лассо (Ted Lasso), 2020', раздача: r.title, размер: '1,4 ГБ' }, question: now.question, features: [0.9] }, label: true, source: 'match-answer', title: r.title });
+  expect(by(buildDataset(db), 'match', 'user')).toEqual([expect.objectContaining({ state: now.state, target: true })]);
 });
 
 test('правила «это он / не тот» — метка для раздач сериала с той же основой', () => {
@@ -62,7 +71,7 @@ test('правила «это он / не тот» — метка для раз�
   addRule(db, t.id, r.trackerName, r.title, 'reject');
   const rows = by(buildDataset(db), 'match', 'rule');
   expect(rows).toHaveLength(1);
-  expect(rows[0]).toMatchObject({ target: false, state: matchInput(t, r).state });
+  expect(rows[0]).toMatchObject({ target: false, state: matchInput(t, r, titleContext(db, t)).state });
 });
 
 test('скачанное: «тот сериал» — да, финальная проверка (серия, озвучка) — да', () => {
@@ -74,7 +83,7 @@ test('скачанное: «тот сериал» — да, финальная �
   expect(by(rows, 'match', 'download')).toEqual([expect.objectContaining({ target: true, group: 'tv:3' })]);
   const fin = by(rows, 'final', 'download');
   expect(fin).toHaveLength(1);
-  const want = finalInput({ title: t, code: 'S04E05', what: 'серия 5 сезона 4', dub: 'LostFilm' }, r);
+  const want = finalInput({ title: t, code: 'S04E05', what: 'серия 5 сезона 4', dub: 'LostFilm' }, r, titleContext(db, t));
   expect(fin[0]).toMatchObject({ target: true, state: want.state, question: want.question });
 });
 

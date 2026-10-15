@@ -4,7 +4,6 @@ import { testDb } from './helpers';
 import { decide } from '@/lib/laya/decide';
 import { addExample } from '@/lib/laya/examples';
 import { beat } from '@/lib/heartbeat';
-import { layaVersions } from '@/lib/db/schema';
 import type { LayaClient } from '@/lib/laya/client';
 
 process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
@@ -26,19 +25,31 @@ describe('ответ пользователя важнее Laya', () => {
   });
 });
 
-describe('кэш — ответ модели, адаптер применяется при чтении', () => {
-  test('новая версия адаптеров не требует новых вопросов', async () => {
+describe('кэш — ответ модели по её имени', () => {
+  test('та же модель — из кэша; другая модель или включённые головы — спросить заново', async () => {
     const db = testDb();
     beat(db, 'laya', true, JSON.stringify({ status: 'ready', laya: '0.3.22', model: 'm@1' }));
     const c = client({ noul: 0.5 });
-    expect(await decide(db, 'match', input('a', [1]), { budget: { left: 5 }, client: c.client })).toMatchObject({ sure: false });
-    db.insert(layaVersions).values({ number: 1, createdAt: 1, examples: 40, laya: '0.3.22', model: 'm@1', current: true, adapters: { match: { w: [0, 3], b: 0 } }, metrics: {} }).run();
-    expect(await decide(db, 'match', input('a', [1]), { budget: { left: 5 }, client: c.client })).toMatchObject({ sure: true, answer: true, raw: 0.5 });
+    expect(await decide(db, 'match', input('a', [1]), { budget: { left: 5 }, client: c.client })).toMatchObject({ sure: false, raw: 0.5 });
+    await decide(db, 'match', input('a', [1]), { budget: { left: 5 }, client: c.client });
     expect(c.calls).toBe(1);
-    // другая модель — ответы прежней не годятся
-    beat(db, 'laya', true, JSON.stringify({ status: 'ready', laya: '0.3.22', model: 'm@2' }));
+    beat(db, 'laya', true, JSON.stringify({ status: 'ready', laya: '0.3.22', model: 'm@1+heads-2026-10-15' }));
     await decide(db, 'match', input('a', [1]), { budget: { left: 5 }, client: c.client });
     expect(c.calls).toBe(2);
+    beat(db, 'laya', true, JSON.stringify({ status: 'ready', laya: '0.3.22', model: 'm@2' }));
+    await decide(db, 'match', input('a', [1]), { budget: { left: 5 }, client: c.client });
+    expect(c.calls).toBe(3);
+  });
+  test('ответ на прежний, короткий вопрос (до 2.5) не годится — спросить заново с контекстом', async () => {
+    const db = testDb();
+    beat(db, 'laya', true, JSON.stringify({ status: 'ready', laya: '0.3.22', model: 'm@1' }));
+    const { layaAnswers } = await import('@/lib/db/schema');
+    db.insert(layaAnswers).values({ task: 'match', key: 'old', version: 0, model: 'm@1', answer: true, p: 0.97, raw: 0.97, at: 1 }).run();
+    const c = client({ noul: 0.4 });
+    expect(await decide(db, 'match', input('old'), { budget: { left: 5 }, client: c.client })).toMatchObject({ raw: 0.4 });
+    expect(c.calls).toBe(1);
+    await decide(db, 'match', input('old'), { budget: { left: 5 }, client: c.client });
+    expect(c.calls).toBe(1); // новый ответ — уже в кэше
   });
   test('бюджет кончился — отдельное решение (не «правила»)', async () => {
     const db = testDb();

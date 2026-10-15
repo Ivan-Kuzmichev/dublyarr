@@ -3,10 +3,10 @@ import { randomBytes } from 'node:crypto';
 import { testDb } from './helpers';
 import { answerMatch, assignStudio } from '@/lib/manual-search';
 import { exampleStats, markFinalAnswer } from '@/lib/laya/examples';
-import { matchInput } from '@/lib/laya/review';
+import { matchInput, titleContext } from '@/lib/laya/review';
 import { seedStudios, findStudioByAlias } from '@/lib/studios';
 import { parseRelease } from '@/lib/parse/dubs';
-import { layaAnswers, layaExamples, layaVersions, releases, sources, titles } from '@/lib/db/schema';
+import { layaAnswers, layaExamples, releases, sources, titles } from '@/lib/db/schema';
 
 process.env.DUBLYARR_SECRET_KEY = randomBytes(32).toString('base64');
 
@@ -22,7 +22,7 @@ function setup(title = 'Game of Thrones S01E03 [WEB-DL 1080p] MVO Paravozik') {
 describe('примеры из ответов пользователя', () => {
   test('«Это он» / «Не тот сериал»: тот же вопрос, что у Laya; ответ Laya рядом; повтор — один пример', () => {
     const s = setup();
-    const input = matchInput(s.t, s.r);
+    const input = matchInput(s.t, s.r, titleContext(s.db, s.t));
     s.db.insert(layaAnswers).values({ task: 'match', key: input.key, version: 0, answer: false, p: 0.3, raw: 0.3, at: 1 }).run();
     answerMatch(s.db, s.t.id, s.r.id, 'match');
     answerMatch(s.db, s.t.id, s.r.id, 'match', 'telegram');
@@ -47,14 +47,12 @@ describe('примеры из ответов пользователя', () => {
     markFinalAnswer(s.db, s.t, s.r, true);
     expect(s.db.select().from(layaExamples).get()).toMatchObject({ task: 'final', label: true, source: 'correction', laya: { answer: false, p: 0.2 } });
   });
-  test('статистика: всего, новых с последней версии, по задачам', () => {
+  test('статистика: всего и по задачам', () => {
     const s = setup();
     answerMatch(s.db, s.t.id, s.r.id, 'match');
-    s.db.insert(layaVersions).values({ number: 1, createdAt: Date.now() + 1000, examples: 1, laya: 'x', model: 'y', current: true, adapters: {}, metrics: {} }).run();
     assignStudio(s.db, s.t.id, { label: 'Paravozik', newName: 'Paravozik Studio' });
     const st = exampleStats(s.db);
     expect(st.total).toBe(2);
     expect(st.byTask).toEqual({ studio: 1, match: 1, anime: 0, final: 0 });
-    expect(st.sinceVersion).toBe(0); // оба раньше «версии из будущего»
   });
 });

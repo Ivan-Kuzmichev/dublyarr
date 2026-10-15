@@ -1,6 +1,6 @@
 import { and, desc, eq } from 'drizzle-orm';
 import type { Db } from '../db/client';
-import { layaAnswers, layaExamples, layaVersions, type Release, type Title } from '../db/schema';
+import { layaAnswers, layaExamples, type Release, type Title } from '../db/schema';
 import type { LayaTask } from './decide';
 
 // Размеченные примеры для дообучения: ответ пользователя на тот же вопрос, что видела (или увидела бы) Laya.
@@ -33,11 +33,10 @@ export function markFinalAnswer(db: Db, t: Pick<Title, 'tmdbType' | 'tmdbId'>, r
   for (const a of asked) addExample(db, { task: 'final', key: a.key, input: a.input!, label: ok, laya: { answer: a.answer, p: a.p, raw: a.raw, model: a.model || undefined }, source: 'correction', title: r.title, now });
 }
 
-/** Сколько примеров: всего, по задачам и новых с текущей версии адаптеров. */
+/** Сколько примеров: всего и по задачам. */
 export function exampleStats(db: Db) {
-  const rows = db.select({ task: layaExamples.task, at: layaExamples.createdAt }).from(layaExamples).all();
-  const current = db.select().from(layaVersions).where(eq(layaVersions.current, true)).get();
+  const rows = db.select({ task: layaExamples.task }).from(layaExamples).all();
   const byTask = { studio: 0, match: 0, anime: 0, final: 0 } as Record<LayaTask, number>;
   for (const r of rows) if (r.task in byTask) byTask[r.task as LayaTask]++;
-  return { total: rows.length, byTask, sinceVersion: rows.filter((r) => r.at > (current?.createdAt ?? 0)).length };
+  return { total: rows.length, byTask };
 }

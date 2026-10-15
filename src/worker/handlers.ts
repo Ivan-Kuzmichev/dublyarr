@@ -14,7 +14,6 @@ import { checkDisk, diskUsage, fullestDisk } from '../lib/storage';
 import { getCleanup, runCleanup } from '../lib/cleanup';
 import { createTelegram, getTelegramSettings, telegramProxy } from '../lib/telegram';
 import { sendPending } from '../lib/notify';
-import { pollUpdates } from '../lib/telegram-updates';
 import { checkPacks } from '../lib/pack-watch';
 import { searchTitle } from '../lib/search';
 import { getSetting, setSetting } from '../lib/settings';
@@ -25,7 +24,6 @@ import { downloads } from '../lib/db/schema';
 import { eq } from 'drizzle-orm';
 import path from 'node:path';
 import { getConfig } from '../lib/config';
-import { trainVersion, trainingDue } from '../lib/laya/versions';
 import { processSeason } from '../lib/intros/run';
 import { systemIntroTools } from '../lib/intros/tools';
 import { getIntroSettings } from '../lib/intros/settings';
@@ -85,7 +83,7 @@ async function packsJob(db: Db) {
 }
 
 /** Клиент Telegram, если бот настроен (чаты — у учёток). */
-function telegramFor(db: Db) {
+export function telegramFor(db: Db) {
   const s = getTelegramSettings(db);
   if (!s?.token) return null;
   return createTelegram({ token: s.token, proxy: telegramProxy(db, s) });
@@ -129,16 +127,6 @@ export const buildHandlers = (db: Db): Record<string, Handler> => ({
     if (retentionDue(settings.schedule, getSetting<number>(db, 'retention.lastRun') ?? null, new Date())) await retentionJob(db);
   },
   'retention.run': () => retentionJob(db),
-  // дообучение Laya: ночью при 30+ новых примерах или после обновления; «Обучить сейчас» — без порога
-  'laya.train': async () => {
-    if (trainingDue(db, new Date())) await layaTrainJob(db, false);
-  },
-  'laya.train-now': () => layaTrainJob(db, true),
-  'telegram.poll': async () => {
-    const s = getTelegramSettings(db);
-    if (!s?.token) return;
-    await pollUpdates(db, createTelegram({ token: s.token, proxy: telegramProxy(db, s) }));
-  },
   'telegram.send': async () => {
     const tg = telegramFor(db);
     if (!tg) return;
@@ -158,8 +146,3 @@ export const buildHandlers = (db: Db): Record<string, Handler> => ({
   },
 });
 
-async function layaTrainJob(db: Db, force: boolean) {
-  const r = await trainVersion(db, path.join(getConfig().dataDir, 'laya'), { force });
-  setSetting(db, 'laya.lastTrain', { at: Date.now(), ...r });
-  log.info({ applied: r.applied, version: r.version, reason: r.reason }, 'laya training');
-}
