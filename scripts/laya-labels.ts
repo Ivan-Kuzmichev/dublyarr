@@ -8,14 +8,18 @@ import { migrateDb, openDb } from '../src/lib/db/client';
 import { titles, studios as studiosTable, type Release, type Title } from '../src/lib/db/schema';
 import { seedStudios, listStudios } from '../src/lib/studios';
 import { parseRelease } from '../src/lib/parse/dubs';
-import { matchInput, studioInput } from '../src/lib/laya/review';
+import { matchInput, studioInput, type TitleContext } from '../src/lib/laya/review';
 import { finalInput } from '../src/lib/laya/final';
 import type { DatasetRow } from '../src/lib/laya/dataset';
 
 type Group = { titles: Record<string, [string, string, number, ('series' | 'anime' | 'movie')?]>; releases: [string, string, string][] };
 
 const DIR = path.resolve('laya-train/labels');
-const OUT = path.resolve('laya-train/data/labeled.json');
+// RICH=1 — расширенный контекст вопросов (опыт 2.5): сезоны и годы из labels/tmdb.json
+const RICH = process.env.RICH === '1';
+const OUT = path.resolve(RICH ? 'laya-train/data/labeled-rich.json' : 'laya-train/data/labeled.json');
+type Meta = { lastYear: number | null; seasons: Record<string, number> } | null;
+const META: Record<string, Meta> = RICH ? JSON.parse(readFileSync(path.join(DIR, 'tmdb.json'), 'utf8')) : {};
 const hash = (s: string) => createHash('sha1').update(s).digest('hex');
 const pad = (n: number) => String(n).padStart(2, '0');
 
@@ -36,21 +40,25 @@ const studioNames = listStudios(db).map((s) => s.name);
 
 const rows: DatasetRow[] = [];
 let tmdb = 1;
-const groups: Group[] = readdirSync(DIR)
-  .filter((f) => f.endsWith('.json'))
+const groups: (Group & { file: string })[] = readdirSync(DIR)
+  .filter((f) => /^g\d+\.json$/.test(f))
   .sort()
-  .flatMap((f) => JSON.parse(readFileSync(path.join(DIR, f), 'utf8')) as Group[]);
+  .flatMap((f) => (JSON.parse(readFileSync(path.join(DIR, f), 'utf8')) as Group[]).map((g) => ({ ...g, file: f.slice(0, -5) })));
 const allTitles: { key: string; t: Title; gi: number }[] = [];
+const ctxOf = new Map<number, TitleContext>();
 groups.forEach((g, gi) => {
   for (const [key, [ru, orig, year, kind]] of Object.entries(g.titles)) {
+    const meta = META[`${g.file}:${key}:${orig}`] ?? null;
     const t = db
       .insert(titles)
-      .values({ tmdbId: tmdb++, tmdbType: kind === 'movie' ? 'movie' : 'tv', kind: kind ?? 'series', nameRu: ru, nameOriginal: orig, originalLanguage: 'xx', year, status: 'ended', createdAt: 1, refreshedAt: 1 })
+      .values({ tmdbId: tmdb++, tmdbType: kind === 'movie' ? 'movie' : 'tv', kind: kind ?? 'series', nameRu: ru, nameOriginal: orig, originalLanguage: 'xx', year, lastAirDate: meta?.lastYear ? `${meta.lastYear}-01-01` : null, status: 'ended', createdAt: 1, refreshedAt: 1 })
       .returning()
       .get();
     allTitles.push({ key: `${gi}:${key}`, t, gi });
+    ctxOf.set(t.id, { seasons: Object.entries(meta?.seasons ?? {}).map(([n, c]) => ({ number: Number(n), episodeCount: c })) });
   }
 });
+const ctx = (t: Title) => (RICH ? ctxOf.get(t.id) : undefined);
 const groupOf = (t: Title) => `${t.tmdbType}:${t.tmdbId}`;
 
 groups.forEach((g, gi) => {
@@ -62,12 +70,12 @@ groups.forEach((g, gi) => {
     const r = { id: 0, titleId: 0, trackerName, title, size: bytes(size), parsed, match: { score: 0, level: 'doubt', reasons: [] } } as unknown as Release;
     // «тот ли сериал»: к каждому сериалу группы + к одному чужому (явное «нет»)
     for (const x of mine) {
-      const m = matchInput(x.t, r);
+      const m = matchInput(x.t, r, ctx(x.t));
       rows.push({ task: 'match', group: groupOf(x.t), source: 'user', state: m.state, question: m.question, target: owner === x.key.split(':')[1] });
     }
     const stranger = others.sort((a, b) => hash(title + a.key).localeCompare(hash(title + b.key)))[0];
     if (stranger) {
-      const m = matchInput(stranger.t, r);
+      const m = matchInput(stranger.t, r, ctx(stranger.t));
       rows.push({ task: 'match', group: groupOf(stranger.t), source: 'pair', state: m.state, question: m.question, target: false });
     }
     const own = mine.find((x) => x.key.split(':')[1] === owner)?.t;
@@ -87,7 +95,7 @@ groups.forEach((g, gi) => {
     const season = parsed.seasons[0];
     const ep = parsed.episodes ? parsed.episodes.from + Math.floor((parsed.episodes.to - parsed.episodes.from) / 2) : 1;
     const ask = (s: number, n: number, dub: string, target: boolean) => {
-      const f = finalInput({ title: own, code: parsed.pack ? `S${pad(s)}` : `S${pad(s)}E${pad(n)}`, what: `серия ${n} сезона ${s}`, dub }, r);
+      const f = finalInput({ title: own, code: parsed.pack ? `S${pad(s)}` : `S${pad(s)}E${pad(n)}`, what: `серия ${n} сезона ${s}`, dub }, r, ctx(own));
       rows.push({ task: 'final', group: groupOf(own), source: 'user', state: f.state, question: f.question, target });
     };
     ask(season, ep, named[0], true);

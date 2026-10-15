@@ -1,0 +1,889 @@
+{
+ "g01:us:The Office": {
+  "tmdbId": 2316,
+  "firstYear": 2005,
+  "lastYear": 2013,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 6,
+   "2": 22,
+   "3": 23,
+   "4": 14,
+   "5": 26,
+   "6": 24,
+   "7": 24,
+   "8": 24,
+   "9": 23
+  }
+ },
+ "g01:uk:The Office": {
+  "tmdbId": 2996,
+  "firstYear": 2001,
+  "lastYear": 2002,
+  "status": "Ended",
+  "countries": [
+   "GB"
+  ],
+  "seasons": {
+   "1": 6,
+   "2": 6
+  }
+ },
+ "g01:us:Shameless": {
+  "tmdbId": 34307,
+  "firstYear": 2011,
+  "lastYear": 2021,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 12,
+   "2": 12,
+   "3": 12,
+   "4": 12,
+   "5": 12,
+   "6": 12,
+   "7": 12,
+   "8": 12,
+   "9": 14,
+   "10": 12,
+   "11": 12
+  }
+ },
+ "g01:uk:Shameless": {
+  "tmdbId": 1906,
+  "firstYear": 2004,
+  "lastYear": 2013,
+  "status": "Ended",
+  "countries": [
+   "GB"
+  ],
+  "seasons": {
+   "1": 7,
+   "2": 10,
+   "3": 8,
+   "4": 8,
+   "5": 16,
+   "6": 16,
+   "7": 16,
+   "8": 22,
+   "9": 11,
+   "10": 10,
+   "11": 14
+  }
+ },
+ "g01:new:Doctor Who": {
+  "tmdbId": 57243,
+  "firstYear": 2005,
+  "lastYear": 2021,
+  "status": "Ended",
+  "countries": [
+   "GB"
+  ],
+  "seasons": {
+   "1": 13,
+   "2": 13,
+   "3": 13,
+   "4": 13,
+   "5": 13,
+   "6": 13,
+   "7": 13,
+   "8": 12,
+   "9": 12,
+   "10": 12,
+   "11": 10,
+   "12": 10,
+   "13": 6
+  }
+ },
+ "g01:classic:Doctor Who": {
+  "tmdbId": 121,
+  "firstYear": 1963,
+  "lastYear": 1989,
+  "status": "Ended",
+  "countries": [
+   "GB"
+  ],
+  "seasons": {
+   "1": 42,
+   "2": 39,
+   "3": 45,
+   "4": 43,
+   "5": 40,
+   "6": 44,
+   "7": 25,
+   "8": 25,
+   "9": 26,
+   "10": 26,
+   "11": 26,
+   "12": 20,
+   "13": 26,
+   "14": 26,
+   "15": 26,
+   "16": 26,
+   "17": 20,
+   "18": 28,
+   "19": 26,
+   "20": 22,
+   "21": 24,
+   "22": 13,
+   "23": 14,
+   "24": 14,
+   "25": 14,
+   "26": 14
+  }
+ },
+ "g01:us:House of Cards": {
+  "tmdbId": 1425,
+  "firstYear": 2013,
+  "lastYear": 2018,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 13,
+   "2": 13,
+   "3": 13,
+   "4": 13,
+   "5": 13,
+   "6": 8
+  }
+ },
+ "g01:uk:House of Cards": {
+  "tmdbId": 21720,
+  "firstYear": 1990,
+  "lastYear": 1990,
+  "status": "Ended",
+  "countries": [
+   "GB"
+  ],
+  "seasons": {
+   "1": 4
+  }
+ },
+ "g01:series:Fargo": {
+  "tmdbId": 60622,
+  "firstYear": 2014,
+  "lastYear": 2024,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 10,
+   "2": 10,
+   "3": 10,
+   "4": 11,
+   "5": 10
+  }
+ },
+ "g01:lasso:Ted Lasso": {
+  "tmdbId": 97546,
+  "firstYear": 2020,
+  "lastYear": 2026,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 10,
+   "2": 12,
+   "3": 12,
+   "4": 10
+  }
+ },
+ "g01:ted:Ted": {
+  "tmdbId": 201834,
+  "firstYear": 2024,
+  "lastYear": 2026,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 7,
+   "2": 8
+  }
+ },
+ "g01:new:Battlestar Galactica": {
+  "tmdbId": 1972,
+  "firstYear": 2004,
+  "lastYear": 2009,
+  "status": "Ended",
+  "countries": [
+   "CA",
+   "US",
+   "GB"
+  ],
+  "seasons": {
+   "1": 13,
+   "2": 20,
+   "3": 20,
+   "4": 20
+  }
+ },
+ "g01:old:Battlestar Galactica": {
+  "tmdbId": 501,
+  "firstYear": 1978,
+  "lastYear": 1979,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 21
+  }
+ },
+ "g01:new:Shōgun": {
+  "tmdbId": 126308,
+  "firstYear": 2024,
+  "lastYear": 2024,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 10
+  }
+ },
+ "g01:old:Shōgun": {
+  "tmdbId": 13862,
+  "firstYear": 1980,
+  "lastYear": 1980,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 5
+  }
+ },
+ "g01:boys:The Boys": {
+  "tmdbId": 76479,
+  "firstYear": 2019,
+  "lastYear": 2026,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 8,
+   "2": 8,
+   "3": 8,
+   "4": 8,
+   "5": 8
+  }
+ },
+ "g02:frieren:葬送のフリーレン": {
+  "tmdbId": 209867,
+  "firstYear": 2023,
+  "lastYear": 2026,
+  "status": "Returning Series",
+  "countries": [
+   "JP"
+  ],
+  "seasons": {
+   "1": 38
+  }
+ },
+ "g02:jjk:呪術廻戦": {
+  "tmdbId": 95479,
+  "firstYear": 2020,
+  "lastYear": 2026,
+  "status": "Returning Series",
+  "countries": [
+   "JP"
+  ],
+  "seasons": {
+   "1": 59
+  }
+ },
+ "g02:solo:俺だけレベルアップな件": {
+  "tmdbId": 127532,
+  "firstYear": 2024,
+  "lastYear": 2025,
+  "status": "Ended",
+  "countries": [
+   "JP"
+  ],
+  "seasons": {
+   "1": 25
+  }
+ },
+ "g02:hotd:House of the Dragon": {
+  "tmdbId": 94997,
+  "firstYear": 2022,
+  "lastYear": 2026,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 10,
+   "2": 8,
+   "3": 8
+  }
+ },
+ "g02:got:Game of Thrones": {
+  "tmdbId": 1399,
+  "firstYear": 2011,
+  "lastYear": 2019,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 10,
+   "2": 10,
+   "3": 10,
+   "4": 10,
+   "5": 10,
+   "6": 10,
+   "7": 7,
+   "8": 6
+  }
+ },
+ "g02:bb:Breaking Bad": {
+  "tmdbId": 1396,
+  "firstYear": 2008,
+  "lastYear": 2013,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 7,
+   "2": 13,
+   "3": 13,
+   "4": 13,
+   "5": 16
+  }
+ },
+ "g02:bcs:Better Call Saul": {
+  "tmdbId": 60059,
+  "firstYear": 2015,
+  "lastYear": 2022,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 10,
+   "2": 10,
+   "3": 10,
+   "4": 10,
+   "5": 10,
+   "6": 13
+  }
+ },
+ "g02:witcher:The Witcher": {
+  "tmdbId": 71912,
+  "firstYear": 2019,
+  "lastYear": 2025,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 8,
+   "2": 8,
+   "3": 8,
+   "4": 8
+  }
+ },
+ "g03:reacher:Reacher": {
+  "tmdbId": 108978,
+  "firstYear": 2022,
+  "lastYear": 2026,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 8,
+   "2": 8,
+   "3": 8,
+   "4": 8
+  }
+ },
+ "g03:live:One Piece": {
+  "tmdbId": 111110,
+  "firstYear": 2023,
+  "lastYear": 2026,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 8,
+   "2": 8,
+   "3": 1
+  }
+ },
+ "g03:anime:ワンピース": {
+  "tmdbId": 37854,
+  "firstYear": 1999,
+  "lastYear": 2026,
+  "status": "Returning Series",
+  "countries": [
+   "JP"
+  ],
+  "seasons": {
+   "1": 61,
+   "2": 16,
+   "3": 14,
+   "4": 39,
+   "5": 13,
+   "6": 52,
+   "7": 33,
+   "8": 35,
+   "9": 73,
+   "10": 45,
+   "11": 26,
+   "12": 14,
+   "13": 101,
+   "14": 58,
+   "15": 62,
+   "16": 50,
+   "17": 56,
+   "18": 55,
+   "19": 74,
+   "20": 14,
+   "21": 197,
+   "22": 67,
+   "23": 25
+  }
+ },
+ "g03:fallout:Fallout": {
+  "tmdbId": 106379,
+  "firstYear": 2024,
+  "lastYear": 2026,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 8,
+   "2": 8
+  }
+ },
+ "g03:tlou:The Last of Us": {
+  "tmdbId": 100088,
+  "firstYear": 2023,
+  "lastYear": 2025,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 9,
+   "2": 7
+  }
+ },
+ "g04:naruto:NARUTO -ナルト-": {
+  "tmdbId": 46260,
+  "firstYear": 2002,
+  "lastYear": 2007,
+  "status": "Ended",
+  "countries": [
+   "JP"
+  ],
+  "seasons": {
+   "1": 52,
+   "2": 52,
+   "3": 54,
+   "4": 62
+  }
+ },
+ "g04:shipp:NARUTO -ナルト- 疾風伝": {
+  "tmdbId": 31910,
+  "firstYear": 2007,
+  "lastYear": 2017,
+  "status": "Ended",
+  "countries": [
+   "JP"
+  ],
+  "seasons": {
+   "1": 32,
+   "2": 21,
+   "3": 18,
+   "4": 17,
+   "5": 24,
+   "6": 31,
+   "7": 8,
+   "8": 24,
+   "9": 21,
+   "10": 25,
+   "11": 21,
+   "12": 33,
+   "13": 20,
+   "14": 25,
+   "15": 28,
+   "16": 13,
+   "17": 11,
+   "18": 21,
+   "19": 20,
+   "20": 87
+  }
+ },
+ "g04:boruto:BORUTO-ボルト- NARUTO NEXT GENERATIONS": {
+  "tmdbId": 70881,
+  "firstYear": 2017,
+  "lastYear": 2023,
+  "status": "Returning Series",
+  "countries": [
+   "JP"
+  ],
+  "seasons": {
+   "1": 293
+  }
+ },
+ "g04:aot:進撃の巨人": {
+  "tmdbId": 1429,
+  "firstYear": 2013,
+  "lastYear": 2022,
+  "status": "Ended",
+  "countries": [
+   "JP"
+  ],
+  "seasons": {
+   "1": 25,
+   "2": 12,
+   "3": 22,
+   "4": 28
+  }
+ },
+ "g04:brothers:Brothers": {
+  "tmdbId": 250203,
+  "firstYear": 2026,
+  "lastYear": 2026,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 8
+  }
+ },
+ "g04:band:Band of Brothers": {
+  "tmdbId": 4613,
+  "firstYear": 2001,
+  "lastYear": 2001,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 10
+  }
+ },
+ "g04:prophecy:Dune: Prophecy": {
+  "tmdbId": 90228,
+  "firstYear": 2024,
+  "lastYear": 2024,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 6,
+   "2": 8
+  }
+ },
+ "g05:lanterns:Lanterns": {
+  "tmdbId": 95350,
+  "firstYear": 2026,
+  "lastYear": 2026,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 8
+  }
+ },
+ "g05:king:도굴왕": {
+  "tmdbId": 297826,
+  "firstYear": 2026,
+  "lastYear": 2026,
+  "status": "Ended",
+  "countries": [
+   "KR"
+  ],
+  "seasons": {
+   "1": 12
+  }
+ },
+ "g05:lara:Tomb Raider: The Legend of Lara Croft": {
+  "tmdbId": 117830,
+  "firstYear": 2024,
+  "lastYear": 2025,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 8,
+   "2": 8
+  }
+ },
+ "g05:penguin:The Penguin": {
+  "tmdbId": 194764,
+  "firstYear": 2024,
+  "lastYear": 2024,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 8
+  }
+ },
+ "g05:severance:Severance": {
+  "tmdbId": 95396,
+  "firstYear": 2022,
+  "lastYear": 2025,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 9,
+   "2": 10,
+   "3": 0
+  }
+ },
+ "g06:bc:ブラッククローバー": {
+  "tmdbId": 73223,
+  "firstYear": 2017,
+  "lastYear": 2026,
+  "status": "Returning Series",
+  "countries": [
+   "JP"
+  ],
+  "seasons": {
+   "1": 170,
+   "2": 26
+  }
+ },
+ "g06:dexter:Dexter": {
+  "tmdbId": 1405,
+  "firstYear": 2006,
+  "lastYear": 2013,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 12,
+   "2": 12,
+   "3": 12,
+   "4": 12,
+   "5": 12,
+   "6": 12,
+   "7": 12,
+   "8": 12
+  }
+ },
+ "g06:sin:Dexter: Original Sin": {
+  "tmdbId": 219937,
+  "firstYear": 2024,
+  "lastYear": 2025,
+  "status": "Canceled",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 10
+  }
+ },
+ "g06:res:Dexter: Resurrection": {
+  "tmdbId": 259909,
+  "firstYear": 2025,
+  "lastYear": 2025,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 10,
+   "2": 10
+  }
+ },
+ "g06:vikings:Vikings": {
+  "tmdbId": 44217,
+  "firstYear": 2013,
+  "lastYear": 2020,
+  "status": "Ended",
+  "countries": [
+   "CA"
+  ],
+  "seasons": {
+   "1": 9,
+   "2": 10,
+   "3": 10,
+   "4": 20,
+   "5": 20,
+   "6": 20
+  }
+ },
+ "g06:valhalla:Vikings: Valhalla": {
+  "tmdbId": 116135,
+  "firstYear": 2022,
+  "lastYear": 2024,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 8,
+   "2": 8,
+   "3": 8
+  }
+ },
+ "g06:bbc:Sherlock": {
+  "tmdbId": 19885,
+  "firstYear": 2010,
+  "lastYear": 2017,
+  "status": "Ended",
+  "countries": [
+   "GB"
+  ],
+  "seasons": {
+   "1": 3,
+   "2": 3,
+   "3": 3,
+   "4": 3
+  }
+ },
+ "g06:young:Young Sherlock": {
+  "tmdbId": 255661,
+  "firstYear": 2026,
+  "lastYear": 2026,
+  "status": "Returning Series",
+  "countries": [
+   "GB",
+   "US"
+  ],
+  "seasons": {
+   "1": 8,
+   "2": 3
+  }
+ },
+ "g07:twd:The Walking Dead": {
+  "tmdbId": 1402,
+  "firstYear": 2010,
+  "lastYear": 2022,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 6,
+   "2": 13,
+   "3": 16,
+   "4": 16,
+   "5": 16,
+   "6": 16,
+   "7": 16,
+   "8": 16,
+   "9": 16,
+   "10": 22,
+   "11": 24
+  }
+ },
+ "g07:city:The Walking Dead: Dead City": {
+  "tmdbId": 194583,
+  "firstYear": 2023,
+  "lastYear": 2026,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 6,
+   "2": 8,
+   "3": 8
+  }
+ },
+ "g07:daryl:The Walking Dead: Daryl Dixon": {
+  "tmdbId": 211684,
+  "firstYear": 2023,
+  "lastYear": 2025,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 6,
+   "2": 6,
+   "3": 7,
+   "4": 0
+  }
+ },
+ "g07:ww:Westworld": {
+  "tmdbId": 63247,
+  "firstYear": 2016,
+  "lastYear": 2022,
+  "status": "Canceled",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 10,
+   "2": 10,
+   "3": 8,
+   "4": 8
+  }
+ },
+ "g08:st:Stranger Things": {
+  "tmdbId": 66732,
+  "firstYear": 2016,
+  "lastYear": 2025,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 8,
+   "2": 9,
+   "3": 8,
+   "4": 9,
+   "5": 8
+  }
+ },
+ "g08:tales:Stranger Things: Tales from '85": {
+  "tmdbId": 224263,
+  "firstYear": 2026,
+  "lastYear": 2026,
+  "status": "Returning Series",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 10,
+   "2": 8
+  }
+ },
+ "g09:ys:Yellowstone": {
+  "tmdbId": 73586,
+  "firstYear": 2018,
+  "lastYear": 2024,
+  "status": "Ended",
+  "countries": [
+   "US"
+  ],
+  "seasons": {
+   "1": 9,
+   "2": 10,
+   "3": 10,
+   "4": 10,
+   "5": 14
+  }
+ }
+}

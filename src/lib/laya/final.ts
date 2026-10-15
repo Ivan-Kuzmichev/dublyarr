@@ -4,6 +4,7 @@ import type { Verdict } from '../evaluate';
 import { formatSize } from '../format';
 import type { LayaClient } from './client';
 import { decide, type Budget, type DecideInput } from './decide';
+import { richState, type TitleContext } from './review';
 
 // Финальная проверка перед загрузкой (spec §3): «это S01E03 сериала X в озвучке Y?» — до трёх лучших раздач.
 
@@ -16,7 +17,16 @@ const pct = (p: number) => `${Math.round(p * 100)} %`;
  */
 export type FinalTarget = { title: Title; codeOf: (r: Release) => string; what: string; dubOf: (v: Verdict, r: Release) => string; today: string };
 
-export function finalInput(t: { title: Title; code: string; what: string; dub: string }, r: Release): DecideInput {
+export function finalInput(t: { title: Title; code: string; what: string; dub: string }, r: Release, ctx?: TitleContext): DecideInput {
+  if (ctx) {
+    const { раздача, ...rest } = richState(t.title, r, ctx);
+    return {
+      key: `final|${t.title.tmdbType}:${t.title.tmdbId}|${t.code}|${t.dub}|${r.trackerName}|${r.title}|${r.size}`,
+      state: { нужно: `${t.what} в озвучке ${t.dub}`, раздача, ...rest },
+      question: { type: 'noul', instructions: `Это ${t.what} ${t.title.kind === 'movie' ? 'фильма' : 'сериала'} «${t.title.nameRu}» в озвучке ${t.dub}?` },
+      features: [r.match.score],
+    };
+  }
   const name = `${t.title.nameRu}${t.title.nameOriginal && t.title.nameOriginal !== t.title.nameRu ? ` (${t.title.nameOriginal})` : ''}${t.title.year ? `, ${t.title.year}` : ''}`;
   return {
     key: `final|${t.title.tmdbType}:${t.title.tmdbId}|${t.code}|${t.dub}|${r.trackerName}|${r.title}|${r.size}`,

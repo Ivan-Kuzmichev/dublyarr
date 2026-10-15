@@ -10,6 +10,7 @@ import { reparseReleases, titleInfoOf } from '../search';
 import { addExample } from './examples';
 import type { MatchResult } from '../match-types';
 import { formatSize } from '../format';
+import { parsedLine, seasonsLine, titleLine } from './context';
 import type { LayaClient } from './client';
 import { decide, type Budget, type Decision, type DecideInput } from './decide';
 import { GENERIC_DUB } from '../parse/dubs';
@@ -21,7 +22,30 @@ const pct = (p: number) => `${Math.round(p * 100)} %`;
 export const matchKey = (t: Pick<Title, 'tmdbType' | 'tmdbId'>, r: Pick<Release, 'trackerName' | 'title' | 'size'>) => `${t.tmdbType}:${t.tmdbId}|${r.trackerName}|${r.title}|${r.size}`;
 
 /** Вопрос «тот ли сериал»: формулировка, которая лучше всего различала на замере (см. ledger фазы 4). */
-export function matchInput(t: Title, r: Pick<Release, 'trackerName' | 'title' | 'size' | 'match'>): DecideInput {
+/** Расширенный контекст (опыт 2.5): сезоны сериала по TMDB — тогда в вопросе тип, годы, сезоны, разбор и трекер. */
+export type TitleContext = { seasons: { number: number; episodeCount: number }[] };
+
+export function richState(t: Title, r: Pick<Release, 'trackerName' | 'title' | 'size' | 'parsed'>, ctx: TitleContext): Record<string, string> {
+  const s = seasonsLine(ctx.seasons);
+  return {
+    [t.kind === 'movie' ? 'фильм' : 'сериал']: titleLine(t),
+    ...(t.kind !== 'movie' && s ? { сезоны: s } : {}),
+    раздача: r.title,
+    разобрано: parsedLine(r.parsed),
+    размер: formatSize(r.size),
+    трекер: r.trackerName,
+  };
+}
+
+export function matchInput(t: Title, r: Pick<Release, 'trackerName' | 'title' | 'size' | 'match' | 'parsed'>, ctx?: TitleContext): DecideInput {
+  if (ctx) {
+    return {
+      key: matchKey(t, r),
+      state: richState(t, r, ctx),
+      question: { type: 'noul', instructions: t.kind === 'movie' ? 'Эта раздача — тот же фильм?' : 'Эта раздача — тот же сериал?' },
+      features: [r.match.score],
+    };
+  }
   const name = `${t.nameRu}${t.nameOriginal && t.nameOriginal !== t.nameRu ? ` (${t.nameOriginal})` : ''}${t.year ? `, ${t.year}` : ''}`;
   return {
     key: matchKey(t, r),

@@ -60,7 +60,7 @@ def metrics(agent, rows, items):
     return res
 
 
-def train(agent, keys, train_items, cal_items, epochs, lr, batch, seed, log, l2sp=0.0):
+def train(agent, keys, train_items, cal_items, epochs, lr, batch, seed, log, l2sp=0.0, distill=0.0):
     for p in agent.model.parameters():
         p.requires_grad_(False)
     params = [p for k in keys for p in getattr(agent.model, k).parameters()]
@@ -70,10 +70,26 @@ def train(agent, keys, train_items, cal_items, epochs, lr, batch, seed, log, l2s
     opt = torch.optim.AdamW(params, lr=lr, weight_decay=0.01)
     rnd = random.Random(seed)
 
-    def loss_of(items):
+    if distill:
+        # ответы базовой модели — чтобы выбор (студия) не терял уверенности из-за общего scorer
+        base_lg = logits_of(agent, train_items)
+        for it, lg in zip(train_items, base_lg):
+            it["base"] = lg
+
+    def loss_of(items, with_distill=False):
         lg = forward(agent, items, grad=True).float()
         y = torch.tensor([it["y"] for it in items], device=lg.device)
-        return F.cross_entropy(lg, y)
+        loss = F.cross_entropy(lg, y)
+        if with_distill and distill:
+            kl = []
+            for j, it in enumerate(items):
+                if it.get("keep"):
+                    k = len(it["markers"])
+                    p0 = F.softmax(torch.tensor(it["base"], device=lg.device), dim=-1)
+                    kl.append(F.kl_div(F.log_softmax(lg[j, :k], dim=-1), p0, reduction="sum"))
+            if kl:
+                loss = loss + distill * torch.stack(kl).mean()
+        return loss
 
     def cal_loss():
         agent.model.eval()
@@ -95,7 +111,7 @@ def train(agent, keys, train_items, cal_items, epochs, lr, batch, seed, log, l2s
         for i in range(0, len(order), batch):
             part = [train_items[j] for j in order[i:i + batch]]
             opt.zero_grad()
-            loss = loss_of(part)
+            loss = loss_of(part, with_distill=True)
             if l2sp:
                 loss = loss + l2sp * sum(((p - p0) ** 2).sum() for p, p0 in zip(params, start))
             loss.backward()
@@ -145,6 +161,8 @@ def main():
     ap.add_argument("--seed", type=int, default=1)
     ap.add_argument("--device", default="mps" if torch.backends.mps.is_available() else "cpu")
     ap.add_argument("--l2sp", type=float, default=0.0)
+    ap.add_argument("--eval-only", action="store_true", help="только оценить базовую модель на проверочной части")
+    ap.add_argument("--distill", type=float, default=0.0, help="вес удержания ответов базовой модели на вопросах выбора")
     ap.add_argument("--balance", action="store_true", help="уравнять задачи в обучении повтором строк (не больше ×8)")
     a = ap.parse_args()
     keys = tuple(k.strip() for k in a.keys.split(",") if k.strip())
@@ -164,6 +182,8 @@ def main():
     log(f"строк: {len(rows)} · обучение {len(tr)} · калибровка {len(cal)} · проверка {len(te)} · учим {', '.join(keys)} · {a.device}")
     enc = lambda part: encode_rows(agent, part)  # noqa: E731
     tr_i, cal_i, te_i = enc(tr), enc(cal), enc(te)
+    for r, it in zip(tr, tr_i):
+        it["keep"] = r["question"]["type"] != "noul"
     if a.balance:
         # общий scorer: без уравнивания «да/нет» (их больше всего) уводит выбор студии
         by_task = defaultdict(list)
@@ -174,7 +194,11 @@ def main():
         log("обучение после уравнивания: " + ", ".join(f"{t} ×{min(8, max(1, round(top / len(v))))}" for t, v in by_task.items()))
 
     base = metrics(agent, te, te_i)
-    train(agent, keys, tr_i, cal_i, a.epochs, a.lr, a.batch, a.seed, log, a.l2sp)
+    if a.eval_only:
+        for t, m in sorted(base.items()):
+            log(f"| {t} | {m['n']} | {m['logloss']:.3f} | {m['accuracy']:.0%} | {m['auto_correct']:.0%} | {m['auto_wrong']:.0%} | {m['cost']:.2f} |")
+        return
+    train(agent, keys, tr_i, cal_i, a.epochs, a.lr, a.batch, a.seed, log, a.l2sp, a.distill)
     calibrate(agent, cal, cal_i)
     tuned = metrics(agent, te, te_i)
 
@@ -186,8 +210,10 @@ def main():
         checked = b["n"] >= MIN_CHECKED
         # цена решений: вопросы + 6,7 × уверенные ошибки (из порога 0,85) — не дороже, и log-loss не хуже
         better = n["logloss"] <= b["logloss"] + 1e-6 and n["cost"] <= b["cost"] + 1e-6
+        # «всегда спрашивать» стоит 1,0 — головы, которые почти ничего не решают сами, пользы не дают
+        better = better and (n["cost"] < 0.95 or not checked)
+        improved |= checked and better and n["cost"] < b["cost"] - 0.01
         ok &= better or not checked
-        improved |= checked and (n["logloss"] < b["logloss"] - 0.005 or n["cost"] < b["cost"] - 0.01)
         mark = "не проверено" if not checked else ("✓" if better else "хуже")
         log(f"| {t} | {b['n']} | {b['logloss']:.3f} → {n['logloss']:.3f} | {b['accuracy']:.0%} → {n['accuracy']:.0%} | {b['auto_correct']:.0%} → {n['auto_correct']:.0%} | {b['auto_wrong']:.0%} → {n['auto_wrong']:.0%} | {b['cost']:.2f} → {n['cost']:.2f} | {mark} |")
 
