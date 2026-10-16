@@ -57,7 +57,7 @@ export function episodeStatuses(db: Db, titleId: number, today: string): Map<str
       const k = key(e.season, e.number);
       if (!e.airDate) out.set(k, { state: 'upcoming', text: 'Дата не объявлена' });
       else if (e.airDate > today) out.set(k, { state: 'upcoming', text: `Эфир ${formatAirDate(e.airDate, today)}` });
-      else out.set(k, wanted.has(k) ? { state: 'missing', text: 'Ищем' } : { state: 'skipped', text: 'Не по подписке' });
+      else out.set(k, wanted.has(k) ? { state: 'missing', text: 'Ищем' } : { state: 'skipped', text: sub.filesOnly ? 'Нет файла' : 'Не по подписке' });
     }
     for (const w of db.select().from(wantedState).where(eq(wantedState.titleId, titleId)).all()) {
       const k = key(w.season, w.number);

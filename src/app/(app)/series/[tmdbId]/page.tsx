@@ -163,7 +163,7 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
       <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_340px]">
       {sub && (
         <div className="lg:order-2">
-          {!isMovieProfile(sub.profile) && <SubscriptionPanel profile={sub.profile} studioNames={studioNames} author={subscriptionAuthor(db, sub)} />}
+          {!isMovieProfile(sub.profile) && <SubscriptionPanel profile={sub.profile} studioNames={studioNames} author={subscriptionAuthor(db, sub)} filesOnly={sub.filesOnly} />}
           {may.storage && (
             <section className="mt-5 flex flex-col gap-2 rounded-2xl border border-line bg-surface p-5">
               <h3 className="m-0 text-base font-semibold">Хранение</h3>

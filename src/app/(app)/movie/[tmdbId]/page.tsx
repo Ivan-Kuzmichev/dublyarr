@@ -142,9 +142,10 @@ export default async function MoviePage({ params }: { params: Promise<{ tmdbId: 
             <section className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-5">
               <div className="flex items-baseline justify-between gap-3">
                 <h3 className="m-0 text-base font-semibold">Подписка</h3>
-                <span className="text-[13px] text-accent">активна{author ? ` · добавил ${author}` : ''}</span>
+                {sub.filesOnly ? <span className="text-[13px] text-muted">только файлы</span> : <span className="text-[13px] text-accent">активна{author ? ` · добавил ${author}` : ''}</span>}
               </div>
-              <ul className="m-0 flex list-none flex-col gap-2 p-0">
+              {sub.filesOnly && <p className="m-0 text-[13px] text-muted">Взят из медиатеки: Dublyarr учитывает файл в «Хранилище», но ничего не ищет и не качает. После «Включить подписку» — по этому профилю:</p>}
+              <ul className={`m-0 flex list-none flex-col gap-2 p-0 ${sub.filesOnly ? 'opacity-60' : ''}`}>
                 {describeMovieProfile(profile).map((line) => (
                   <li key={line} className="flex gap-2.5 text-sm text-text-2">
                     <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
