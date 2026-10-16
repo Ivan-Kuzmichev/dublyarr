@@ -32,6 +32,8 @@ const JOB_LABEL: Record<string, string> = {
   'cleanup.run': 'уборка загрузок',
   'intros.tick': 'разметка заставок',
   'retention.run': 'уборка медиатеки',
+  'media.scan': 'сканирование медиатеки',
+  'media.adopt': 'перенос в медиатеку',
   'retention.tick': 'уборка медиатеки',
   'tmdb.refresh-all': 'обновление из TMDB',
   'telegram.send': 'Telegram',

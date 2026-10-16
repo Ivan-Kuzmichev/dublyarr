@@ -6,6 +6,9 @@ import { syncMovie } from '../lib/movies';
 import { logger } from '../lib/log';
 import type { Handler } from './jobs';
 import { getQbit } from '../lib/qbit';
+import { runAdopt, runMediaScan } from '../lib/media-scan/scan';
+import { systemRunner } from '../lib/media/runner';
+import type { AdoptChoice } from '../lib/media-scan/adopt';
 import { fetchTorrentFile, syncDownloads, type Paths } from '../lib/downloads';
 import { searchAll, searchDueTitles } from '../lib/autosearch';
 import { getSchedule } from '../lib/schedule';
@@ -127,6 +130,16 @@ export const buildHandlers = (db: Db): Record<string, Handler> => ({
     if (retentionDue(settings.schedule, getSetting<number>(db, 'retention.lastRun') ?? null, new Date())) await retentionJob(db);
   },
   'retention.run': () => retentionJob(db),
+  // сканирование медиатеки и «Добавить» из окна «Хранилища» (2.7)
+  'media.scan': async () => {
+    const paths = getSetting<Paths>(db, 'paths');
+    if (paths) await runMediaScan(db, { tmdb: getTmdb(db), paths });
+  },
+  'media.adopt': async (payload) => {
+    const paths = getSetting<Paths>(db, 'paths');
+    const p = payload as { choices?: AdoptChoice[]; canSubscribe?: boolean };
+    if (paths && p.choices?.length) await runAdopt(db, { tmdb: getTmdb(db), runner: systemRunner, paths, now: Date.now(), userCanSubscribe: !!p.canSubscribe, qbit: getQbit(db) }, p.choices);
+  },
   'telegram.send': async () => {
     const tg = telegramFor(db);
     if (!tg) return;
