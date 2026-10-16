@@ -266,7 +266,10 @@ Self-hosted сервис для дома (администратор + поль�
 - Обучение на Mac: `laya-train/probe.py --data … [--save ../laya/probe/match.json]` (веса классов поровну, L2 по калибровочной части; группы — по названию сериала, иначе ручная разметка и выгрузка с NAS пересекаются).
   Данные — ручная разметка + `GET /api/v1/laya/dataset`. Замер на непросмотренных сериалах, ваши ответы «тот ли сериал»: точность 76 → 88 %, уверенное «да» верно 7 → 20 %, ошибок 1 → 0 %.
 - laya-serve: `POST /ask` с `probe: {id: "match"}` — к ответу «да/нет» применяется надстройка (`noul` — пересчитанная, `base` — Laya); `model` — с суффиксом `+probe-<дата>` (кэш ответов сбрасывается при смене весов);
-  `heads.disabled` выключает и её. Node: `decideMany` ставит пометку задачам из `PROBE_TASKS` (пока `match`). Вопрос с надстройкой — примерно вдвое дольше (ещё один проход энкодера).
+  `heads.disabled` выключает и её. Node: `decideMany` ставит пометку задачам из `PROBE_TASKS` (пока `match`).
+- 2.6.1: на DS920+ (Celeron J4125, без AVX) laya-serve падал с SIGILL на части вопросов (с 2.5 — чаще: длиннее вопрос, в 2.6 — ещё проход энкодера).
+  Без AVX в `/proc/cpuinfo` — `MKL_ENABLE_INSTRUCTIONS=SSE4_2`, `DNNL_MAX_CPU_ISA=SSE41`, `ATEN_CPU_CAPABILITY=default` (`laya-child.ts`); `faulthandler` в laya-serve — стек падения в журнал;
+  отказ laya-serve (не 503) — `laya ask rejected` в журнале; сбой надстройки — ответ Laya без неё. Rosetta в Docker на Mac выполняет AVX, не объявляя его: воспроизвести там нельзя. Вопрос с надстройкой — примерно вдвое дольше (ещё один проход энкодера).
 
 # This is NOT the Next.js you know
 

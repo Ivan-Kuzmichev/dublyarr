@@ -3,6 +3,8 @@ import { testDb } from './helpers';
 import { createLayaClient } from '@/lib/laya/client';
 import { getLayaSettings, parseLayaForm } from '@/lib/laya/settings';
 import { beat, serviceStatuses } from '@/lib/heartbeat';
+import { Writable } from 'node:stream';
+import { applyLogSettings, setLogDestination } from '@/lib/log';
 
 const Q = { m: { type: 'noul' as const, instructions: 'Тот же сериал?' } };
 
@@ -34,6 +36,14 @@ describe('клиент Laya', () => {
     expect(await r({ error: 'downloading' }, 503).ask({}, Q)).toBeNull();
     const net = createLayaClient({ port: 1, fetchImpl: (async () => { throw new Error('ECONNREFUSED'); }) as typeof fetch });
     expect(await net.ask({}, Q)).toBeNull();
+  });
+  test('отказ laya-serve (400 с текстом ошибки) — в журнал с кодом и ошибкой, а не молча (2.6.1)', async () => {
+    const lines: Record<string, unknown>[] = [];
+    setLogDestination(new Writable({ write(c, _e, cb) { for (const l of String(c).trim().split('\n')) lines.push(JSON.parse(l)); cb(); } }));
+    applyLogSettings({ level: 'info', areas: {} });
+    const c = createLayaClient({ port: 1, fetchImpl: (async () => Response.json({ error: "KeyError: 'type'" }, { status: 400 })) as typeof fetch });
+    expect(await c.ask({}, Q, { probe: { m: 'match' } })).toBeNull();
+    expect(lines).toContainEqual(expect.objectContaining({ msg: 'laya ask rejected', status: 400, error: "KeyError: 'type'", probe: true }));
   });
   test('таймаут 10 с; три подряд — пауза 10 минут без запросов', async () => {
     let now = 0;

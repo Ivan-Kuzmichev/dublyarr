@@ -16,3 +16,13 @@ test('Laya: python из venv образа (иначе системный), па�
   expect(c.command).toBe('/opt/laya/bin/python');
   expect(c.env).toEqual({ LAYA_DIR: '/data/laya', HF_HUB_DISABLE_PROGRESS_BARS: '1', TQDM_DISABLE: '1', HTTPS_PROXY: 'http://proxy:3128', HTTP_PROXY: 'http://proxy:3128' });
 });
+
+test('Laya на процессоре без AVX (Celeron J4125, DS920+): математика PyTorch — без AVX-ветвей; с AVX и без /proc/cpuinfo — как есть (2.6.1)', () => {
+  const db = testDb();
+  const cfg = { ...loadConfig({ DATA_DIR: '/data' }) };
+  const j4125 = 'processor\t: 0\nflags\t\t: fpu sse sse2 ssse3 sse4_1 sse4_2 popcnt aes movbe sha_ni\n';
+  expect(layaChild(cfg, db, () => false, () => j4125).env).toMatchObject({ MKL_ENABLE_INSTRUCTIONS: 'SSE4_2', DNNL_MAX_CPU_ISA: 'SSE41', ATEN_CPU_CAPABILITY: 'default' });
+  const avx2 = 'flags\t\t: fpu sse sse2 sse4_2 avx avx2 fma\n';
+  expect(layaChild(cfg, db, () => false, () => avx2).env).not.toHaveProperty('MKL_ENABLE_INSTRUCTIONS');
+  expect(layaChild(cfg, db, () => false, () => '').env).not.toHaveProperty('MKL_ENABLE_INSTRUCTIONS');
+});

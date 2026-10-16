@@ -37,7 +37,12 @@ export function createLayaClient(o: { port: number; fetchImpl?: typeof fetch; ti
         const r = await f(`${base}/ask`, { method: 'POST', body: JSON.stringify({ state, questions, ...(opts.probe ? { probe: opts.probe } : {}), maxWaitMs: Math.max(0, (o.timeoutMs ?? TIMEOUT_MS) - ANSWER_MS) }), signal: AbortSignal.timeout(o.timeoutMs ?? TIMEOUT_MS) });
         // 503 «занята» (долго в очереди) или «загружает модель» — не зависание: паузы не будет
         timeouts = 0;
-        if (!r.ok) return null;
+        if (!r.ok) {
+          // 503 — загружает модель / занята (обычное дело); остальное — отказ: причина в журнал, иначе решают правила молча
+          const error = ((await r.json().catch(() => ({}))) as { error?: string }).error;
+          llog[r.status === 503 ? 'debug' : 'warn']({ status: r.status, error, probe: !!opts.probe, questions: Object.keys(questions) }, 'laya ask rejected');
+          return null;
+        }
         const body = (await r.json()) as AskResult;
         // ответ на каждый вопрос нужного типа — иначе не доверяем
         for (const [id, q] of Object.entries(questions)) {

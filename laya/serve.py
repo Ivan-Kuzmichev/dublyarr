@@ -13,6 +13,7 @@ POST /reload — перечитать модель (включили/выклю�
 веса — laya/probe/<задача>.json (свои — ${LAYA_DIR}/probe), выключается тем же heads.disabled.
 """
 import argparse
+import faulthandler
 import json
 import os
 import threading
@@ -168,7 +169,11 @@ def ask(st, questions, max_wait, probe=None):
         raise Busy()
     try:
         r = agent.system_one(st, questions)
-        adjusted = adjust(st, questions, r["answers"], probe or {})
+        try:
+            adjusted = adjust(st, questions, r["answers"], probe or {})
+        except Exception as e:  # надстройка — не повод остаться без ответа: отдаём ответ Laya, причину — в журнал
+            log("надстройка: сбой — ответ без неё", error=f"{type(e).__name__}: {e}"[:300])
+            adjusted = {}
     finally:
         ask_lock.release()
     out = {}
@@ -227,6 +232,8 @@ class Handler(BaseHTTPRequestHandler):
 
 
 if __name__ == "__main__":
+    # SIGILL/SIGSEGV в нативном коде (PyTorch на процессоре без AVX) — стек Python в stderr, супервизор пишет его в журнал
+    faulthandler.enable(all_threads=True)
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=8765)
     port = parser.parse_args().port
