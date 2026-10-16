@@ -12,6 +12,9 @@ import type { Paths } from '@/lib/downloads';
 import { DeleteSeriesDialog } from './DeleteSeriesDialog';
 import { FirstCleanup } from './FirstCleanup';
 import { requirePage } from '@/lib/auth/current';
+import { can } from '@/lib/auth/permissions';
+import { getScanState } from '@/lib/media-scan/state';
+import { MediaScanCard } from './MediaScanCard';
 
 export const metadata = { title: 'Хранилище · Dublyarr' };
 export const dynamic = 'force-dynamic';
@@ -28,7 +31,7 @@ async function load() {
 }
 
 export default async function StoragePage({ searchParams }: { searchParams: Promise<{ sort?: string }> }) {
-  await requirePage('storage');
+  const { user } = await requirePage('storage');
   const { sort } = await searchParams;
   const { paths, data } = await load();
   const shows = sort === 'date' ? [...data.shows].sort((a, b) => b.lastAt - a.lastAt) : data.shows;
@@ -120,6 +123,7 @@ export default async function StoragePage({ searchParams }: { searchParams: Prom
         </section>
 
         <aside className="flex flex-col gap-5">
+          <MediaScanCard initial={getScanState(getDb())} canSubscribe={can(user, 'subscribe')} />
           {data.pending.length > 0 && data.pendingRule && (
             <FirstCleanup items={data.pending.filter((i) => i.rule === data.pendingRule).map((i) => ({ key: i.key, label: i.label, why: i.why, size: i.size }))} rule={data.pendingRule} />
           )}

@@ -10,7 +10,9 @@ import { isJunk } from '../empty-dirs';
 import { notify } from '../notify';
 import { groupFiles, type ScanFile } from './group';
 import { recognize, tmdbSearch, type Candidate, type Search } from './recognize';
-import { adoptItem, seedingPaths, type AdoptChoice, type AdoptDeps, type AdoptLine } from './adopt';
+import { DEFAULT_TEMPLATE, renderTemplate } from '../library-path';
+import { DEFAULT_MOVIE_TEMPLATE } from '../movie-files';
+import { adoptItem, nameParts, seedingPaths, type AdoptChoice, type AdoptDeps, type AdoptLine } from './adopt';
 import { getScanState, setScanState, updateScanState, type ScanEntry } from './state';
 
 const code = (s: number, n: number) => `S${String(s).padStart(2, '0')}E${String(n).padStart(2, '0')}`;
@@ -56,7 +58,14 @@ export async function runMediaScan(db: Db, deps: { tmdb: Tmdb | null; paths: Pat
         } else if (search) ({ best: candidate, sure } = await recognize(item, search));
         const t = candidate && all.find((x) => x.tmdbId === candidate!.tmdbId && x.tmdbType === candidate!.type);
         const haveCodes = new Set(t ? db.select({ s: episodeFiles.season, n: episodeFiles.number }).from(episodeFiles).where(eq(episodeFiles.titleId, t.id)).all().map((f) => code(f.s, f.n)) : []);
-        items.push({ ...item, candidate, sure, have: item.episodes.map((e) => code(e.season, e.number)).filter((c) => haveCodes.has(c)) });
+        const first = item.episodes[0];
+        const parts = first ? nameParts(db, first.rel) : null;
+        const template = item.kind === 'movie' ? deps.paths.movieTemplate || DEFAULT_MOVIE_TEMPLATE : deps.paths.template || DEFAULT_TEMPLATE;
+        const example =
+          candidate && first && parts
+            ? renderTemplate(template, { name: candidate.name, original: candidate.original, year: candidate.year, season: first.season, episode: first.number, studio: parts.studio, quality: parts.quality ? `${parts.quality}p` : '' }, path.extname(first.rel))
+            : null;
+        items.push({ ...item, candidate, sure, example, have: item.episodes.map((e) => code(e.season, e.number)).filter((c) => haveCodes.has(c)) });
       }
     }
     items.sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0));

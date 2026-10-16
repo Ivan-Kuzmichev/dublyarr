@@ -58,6 +58,14 @@ export async function seedingPaths(qbit: Qbit | null, paths: Paths): Promise<Set
   }
 }
 
+/** Студия (по словарю) и качество из имени файла — для имени по шаблону. */
+export function nameParts(db: Db, rel: string): { studio: string; quality: number | null } {
+  const studios = listStudios(db);
+  const p = parseRelease(path.basename(rel, path.extname(rel)), {}, NONE, studios.map((s) => ({ id: s.id, name: s.name, aliases: s.aliases, trackers: s.trackers })));
+  const id = p.dubs.find((d) => d.studioId !== null)?.studioId;
+  return { studio: studios.find((s) => s.id === id)?.name ?? '', quality: p.resolution ?? null };
+}
+
 /** Перенести файл: раздаётся — жёсткая ссылка (другой том — копия), иначе — перемещение. */
 async function place(src: string, dst: string, seeding: boolean): Promise<'hardlink' | 'copy' | 'move'> {
   await mkdir(path.dirname(dst), { recursive: true });
@@ -99,11 +107,6 @@ export async function adoptItem(db: Db, deps: AdoptDeps, c: AdoptChoice): Promis
     const movie = title.kind === 'movie';
     const template = movie ? deps.paths.movieTemplate || DEFAULT_MOVIE_TEMPLATE : deps.paths.template || DEFAULT_TEMPLATE;
     const studios = listStudios(db);
-    const refs = studios.map((s) => ({ id: s.id, name: s.name, aliases: s.aliases, trackers: s.trackers }));
-    const studioLabel = (rel: string) => {
-      const id = parseRelease(path.basename(rel, path.extname(rel)), {}, NONE, refs).dubs.find((d) => d.studioId !== null)?.studioId;
-      return studios.find((s) => s.id === id)?.name ?? '';
-    };
     for (const e of c.episodes) {
       const src = inside(root, e.rel)!;
       const seed = deps.seeding === null || deps.seeding.has(path.resolve(src));
@@ -124,8 +127,9 @@ export async function adoptItem(db: Db, deps: AdoptDeps, c: AdoptChoice): Promis
           throw err;
         }
       }
-      const quality = (proc.probe ? resolutionOf(proc.probe) : null) ?? parseRelease(path.basename(e.rel), {}, NONE, refs).resolution ?? null;
-      const studio = studioLabel(e.rel);
+      const parts = nameParts(db, e.rel);
+      const quality = (proc.probe ? resolutionOf(proc.probe) : null) ?? parts.quality;
+      const studio = parts.studio;
       const rel = renderTemplate(template, { name: title.nameRu, original: title.nameOriginal, year: title.year, season: e.season, episode: e.number, studio, quality: quality ? `${quality}p` : '' }, proc.kind === 'remux' ? '.mkv' : path.extname(e.rel));
       const dst = inside(root, rel);
       if (!dst) {

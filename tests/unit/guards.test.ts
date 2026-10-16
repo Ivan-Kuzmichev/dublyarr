@@ -66,6 +66,10 @@ describe('действия без права', () => {
     expect(await st.deleteSeriesAction({}, f({ mode: 'all' }))).toMatchObject(DENIED);
     expect(await st.confirmRetentionAction({}, f({ key: 's:1:1' }))).toMatchObject(DENIED);
     await expect(st.setExceptionsAction(f())).resolves.toBeUndefined();
+    expect(await st.startMediaScanAction()).toMatchObject(DENIED);
+    expect(await st.adoptMediaAction([])).toMatchObject(DENIED);
+    expect(await st.mediaScanStateAction()).toBeNull();
+    expect(await st.searchCandidatesAction('Silo', 'tv')).toEqual([]);
     const c = await import('@/app/(app)/cleanup/actions');
     expect(await c.confirmCleanupAction({}, f())).toMatchObject(DENIED);
     const o = await import('@/app/(app)/old-copies/actions');
