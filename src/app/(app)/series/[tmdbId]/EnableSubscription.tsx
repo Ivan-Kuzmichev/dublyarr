@@ -14,7 +14,11 @@ export function EnableSubscription({ tmdbId, movie = false }: { tmdbId: number; 
       <Button type="submit" disabled={pending}>
         Включить подписку
       </Button>
-      <span className="text-[13px] text-faint">{state.error ?? 'Сейчас — только файлы: ничего не качается'}</span>
+      {state.error && (
+        <span role="alert" className="text-[13px] text-danger">
+          {state.error}
+        </span>
+      )}
     </form>
   );
 }
