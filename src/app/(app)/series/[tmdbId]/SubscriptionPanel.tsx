@@ -24,10 +24,12 @@ export function SubscriptionPanel({ profile, studioNames, author, filesOnly = fa
       )}
       <ol className={`m-0 flex list-none flex-col gap-2 p-0 ${filesOnly ? 'opacity-60' : ''}`}>
         {profile.dubs.map((p, i) => (
-          <li key={i} className="flex items-center gap-3 text-sm">
+          <li key={i} className="flex items-start gap-3 text-sm">
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface-2 font-mono text-xs text-accent">{i + 1}</span>
-            <span className="grow font-medium">{dubLabel(p, name)}</span>
-            <span className="text-[13px] text-faint">{i === 0 ? 'сразу' : `если нет — через ${p.waitDays} дн после эфира`}</span>
+            <span className="flex min-w-0 flex-col gap-0.5">
+              <span className="font-medium">{dubLabel(p, name)}</span>
+              <span className="text-[13px] text-faint">{i === 0 ? 'сразу' : `если нет — через ${p.waitDays} дн после эфира`}</span>
+            </span>
           </li>
         ))}
       </ol>
