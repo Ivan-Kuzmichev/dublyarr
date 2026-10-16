@@ -1,0 +1,1 @@
+ALTER TABLE `subscriptions` ADD `files_only` integer DEFAULT false NOT NULL;

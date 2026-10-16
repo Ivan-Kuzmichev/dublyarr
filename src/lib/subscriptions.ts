@@ -30,12 +30,18 @@ export function updateSubscription(db: Db, titleId: number, profile: Profile | M
   return row;
 }
 
+/** «Только файлы» ↔ обычная подписка («Включить подписку» на странице сериала). */
+export function setFilesOnly(db: Db, titleId: number, on: boolean, now = Date.now()) {
+  db.update(subscriptions).set({ filesOnly: on, updatedAt: now }).where(eq(subscriptions.titleId, titleId)).run();
+}
+
 export const unsubscribe = (db: Db, titleId: number) => db.delete(subscriptions).where(eq(subscriptions.titleId, titleId)).run();
 
 type Ep = Pick<Episode, 'season' | 'number' | 'airDate'>;
 
 /** Какие вышедшие серии нужны по подписке (без спецвыпусков и серий без даты). Сегодняшняя — уже нужна. */
-export function wantedEpisodes(sub: Pick<Subscription, 'subscribedAt' | 'profile'> & { maxSeason?: number | null }, eps: Ep[], today: string) {
+export function wantedEpisodes(sub: Pick<Subscription, 'subscribedAt' | 'profile'> & { maxSeason?: number | null; filesOnly?: boolean }, eps: Ep[], today: string) {
+  if (sub.filesOnly) return []; // «только файлы» — ничего не качаем
   if (isMovieProfile(sub.profile)) return []; // у фильма нет серий
   const since = new Date(sub.subscribedAt).toLocaleDateString('sv-SE');
   const s = sub.profile.scope;

@@ -16,7 +16,7 @@ export const lastSeason = (db: Db, titleId: number): number | null =>
 export function extendSeasons(db: Db, titleId: number, now = Date.now()): 'extended' | 'noted' | 'none' {
   const sub = db.select().from(subscriptions).where(eq(subscriptions.titleId, titleId)).get();
   const last = lastSeason(db, titleId);
-  if (!sub || sub.maxSeason === null || last === null || last <= sub.maxSeason) return 'none';
+  if (!sub || sub.filesOnly || sub.maxSeason === null || last === null || last <= sub.maxSeason) return 'none';
   if (!isMovieProfile(sub.profile) && sub.profile.autoNextSeason) {
     db.update(subscriptions).set({ maxSeason: last }).where(eq(subscriptions.id, sub.id)).run();
     addNotice(db, titleId, 'season-subscribed', `Подписался на ${last}-й сезон`, now);

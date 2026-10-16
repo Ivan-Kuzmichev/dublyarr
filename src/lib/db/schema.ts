@@ -213,6 +213,8 @@ export const subscriptions = sqliteTable('subscriptions', {
   lastSearchedAt: ts('last_searched_at'),
   keepAll: integer('keep_all', { mode: 'boolean' }).notNull().default(false), // исключение: хранить все сезоны
   autoDelete: integer('auto_delete', { mode: 'boolean' }).notNull().default(false), // удалять через N дней после скачивания // последний сезон, на который распространяется подписка (null — без границы)
+  // «Только файлы» (2.7): сериал в библиотеке ради учёта и хранения — ничего не качаем, новые сезоны не подписываем
+  filesOnly: integer('files_only', { mode: 'boolean' }).notNull().default(false),
   subscribedAt: ts('subscribed_at').notNull(),
   updatedAt: ts('updated_at').notNull(),
 });
@@ -350,7 +352,7 @@ export const episodeFiles = sqliteTable(
     downloadId: integer('download_id').references(() => downloads.id, { onDelete: 'set null' }),
     studioLabel: text('studio_label'),
     resolution: integer('resolution'),
-    method: text('method', { enum: ['hardlink', 'copy'] }).notNull(),
+    method: text('method', { enum: ['hardlink', 'copy', 'move'] }).notNull(),
     importedAt: ts('imported_at').notNull(),
     dubPosition: integer('dub_position'), // позиция профиля, по которой взята серия
     processed: integer('processed', { mode: 'boolean' }).notNull().default(false), // пересобран mkvmerge
