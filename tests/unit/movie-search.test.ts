@@ -206,3 +206,17 @@ test('ручной поиск: не больше 3 вопросов к Laya (с�
   await runManualMovieSearch(s.db, 603, { ...s.deps.searchOpts, now: s.deps.now, today: '2026-10-01', layaClient });
   expect(asked).toBeLessThanOrEqual(3);
 });
+
+describe('взятое из медиатеки (2.7, ревью)', () => {
+  test('«только файлы» — фильм не ищется; взятый файл (adopted) — не «улучшается» сам, даже если профиль хочет дубляж и Remux', async () => {
+    const { setFilesOnly } = await import('@/lib/subscriptions');
+    const s = await setup({ items: [REMUX], profile: { remux: true } });
+    setFilesOnly(s.db, s.t.id, true);
+    expect(await searchSubscription(s.db, s.t.id, s.deps)).toMatchObject({ started: 0 });
+    expect(s.state.queries).toEqual([]);
+    setFilesOnly(s.db, s.t.id, false);
+    s.db.insert(episodeFiles).values({ titleId: s.t.id, season: 0, number: 0, path: 'Матрица (1999)/Матрица (1999) [ 1080p].mkv', size: 1, method: 'move', importedAt: s.deps.now, adopted: true }).run();
+    expect(await searchSubscription(s.db, s.t.id, s.deps)).toMatchObject({ started: 0 });
+    expect(s.state.queries).toEqual([]);
+  });
+});

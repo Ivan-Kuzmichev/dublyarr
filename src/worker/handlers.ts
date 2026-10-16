@@ -9,6 +9,7 @@ import { getQbit } from '../lib/qbit';
 import { runAdopt, runMediaScan } from '../lib/media-scan/scan';
 import { systemRunner } from '../lib/media/runner';
 import type { AdoptChoice } from '../lib/media-scan/adopt';
+import { getScanState, updateScanState } from '../lib/media-scan/state';
 import { fetchTorrentFile, syncDownloads, type Paths } from '../lib/downloads';
 import { searchAll, searchDueTitles } from '../lib/autosearch';
 import { getSchedule } from '../lib/schedule';
@@ -132,13 +133,21 @@ export const buildHandlers = (db: Db): Record<string, Handler> => ({
   'retention.run': () => retentionJob(db),
   // сканирование медиатеки и «Добавить» из окна «Хранилища» (2.7)
   'media.scan': async () => {
-    const paths = getSetting<Paths>(db, 'paths');
-    if (paths) await runMediaScan(db, { tmdb: getTmdb(db), paths });
+    try {
+      const paths = getSetting<Paths>(db, 'paths');
+      if (paths) await runMediaScan(db, { tmdb: getTmdb(db), paths });
+    } finally {
+      if (getScanState(db).status !== 'idle') updateScanState(db, { status: 'idle', progress: undefined }); // не зависнуть в «Сканирую…»
+    }
   },
   'media.adopt': async (payload) => {
-    const paths = getSetting<Paths>(db, 'paths');
-    const p = payload as { choices?: AdoptChoice[]; canSubscribe?: boolean };
-    if (paths && p.choices?.length) await runAdopt(db, { tmdb: getTmdb(db), runner: systemRunner, paths, now: Date.now(), userCanSubscribe: !!p.canSubscribe, qbit: getQbit(db) }, p.choices);
+    try {
+      const paths = getSetting<Paths>(db, 'paths');
+      const p = payload as { choices?: AdoptChoice[]; canSubscribe?: boolean };
+      if (paths && p.choices?.length) await runAdopt(db, { tmdb: getTmdb(db), runner: systemRunner, paths, now: Date.now(), userCanSubscribe: !!p.canSubscribe, qbit: getQbit(db) }, p.choices);
+    } finally {
+      if (getScanState(db).status !== 'idle') updateScanState(db, { status: 'idle', progress: undefined });
+    }
   },
   'telegram.send': async () => {
     const tg = telegramFor(db);

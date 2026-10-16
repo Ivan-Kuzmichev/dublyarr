@@ -31,9 +31,19 @@ function nameOf(raw: string): { names: string[]; year: number | null } {
 }
 
 export function groupFiles(files: ScanFile[], root: 'media' | 'movies'): { items: ScanItem[]; skipped: { key: string; why: string }[] } {
+  // папка верхнего уровня с несколькими сериалами внутри («Сериалы/BEEF», «Сериалы/Silo») — позиция на каждую подпапку
+  const subsOf = new Map<string, Set<string>>();
+  for (const f of files) {
+    const parts = f.rel.split('/');
+    if (parts.length >= 3 && isVideo(f.rel) && !SEASON_DIR.test(parts[1])) subsOf.set(parts[0], new Set([...(subsOf.get(parts[0]) ?? []), parts[1]]));
+  }
+  const keyOf = (rel: string) => {
+    const parts = rel.split('/');
+    return (subsOf.get(parts[0])?.size ?? 0) >= 2 && parts.length >= 3 && !SEASON_DIR.test(parts[1]) ? `${parts[0]}/${parts[1]}` : parts[0];
+  };
   const byKey = new Map<string, ScanFile[]>();
   for (const f of files) {
-    const key = f.rel.split('/')[0];
+    const key = keyOf(f.rel);
     byKey.set(key, [...(byKey.get(key) ?? []), f]);
   }
   const items: ScanItem[] = [];
@@ -45,17 +55,23 @@ export function groupFiles(files: ScanFile[], root: 'media' | 'movies'): { items
       continue;
     }
     const folder = list.length > 1 || key !== list[0].rel;
-    const head = nameOf(folder ? key : stem(key));
+    const head = nameOf(folder ? path.basename(key) : stem(key));
     const seasonOf = (rel: string) => {
-      const dir = rel.split('/').slice(1, -1).map((d) => SEASON_DIR.exec(d)?.[1]).find(Boolean);
-      return dir ? Number(dir) : (parseRelease(stem(rel), {}, NONE, []).seasons[0] ?? parseRelease(key, {}, NONE, []).seasons[0] ?? null);
+      const dir = rel.slice(key.length + 1).split('/').slice(0, -1).map((d) => SEASON_DIR.exec(d)?.[1]).find(Boolean);
+      return dir ? Number(dir) : (parseRelease(stem(rel), {}, NONE, []).seasons[0] ?? parseRelease(path.basename(key), {}, NONE, []).seasons[0] ?? null);
     };
-    const numbered = videos.map((v) => {
+    let numbered: { v: ScanFile; season: number | null; number: number | null }[] = videos.map((v) => {
       const season = seasonOf(v.rel);
       return { v, season, number: season !== null ? episodeFromFilename(path.basename(v.rel), season) : null };
     });
+    // сквозные номера без сезона («Frieren - 13») у трёх и больше видео — сериал, сезон 1 (сопоставление с TMDB — при добавлении)
+    if (!numbered.some((n) => n.number !== null) && videos.length >= 3) {
+      const bare = videos.map((v) => ({ v, season: 1 as number | null, number: episodeFromFilename(path.basename(v.rel), 1) }));
+      if (bare.filter((n) => n.number !== null).length >= Math.ceil(videos.length * 0.6)) numbered = bare;
+    }
     const series = numbered.some((n) => n.season !== null && n.number !== null);
-    const sidecarsOf = (rel: string) => list.filter((s) => SIDECAR.test(s.rel) && path.dirname(s.rel) === path.dirname(rel) && path.basename(s.rel).startsWith(stem(rel))).map((s) => s.rel);
+    // субтитры серии — с тем же именем и следующим «.» («S01E1.eng.srt», но не «S01E10.rus.srt»)
+    const sidecarsOf = (rel: string) => list.filter((s) => SIDECAR.test(s.rel) && path.dirname(s.rel) === path.dirname(rel) && path.basename(s.rel).startsWith(`${stem(rel)}.`)).map((s) => s.rel);
     const item: ScanItem = { key, root, kind: series ? 'series' : 'movie', names: head.names, year: head.year, episodes: [], unknown: [], size: videos.reduce((n, v) => n + v.size, 0) };
     if (!series) {
       const main = [...videos].sort((a, b) => b.size - a.size)[0];

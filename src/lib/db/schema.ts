@@ -353,6 +353,8 @@ export const episodeFiles = sqliteTable(
     studioLabel: text('studio_label'),
     resolution: integer('resolution'),
     method: text('method', { enum: ['hardlink', 'copy', 'move'] }).notNull(),
+    // взят из медиатеки (2.7): файл пользователя — сам не «улучшается» и не заменяется
+    adopted: integer('adopted', { mode: 'boolean' }).notNull().default(false),
     importedAt: ts('imported_at').notNull(),
     dubPosition: integer('dub_position'), // позиция профиля, по которой взята серия
     processed: integer('processed', { mode: 'boolean' }).notNull().default(false), // пересобран mkvmerge

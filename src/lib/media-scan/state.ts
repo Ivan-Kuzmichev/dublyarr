@@ -6,7 +6,7 @@ import type { AdoptChoice, AdoptLine } from './adopt';
 
 // Результат сканирования медиатеки и ход задач — app_settings['mediaScan']: окно открывается из него без нового обхода.
 
-export type ScanEntry = ScanItem & { candidate: Candidate | null; sure: boolean; have: string[]; example: string | null /* куда ляжет первая серия */ };
+export type ScanEntry = ScanItem & { candidate: Candidate | null; sure: boolean; have: string[]; example: string | null /* куда ляжет первая серия */; error?: string };
 export type MediaScanState = {
   status: 'idle' | 'scanning' | 'adopting';
   progress?: { done: number; total: number };

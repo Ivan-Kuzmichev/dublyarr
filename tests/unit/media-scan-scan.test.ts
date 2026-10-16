@@ -50,3 +50,46 @@ test('добавление: позиция уходит из найденног�
   expect(st).toMatchObject({ status: 'idle', items: [], last: { at: 7 } });
   expect(db.select().from(episodeFiles).get()!.method).toBe('hardlink');
 });
+
+test('вложенные корни: папка фильмов и загрузок внутри медиатеки не сканируются как чужое; известный фильм — по своему корню', async () => {
+  const db = testDb();
+  const media = mkdtempSync(path.join(tmpdir(), 'dy-scan-'));
+  const put = (rel: string) => (mkdirSync(path.dirname(path.join(media, rel)), { recursive: true }), writeFileSync(path.join(media, rel), 'v'));
+  put('Фильмы/Матрица (1999)/Матрица (1999) [Дубляж 1080p].mkv'); // свой фильм Dublyarr в папке фильмов
+  put('downloads/dublyarr/Some.Torrent/S01E01.mkv'); // раздача Dublyarr
+  put('BEEF/Season 01/BEEF - S01E01 - WEB-DL 2160p TVShows.mkv');
+  const m = db.insert(titles).values({ tmdbId: 603, tmdbType: 'movie', kind: 'movie', nameRu: 'Матрица', nameOriginal: 'The Matrix', year: 1999, originalLanguage: 'en', status: 'released', createdAt: 1, refreshedAt: 1 }).returning().get();
+  db.insert(episodeFiles).values({ titleId: m.id, season: 0, number: 0, path: 'Матрица (1999)/Матрица (1999) [Дубляж 1080p].mkv', size: 1, method: 'hardlink', importedAt: 1 }).run();
+  const s = await runMediaScan(db, { tmdb: null, paths: { downloads: path.join(media, 'downloads'), media, movies: path.join(media, 'Фильмы') }, search: async () => [] });
+  expect(s.items.map((i) => i.key)).toEqual(['BEEF']);
+});
+
+test('TMDB не ответил по одной позиции — сканирование доходит до конца, у позиции причина', async () => {
+  const db = testDb();
+  const media = mkdtempSync(path.join(tmpdir(), 'dy-scan-'));
+  const put = (rel: string) => (mkdirSync(path.dirname(path.join(media, rel)), { recursive: true }), writeFileSync(path.join(media, rel), 'v'));
+  put('BEEF/Season 01/BEEF - S01E01 - WEB-DL 2160p TVShows.mkv');
+  put('Silo/Season 03/Silo - S03E01 - WEB-DL 1080p LostFilm.mkv');
+  const search = async (q: string) => {
+    if (q === 'BEEF') throw new Error('TMDB: 429');
+    return [{ tmdbId: 125988, type: 'tv' as const, name: 'Укрытие', original: 'Silo', year: 2023, posterPath: null, score: 0 }];
+  };
+  const s = await runMediaScan(db, { tmdb: null, paths: { downloads: media, media }, search });
+  expect(s.items.map((i) => [i.key, i.candidate?.tmdbId ?? null, i.error ?? null])).toEqual([
+    ['BEEF', null, 'TMDB не ответил: TMDB: 429'],
+    ['Silo', 125988, null],
+  ]);
+});
+
+test('задача воркера без папок или без позиций — состояние не зависает в «идёт»', async () => {
+  const { buildHandlers } = await import('@/worker/handlers');
+  const { updateScanState } = await import('@/lib/media-scan/state');
+  const db = testDb();
+  const h = buildHandlers(db);
+  updateScanState(db, { status: 'scanning' });
+  await h['media.scan']({});
+  expect(getScanState(db).status).toBe('idle');
+  updateScanState(db, { status: 'adopting' });
+  await h['media.adopt']({ choices: [] });
+  expect(getScanState(db).status).toBe('idle');
+});

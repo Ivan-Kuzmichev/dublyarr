@@ -58,7 +58,7 @@ export async function searchMovie(db: Db, titleId: number, deps: AutoDeps) {
   const now = deps.now ?? Date.now();
   const today = deps.today ?? todayIso();
   const sub = db.select().from(subscriptions).where(eq(subscriptions.titleId, titleId)).get();
-  if (!sub || !isMovieProfile(sub.profile)) return res;
+  if (!sub || !isMovieProfile(sub.profile) || sub.filesOnly) return res; // «только файлы» — не ищем
   const profile = sub.profile;
   const ep = MOVIE_EP;
   // удалён правилом хранения или вручную («только файлы») — заново не качаем, пока не переподпишутся
@@ -72,6 +72,7 @@ export async function searchMovie(db: Db, titleId: number, deps: AutoDeps) {
   const active = activeDownloads(db, titleId);
   const stalled = active.filter((d) => d.state === 'stalled');
   if (active.some((d) => d.state !== 'stalled')) return res; // уже качается (или улучшение в пути)
+  if (file?.adopted) return res; // взят из медиатеки — файл пользователя сам не заменяем
   const own = file ? sourceOfFile(db, file) : null;
   if (file && !wantsDub(file, profile, today) && !(profile.remux && own?.source !== 'remux')) return res; // улучшать нечего — без запросов
 

@@ -20,6 +20,7 @@ import { getRetention } from '@/lib/retention-settings';
 import { RetentionToggles } from '@/app/(app)/series/[tmdbId]/RetentionToggles';
 import { DeleteSeriesDialog } from '@/app/(app)/storage/DeleteSeriesDialog';
 import { MovieRefreshButton, MovieSubscribeButton } from './MovieButtons';
+import { EnableSubscription } from '../../series/[tmdbId]/EnableSubscription';
 import { requireSession } from '@/lib/auth/current';
 import { can } from '@/lib/auth/permissions';
 
@@ -105,7 +106,8 @@ export default async function MoviePage({ params }: { params: Promise<{ tmdbId: 
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            {may.subscribe && <MovieSubscribeButton tmdbId={t.tmdbId} subscribed={!!sub} title={t.nameRu} subtitle={meta.join(' · ')} profile={profile} />}
+            {may.subscribe && sub?.filesOnly && <EnableSubscription tmdbId={t.tmdbId} movie />}
+            {may.subscribe && !sub?.filesOnly && <MovieSubscribeButton tmdbId={t.tmdbId} subscribed={!!sub} title={t.nameRu} subtitle={meta.join(' · ')} profile={profile} />}
             {may.look && (
               <Link href={`/search/${t.tmdbId}?type=movie`} className={buttonClass('secondary', 'md', 'no-underline hover:text-text')}>
                 Ручной поиск

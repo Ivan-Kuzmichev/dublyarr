@@ -52,3 +52,24 @@ test('дубль серии — больший файл берётся, мень
 test('папка без видео — пропуск с причиной', () => {
   expect(groupFiles([f('Docs/readme.nfo', 10)], 'media').skipped).toEqual([{ key: 'Docs', why: 'Нет видео' }]);
 });
+
+test('субтитры — только своей серии: E1 не забирает субтитры E10', () => {
+  const { items } = groupFiles([f('Show/Show S01E1.mkv'), f('Show/Show S01E10.mkv'), f('Show/Show S01E10.rus.srt', 9), f('Show/Show S01E1.eng.srt', 9)], 'media');
+  const eps = items[0].episodes;
+  expect(eps.find((e) => e.number === 1)!.sidecars).toEqual(['Show/Show S01E1.eng.srt']);
+  expect(eps.find((e) => e.number === 10)!.sidecars).toEqual(['Show/Show S01E10.rus.srt']);
+});
+
+test('аниме со сквозными номерами без сезона — сериал (сезон 1), а не фильм', () => {
+  const { items } = groupFiles([f('Frieren/[SubsPlease] Frieren - 01 (1080p).mkv'), f('Frieren/[SubsPlease] Frieren - 02 (1080p).mkv'), f('Frieren/[SubsPlease] Frieren - 13 (1080p).mkv')], 'media');
+  expect(items[0]).toMatchObject({ kind: 'series', names: ['Frieren'] });
+  expect(items[0].episodes.map((e) => `${e.season}x${e.number}`)).toEqual(['1x1', '1x2', '1x13']);
+});
+
+test('папка с несколькими сериалами внутри — по позиции на сериал', () => {
+  const { items } = groupFiles([f('Сериалы/BEEF/Season 01/BEEF - S01E01 - WEB-DL 2160p TVShows.mkv'), f('Сериалы/Silo/Season 03/Silo - S03E01 - WEB-DL 1080p LostFilm.mkv')], 'media');
+  expect(items.map((i) => [i.key, i.names[0]])).toEqual([
+    ['Сериалы/BEEF', 'BEEF'],
+    ['Сериалы/Silo', 'Silo'],
+  ]);
+});

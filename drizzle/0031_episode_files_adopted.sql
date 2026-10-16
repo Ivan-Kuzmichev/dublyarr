@@ -1,0 +1,1 @@
+ALTER TABLE `episode_files` ADD `adopted` integer DEFAULT false NOT NULL;

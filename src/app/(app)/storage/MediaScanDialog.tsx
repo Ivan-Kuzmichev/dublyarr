@@ -52,10 +52,11 @@ function Row({ e, pick, set, canSubscribe }: { e: ScanEntry; pick: Pick; set: (p
         </span>
         {seasonsLine(e) && <span className="text-[13px] text-text-2">{seasonsLine(e)}</span>}
         {e.have.length > 0 && <span className="text-[13px] text-faint">Уже есть в Dublyarr — не добавляются: {e.have.join(', ')}</span>}
+        {e.error && <span className="text-[13px] text-danger">{e.error}</span>}
         {e.unknown.length > 0 && <span className="text-[13px] text-faint">Не возьмём: {e.unknown.map((u) => `${u.rel.split('/').pop()} — ${u.why}`).join('; ')}</span>}
         {e.example && pick.candidate === e.candidate && <span className="truncate font-mono text-xs text-faint">→ {e.example}</span>}
         <div className="flex flex-wrap items-center gap-3 text-[13px]">
-          {e.kind === 'series' && (
+          {(
             <span className="flex gap-1 rounded-[10px] bg-surface-2 p-1">
               {(canSubscribe ? [false, true] : [true]).map((fo) => (
                 <button key={String(fo)} type="button" onClick={() => set({ filesOnly: fo })} className={`h-9 cursor-pointer rounded-[7px] px-3 ${pick.filesOnly === fo ? 'bg-text font-semibold text-bg' : 'text-muted'}`}>
@@ -111,7 +112,7 @@ export function MediaScanDialog({ state, canSubscribe, onClose, onStarted }: { s
     setError(null);
     const list: AdoptPick[] = chosen.map((e) => {
       const p = picks[e.key];
-      return { key: e.key, tmdbId: p.candidate!.tmdbId, type: p.candidate!.type, filesOnly: e.kind === 'movie' ? false : p.filesOnly, process: p.process, episodes: e.episodes.filter((x) => !e.have.includes(code(x.season, x.number))).map((x) => x.rel) };
+      return { key: e.key, tmdbId: p.candidate!.tmdbId, type: p.candidate!.type, filesOnly: p.filesOnly, process: p.process, episodes: e.episodes.filter((x) => !e.have.includes(code(x.season, x.number))).map((x) => x.rel) };
     });
     const r = await adoptMediaAction(list);
     setPending(false);
