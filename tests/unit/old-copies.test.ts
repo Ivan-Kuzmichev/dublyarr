@@ -56,3 +56,14 @@ test('спрятать можно только файл внутри медиа�
   await expect(stashOldCopy(media, `${OLD_DIR}/y.mkv`)).rejects.toThrow('вне медиатеки');
   expect(existsSync(path.join(outside, 'x.mkv'))).toBe(true);
 });
+
+test('удалили последнюю старую копию сериала — его папки в скрытой папке уходят (служебное Synology не мешает), сама скрытая папка остаётся', async () => {
+  const { db, media, put, add } = setup();
+  put(`${OLD_DIR}/Братья (2026)/Season 01/Братья S01E01 [LostFilm 1080p].mkv`);
+  put(`${OLD_DIR}/Братья (2026)/Season 01/@eaDir/x.jpg`);
+  put(`${OLD_DIR}/Братья (2026)/.DS_Store`);
+  const a = add(`${OLD_DIR}/Братья (2026)/Season 01/Братья S01E01 [LostFilm 1080p].mkv`);
+  await confirmOldCopies(db, media, [a.id]);
+  expect(existsSync(path.join(media, OLD_DIR, 'Братья (2026)'))).toBe(false);
+  expect(existsSync(path.join(media, OLD_DIR))).toBe(true);
+});

@@ -1,4 +1,5 @@
-import { readdir, rm, rmdir, stat } from 'node:fs/promises';
+import { readdir, rm, stat } from 'node:fs/promises';
+import { isJunk, removeIfEmpty } from './empty-dirs';
 import path from 'node:path';
 import { eq, inArray } from 'drizzle-orm';
 import type { Db } from './db/client';
@@ -68,6 +69,7 @@ const sizeOf = (p: string) =>
 async function walk(dir: string): Promise<string[]> {
   const out: string[] = [];
   for (const e of await readdir(dir, { withFileTypes: true }).catch(() => [])) {
+    if (isJunk(e.name)) continue; // @eaDir, .DS_Store — не наши и не «брошенные»: уходят вместе с опустевшей папкой
     const p = path.join(dir, e.name);
     if (e.isDirectory()) out.push(...(await walk(p)));
     else if (e.isFile()) out.push(norm(p));
@@ -176,8 +178,7 @@ async function removeFile(paths: Paths, abs: string): Promise<boolean> {
   }
   const root = path.resolve(paths.downloads, CATEGORY);
   for (let dir = path.dirname(abs); dir !== root && insideOurs(paths, dir); dir = path.dirname(dir)) {
-    if ((await readdir(dir).catch(() => ['?'])).length) break;
-    await rmdir(dir).catch(() => undefined);
+    if (!(await removeIfEmpty(dir))) break;
   }
   return true;
 }

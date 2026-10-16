@@ -1,5 +1,6 @@
 import { access, mkdir, rename, rm, stat } from 'node:fs/promises';
 import path from 'node:path';
+import { pruneUp } from './empty-dirs';
 import { eq, inArray } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { oldCopies, titles } from './db/schema';
@@ -58,6 +59,7 @@ export async function settleOldCopy(db: Db, media: string, stashed: string, row:
   const confirmed = oldCopyRuleConfirmed(db);
   if (confirmed && getRetention(db).oldCopy === 'now') {
     await rm(abs, { force: true });
+    await pruneUp(path.dirname(abs), path.join(media, OLD_DIR));
     return;
   }
   const size = await stat(abs).then(
@@ -85,6 +87,7 @@ export async function confirmOldCopies(db: Db, roots: string | { media: string; 
       continue;
     }
     await rm(abs, { force: true });
+    await pruneUp(path.dirname(abs), path.join(root!, OLD_DIR));
     db.delete(oldCopies).where(eq(oldCopies.id, r.id)).run();
     res.deleted++;
     res.freed += r.size;

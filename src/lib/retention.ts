@@ -1,7 +1,8 @@
 import { and, eq } from 'drizzle-orm';
 import type { Db } from './db/client';
 import { deletions, episodeFiles, episodes, oldCopies, retiredEpisodes, seasons, subscriptions, titles } from './db/schema';
-import { readdir, rm, rmdir } from 'node:fs/promises';
+import { rm } from 'node:fs/promises';
+import { pruneUp } from './empty-dirs';
 import path from 'node:path';
 import { getSetting, setSetting } from './settings';
 import { OLD_DIR } from './old-copies';
@@ -142,11 +143,8 @@ export async function deleteMediaFile(media: string, rel: string, under = ''): P
   const abs = inside(root, under ? path.relative(under, rel) : rel);
   if (!abs) return false;
   await rm(abs, { force: true });
-  const top = path.resolve(media);
-  for (let dir = path.dirname(abs); dir.startsWith(`${top}${path.sep}`) && dir !== top; dir = path.dirname(dir)) {
-    if ((await readdir(dir).catch(() => ['?'])).length) break;
-    await rmdir(dir).catch(() => undefined);
-  }
+  // опустевшие папки серии/сезона — до корня медиатеки; служебное Synology/macOS (@eaDir, .DS_Store) не держит папку
+  await pruneUp(path.dirname(abs), media);
   return true;
 }
 

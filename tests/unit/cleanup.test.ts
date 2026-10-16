@@ -105,6 +105,14 @@ describe('план уборки', () => {
     expect(await plan()).toEqual([expect.objectContaining({ kind: 'orphan', path: old, size: 5 })]);
     expect(await plan({ orphans: false })).toEqual([]);
   });
+
+  test('служебное Synology/macOS (@eaDir, .DS_Store, ._*) — не «брошенные файлы»', async () => {
+    const { disk, plan } = setup();
+    disk('Show/@eaDir/S.S01E01.mkv/SYNOVIDEO_VIDEO_SCREENSHOT.jpg', 2);
+    disk('Show/.DS_Store', 2);
+    disk('Show/._S.S01E01.mkv', 2);
+    expect(await plan()).toEqual([]);
+  });
 });
 
 test('разбор формы уборки', () => {
