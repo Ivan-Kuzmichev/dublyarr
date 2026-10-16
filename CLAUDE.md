@@ -273,6 +273,21 @@ Self-hosted сервис для дома (администратор + поль�
   Без AVX в `/proc/cpuinfo` — `MKL_ENABLE_INSTRUCTIONS=SSE4_2`, `DNNL_MAX_CPU_ISA=SSE41`, `ATEN_CPU_CAPABILITY=default` (`laya-child.ts`); `faulthandler` в laya-serve — стек падения в журнал;
   отказ laya-serve (не 503) — `laya ask rejected` в журнале; сбой надстройки — ответ Laya без неё. Rosetta в Docker на Mac выполняет AVX, не объявляя его: воспроизвести там нельзя. Вопрос с надстройкой — примерно вдвое дольше (ещё один проход энкодера).
 
+## Решения (2.7 — сканирование медиатеки)
+
+- «Хранилище» → блок «Медиатека» (`MediaScanCard`, окно `MediaScanDialog`): по кнопке найти видео, которых нет в `episode_files`, и взять их в Dublyarr. Только по кнопке (решение владельца).
+- `src/lib/media-scan/*`:
+  - `group.ts` — позиции (папка верхнего уровня или файл в корне), сезон и серия по имени или `Season NN`, сопутствующие `.srt/.ass/.mka`; имена в стиле сцены режутся с первого технического слова;
+  - `recognize.ts` — TMDB (0,75 название + 0,25 год, уверенно от 0,8);
+  - `scan.ts` — `runMediaScan`, `runAdopt`; `adopt.ts` — `adoptItem`;
+  - `state.ts` — `app_settings['mediaScan']`, `buildChoices`: пути — только из сохранённого сканирования. Задачи воркера — `media.scan`, `media.adopt`.
+- Перенос (решения владельца):
+  - раздаётся в qBittorrent (или клиент недоступен) — жёсткая ссылка, иначе — перемещение;
+  - «Пересобрать как при импорте» — галочка, по умолчанию выключена; после проверенной (ffprobe, ±2 %) пересборки оригинал удаляется, если не раздаётся;
+  - по целевому пути что-то лежит — «Уже есть», без перезаписи; `episode_files.method` += `move`.
+- «Только файлы» — `subscriptions.files_only` (`wantedEpisodes` пуст, `extendSeasons` не трогает), в «Библиотеке» — пометка, на странице сериала — «Включить подписку». По умолчанию в окне — «Только файлы».
+- API: `GET/POST media/scan`, `POST media/adopt { picks }`. e2e — `15-media-scan`.
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
