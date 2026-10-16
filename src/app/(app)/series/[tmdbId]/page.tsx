@@ -17,6 +17,7 @@ import { KindSwitch } from './KindSwitch';
 import { plural } from '@/lib/plural';
 import { RefreshButton } from './RefreshButton';
 import { SubscribeButton } from './SubscribeButton';
+import { EnableSubscription } from './EnableSubscription';
 import { SubscriptionPanel } from './SubscriptionPanel';
 import { seriesKind } from '@/lib/profile';
 import { isMovieProfile } from '@/lib/movie-profile';
@@ -132,7 +133,8 @@ export default async function SeriesPage({ params, searchParams }: { params: Pro
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-3">
-            {may.subscribe && (
+            {may.subscribe && sub?.filesOnly && <EnableSubscription tmdbId={t.tmdbId} />}
+            {may.subscribe && !sub?.filesOnly && (
             <SubscribeButton
               tmdbId={t.tmdbId}
               subscribed={!!sub}

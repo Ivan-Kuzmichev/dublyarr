@@ -22,3 +22,13 @@ test('«только файлы»: нужных серий нет — автоп
   setFilesOnly(db, t.id, false);
   expect(wantedEpisodes(getSubscription(db, t.id)!, eps, '2026-10-16').length).toBe(2);
 });
+
+test('«Библиотека»: у подписки «только файлы» — пометка', async () => {
+  const { libraryItems } = await import('@/lib/subscriptions');
+  const db = testDb();
+  const t = db.insert(titles).values({ tmdbId: 6, kind: 'series', nameRu: 'Бифф', nameOriginal: 'BEEF', originalLanguage: 'en', status: 'ended', createdAt: 1, refreshedAt: 1 }).returning().get();
+  subscribe(db, t.id, getDefaultProfile(db, 'series'), 1);
+  expect(libraryItems(db, '2026-10-16')[0].filesOnly).toBe(false);
+  setFilesOnly(db, t.id, true);
+  expect(libraryItems(db, '2026-10-16')[0].filesOnly).toBe(true);
+});

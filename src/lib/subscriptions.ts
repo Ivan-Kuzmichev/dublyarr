@@ -61,13 +61,13 @@ export function wantedEpisodes(sub: Pick<Subscription, 'subscribedAt' | 'profile
 
 export type LibraryFilter = 'all' | 'airing' | 'ended' | 'movies';
 /** status — у фильма: «Дубляж · 2160p · 24 ГБ» / «Ждём дубляж до …». */
-export type LibraryItem = { title: Title; profile: Profile | MovieProfile; next: { season: number; number: number; airDate: string } | null; status?: string };
+export type LibraryItem = { title: Title; profile: Profile | MovieProfile; next: { season: number; number: number; airDate: string } | null; status?: string; filesOnly: boolean };
 
 const isEnded = (t: Title) => t.status === 'ended' || t.status === 'canceled';
 
 export function libraryItems(db: Db, today: string): LibraryItem[] {
-  const rows = db.select({ title: titles, profile: subscriptions.profile }).from(subscriptions).innerJoin(titles, eq(titles.id, subscriptions.titleId)).all();
-  const items = rows.map(({ title, profile }) => {
+  const rows = db.select({ title: titles, profile: subscriptions.profile, filesOnly: subscriptions.filesOnly }).from(subscriptions).innerJoin(titles, eq(titles.id, subscriptions.titleId)).all();
+  const items = rows.map(({ title, profile, filesOnly }) => {
     const firstDate = db
       .select({ d: min(episodes.airDate) })
       .from(episodes)
@@ -81,8 +81,8 @@ export function libraryItems(db: Db, today: string): LibraryItem[] {
           .orderBy(episodes.season, episodes.number)
           .get()
       : undefined;
-    if (title.kind === 'movie') return { title, profile, next: null, status: movieCard(db, title, today).status };
-    return { title, profile, next: next ? { season: next.season, number: next.number, airDate: next.airDate! } : null };
+    if (title.kind === 'movie') return { title, profile, filesOnly, next: null, status: filesOnly ? '' : movieCard(db, title, today).status };
+    return { title, profile, filesOnly, next: next ? { season: next.season, number: next.number, airDate: next.airDate! } : null };
   });
   return items.sort((a, b) => {
     if (a.next && b.next) return a.next.airDate.localeCompare(b.next.airDate) || a.title.nameRu.localeCompare(b.title.nameRu, 'ru');

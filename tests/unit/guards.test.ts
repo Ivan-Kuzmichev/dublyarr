@@ -70,6 +70,8 @@ describe('действия без права', () => {
     expect(await st.adoptMediaAction([])).toMatchObject(DENIED);
     expect(await st.mediaScanStateAction()).toBeNull();
     expect(await st.searchCandidatesAction('Silo', 'tv')).toEqual([]);
+    const series = await import('@/app/(app)/series/[tmdbId]/actions');
+    expect(await series.enableSubscriptionAction({}, f({ tmdbId: '1' }))).toMatchObject(DENIED);
     const c = await import('@/app/(app)/cleanup/actions');
     expect(await c.confirmCleanupAction({}, f())).toMatchObject(DENIED);
     const o = await import('@/app/(app)/old-copies/actions');

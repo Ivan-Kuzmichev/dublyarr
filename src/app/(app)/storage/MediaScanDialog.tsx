@@ -5,9 +5,9 @@ import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { formatSize } from '@/lib/format';
 import { Poster } from '@/components/catalog/Poster';
-import type { MediaScanState, ScanEntry } from '@/lib/media-scan/state';
+import type { AdoptPick, MediaScanState, ScanEntry } from '@/lib/media-scan/state';
 import type { Candidate } from '@/lib/media-scan/recognize';
-import { adoptMediaAction, searchCandidatesAction, type AdoptPick } from './actions';
+import { adoptMediaAction, searchCandidatesAction } from './actions';
 
 type Pick = { on: boolean; candidate: Candidate | null; filesOnly: boolean; process: boolean };
 const KIND = { series: 'сериал', movie: 'фильм' } as const;

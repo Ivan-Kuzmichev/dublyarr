@@ -1,3 +1,4 @@
+import { getScanState } from '../media-scan/state';
 import { notificationsDebug } from '../notify';
 import { buildDataset } from '../laya/dataset';
 import { desc, eq, inArray } from 'drizzle-orm';
@@ -91,6 +92,7 @@ export const READ_ROUTES: Route[] = [
     },
   },
   // обучающий набор для дообучения голов Laya (laya-train/)
+  { method: 'GET', pattern: 'media/scan', run: (c) => getScanState(c.db) },
   { method: 'GET', pattern: 'laya/dataset', run: (c) => ({ rows: buildDataset(c.db) }) },
   // диагностика уведомлений: получатели и последние события с доставками
   { method: 'GET', pattern: 'notifications', run: (c) => notificationsDebug(c.db, Math.min(100, Number(c.query.get('limit')) || 30)) },

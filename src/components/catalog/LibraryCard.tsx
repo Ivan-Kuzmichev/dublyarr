@@ -29,9 +29,13 @@ export function LibraryCard({ item, studioNames, today }: { item: LibraryItem; s
         <Poster tmdbId={t.tmdbId} name={t.nameRu} path={t.posterPath} className="h-full w-full" />
       </div>
       <span className="line-clamp-2 text-[15px] leading-tight font-semibold">{t.nameRu}</span>
-      <span className="truncate text-[13px] text-muted">
-        {qualityLabel(profile.quality.target)} · {chain}
-      </span>
+      {item.filesOnly ? (
+        <span className="self-start rounded-md border border-line-strong px-1.5 py-0.5 text-[12px] text-muted">только файлы</span>
+      ) : (
+        <span className="truncate text-[13px] text-muted">
+          {qualityLabel(profile.quality.target)} · {chain}
+        </span>
+      )}
       <span className={`text-[13px] ${line.cls}`}>{line.text}</span>
     </Link>
   );

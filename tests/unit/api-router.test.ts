@@ -94,3 +94,18 @@ test('laya/dataset: обучающий набор строками (задача
   expect(r.status).toBe(200);
   expect((r.body as { rows: unknown[] }).rows).toEqual([{ task: 'match', group: 'tv:1', source: 'user', state: { сериал: 'A' }, question: { type: 'noul', instructions: '?' }, target: true }]);
 });
+
+test('media/scan: состояние сканирования; запуск — задача; adopt без позиций — 400', async () => {
+  const { call, db } = api();
+  const s = await call('GET', 'media/scan');
+  expect(s.status).toBe(200);
+  expect(s.body).toMatchObject({ status: 'idle', items: [] });
+  const { setSetting } = await import('@/lib/settings');
+  setSetting(db, 'paths', { downloads: '/d', media: '/m' });
+  expect((await call('POST', 'media/scan')).status).toBe(200);
+  const { jobs } = await import('@/lib/db/schema');
+  expect(db.select().from(jobs).all().map((j) => j.type)).toContain('media.scan');
+  const { updateScanState } = await import('@/lib/media-scan/state');
+  updateScanState(db, { status: 'idle' });
+  expect((await call('POST', 'media/adopt', { picks: [] })).status).toBe(400);
+});

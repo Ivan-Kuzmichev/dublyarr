@@ -14,9 +14,8 @@ import type { Paths } from '@/lib/downloads';
 import { enqueue } from '@/worker/jobs';
 import { getTmdb } from '@/lib/tmdb';
 import { can } from '@/lib/auth/permissions';
-import { getScanState, updateScanState, type MediaScanState } from '@/lib/media-scan/state';
+import { buildChoices, getScanState, updateScanState, type AdoptPick, type MediaScanState } from '@/lib/media-scan/state';
 import { tmdbSearch, type Candidate } from '@/lib/media-scan/recognize';
-import type { AdoptChoice } from '@/lib/media-scan/adopt';
 
 export type ActionState = { ok?: string; error?: string };
 
@@ -110,8 +109,6 @@ export async function searchCandidatesAction(q: string, type: 'tv' | 'movie'): P
   }
 }
 
-export type AdoptPick = { key: string; tmdbId: number; type: 'tv' | 'movie'; filesOnly: boolean; process: boolean; episodes: string[] /* rel серий */ };
-
 /** «Добавить»: только позиции и серии из сохранённого сканирования (пути с клиента не принимаются как есть). */
 export async function adoptMediaAction(picks: AdoptPick[]): Promise<ActionState> {
   const s = await guard('storage');
@@ -119,14 +116,7 @@ export async function adoptMediaAction(picks: AdoptPick[]): Promise<ActionState>
   const db = getDb();
   const state = getScanState(db);
   if (state.status !== 'idle') return { error: 'Уже идёт' };
-  const choices: AdoptChoice[] = [];
-  for (const p of Array.isArray(picks) ? picks : []) {
-    const item = state.items.find((i) => i.key === p.key);
-    if (!item || !Number.isInteger(p.tmdbId) || p.tmdbId <= 0) continue;
-    const want = new Set(p.episodes);
-    const episodes = item.episodes.filter((e) => want.has(e.rel)).map((e) => ({ rel: e.rel, season: e.season, number: e.number, sidecars: e.sidecars }));
-    if (episodes.length) choices.push({ key: item.key, root: item.root, tmdbId: p.tmdbId, type: p.type === 'movie' ? 'movie' : 'tv', filesOnly: !!p.filesOnly, process: !!p.process, episodes });
-  }
+  const choices = buildChoices(state, picks);
   if (!choices.length) return { error: 'Ничего не отмечено' };
   updateScanState(db, { status: 'adopting', progress: { done: 0, total: choices.length } });
   enqueue(db, 'media.adopt', { choices, canSubscribe: can(s.user, 'subscribe') });

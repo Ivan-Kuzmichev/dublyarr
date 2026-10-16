@@ -1,3 +1,4 @@
+import { buildChoices, getScanState, updateScanState } from '../media-scan/state';
 import { and, eq } from 'drizzle-orm';
 import { downloads, releases, titles, wantedState } from '../db/schema';
 import { getSetting } from '../settings';
@@ -212,6 +213,30 @@ export const WRITE_ROUTES: Route[] = [
       const input = parseSourceForm(toFormData({ name: cur.name, url: cur.url, kind: cur.kind, timeout: cur.timeoutMs / 1000 }));
       if ('error' in input) throw new ApiError(400, input.error);
       return fail(await saveSource(c.db, input, cur.id, c.deps.fetchImpl), 502);
+    },
+  },
+  {
+    method: 'POST',
+    pattern: 'media/scan',
+    run: (c) => {
+      if (!getSetting(c.db, 'paths')) throw new ApiError(409, 'Не заданы папки');
+      if (getScanState(c.db).status !== 'idle') throw new ApiError(409, 'Уже идёт');
+      updateScanState(c.db, { status: 'scanning', progress: { done: 0, total: 0 } });
+      enqueue(c.db, 'media.scan');
+      return { ok: 'Сканирую' };
+    },
+  },
+  {
+    method: 'POST',
+    pattern: 'media/adopt',
+    run: (c) => {
+      const state = getScanState(c.db);
+      if (state.status !== 'idle') throw new ApiError(409, 'Уже идёт');
+      const choices = buildChoices(state, (c.body as { picks?: unknown }).picks);
+      if (!choices.length) throw new ApiError(400, 'Нет позиций');
+      updateScanState(c.db, { status: 'adopting', progress: { done: 0, total: choices.length } });
+      enqueue(c.db, 'media.adopt', { choices, canSubscribe: true });
+      return { ok: `Добавляю ${choices.length}` };
     },
   },
   {
