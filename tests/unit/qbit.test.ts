@@ -117,3 +117,15 @@ test('getQbit: один клиент, пока не сменились наст�
   setSecretSetting(db, 'qbittorrent', { url: 'http://q', username: 'a', password: 'p2' });
   expect(getQbit(db)).not.toBe(a);
 });
+
+test('qBittorrent 5.2: обход авторизации для подсети — вход отвечает 204 без «Ok.» и cookie; это успех, запросы — без cookie', async () => {
+  const f = fake('2.11.4', { '/api/v2/auth/login': () => new Response(null, { status: 204 }), '/api/v2/torrents/info': () => Response.json([]) });
+  const q = createQbit({ url: 'http://q:8080', username: '', password: '' }, { fetchImpl: f.fetchImpl });
+  expect(await q.version()).toBe('v5.1.2');
+  await q.list('dublyarr');
+  expect(f.log.filter((r) => r.path.startsWith('/api/v2/auth/login'))).toHaveLength(1);
+  expect(f.log.filter((r) => !r.path.startsWith('/api/v2/auth/login')).every((r) => r.cookie === null)).toBe(true);
+  // неверный пароль — по-прежнему ошибка
+  const bad = fake('2.11.4', { '/api/v2/auth/login': () => new Response('Fails.') });
+  await expect(createQbit(cfg, { fetchImpl: bad.fetchImpl }).version()).rejects.toThrow('Неверный логин или пароль qBittorrent');
+});

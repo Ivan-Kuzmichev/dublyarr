@@ -91,13 +91,21 @@ export function createQbit(cfg: QbitConfig, opts: { fetchImpl?: typeof fetch } =
     if (res.status === 403) throw new QbitError('IP заблокирован qBittorrent после неудачных входов', 'banned');
     const text = (await res.text()).trim();
     const cookie = /SID=([^;]+)/.exec(res.headers.get('set-cookie') ?? '')?.[1];
-    if (text !== 'Ok.' || !cookie) throw new QbitError('Неверный логин или пароль qBittorrent', 'auth');
-    sid = cookie;
+    if (cookie && text === 'Ok.') {
+      sid = cookie;
+      return;
+    }
+    // обход авторизации для подсети (qBittorrent 5.2: 204 без «Ok.» и без cookie) — вход не нужен, запросы без cookie
+    if (res.ok && text !== 'Fails.' && !cookie) {
+      sid = '';
+      return;
+    }
+    throw new QbitError('Неверный логин или пароль qBittorrent', 'auth');
   }
 
   /** Запрос с сессией: при 403 — один повторный вход. */
   async function call(path: string, init: RequestInit = {}): Promise<Response> {
-    if (!sid) await login();
+    if (sid === null) await login();
     let res = await raw(path, init);
     if (res.status === 403) {
       await login();
