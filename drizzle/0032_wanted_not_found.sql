@@ -1,0 +1,1 @@
+ALTER TABLE `wanted_state` ADD `not_found_at` integer;

@@ -67,7 +67,7 @@ def test_refuses_encoder_keys_and_wrong_shapes(tmp_path):
     assert not ok
 
 
-def test_pick_dir_own_over_image_and_disabled(tmp_path):
+def test_pick_dir_own_over_image_and_no_switch(tmp_path):
     data, image = tmp_path / "data", tmp_path / "image"
     for d in (data / "heads", image):
         d.mkdir(parents=True)
@@ -75,5 +75,5 @@ def test_pick_dir_own_over_image_and_disabled(tmp_path):
     assert pick_heads_dir(str(data), str(image)) == str(data / "heads")
     (data / "heads" / "heads.safetensors").unlink()
     assert pick_heads_dir(str(data), str(image)) == str(image)
-    (data / "heads.disabled").write_text("")
-    assert pick_heads_dir(str(data), str(image)) is None
+    (data / "heads.disabled").write_text("")  # выключателя нет с 2.8 — старый файл не мешает
+    assert pick_heads_dir(str(data), str(image)) == str(image)

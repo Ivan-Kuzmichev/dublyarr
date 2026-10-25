@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { testDb } from './helpers';
-import { decide, decideMany, type Budget } from '@/lib/laya/decide';
+import { cachedDecision, decide, decideMany, type Budget } from '@/lib/laya/decide';
+import { setLayaEnabled } from '@/lib/laya/settings';
 import { setSetting } from '@/lib/settings';
 import { beat } from '@/lib/heartbeat';
 import { layaVersions } from '@/lib/db/schema';
@@ -27,6 +28,15 @@ describe('решение Laya', () => {
     const db = testDb();
     const r = await decide(db, 'studio', input('s', choice), { budget: budget(), client: fake({ choice: 'LostFilm', probabilities: { LostFilm: 0.88, новая: 0.12 } }).client });
     expect(r).toEqual({ by: 'laya', answer: 'LostFilm', p: 0.88, raw: 0.88, sure: true });
+  });
+  test('Laya выключена главным выключателем — правила по всем задачам, без запросов и без кэша', async () => {
+    const db = testDb();
+    const f = fake({ noul: 0.99 });
+    await decide(db, 'match', input('cached'), { budget: budget(), client: f.client });
+    setLayaEnabled(db, false);
+    for (const t of ['match', 'final', 'studio', 'anime'] as const) expect(await decide(db, t, input('n'), { budget: budget(), client: f.client })).toEqual({ by: 'rules' });
+    expect(cachedDecision(db, 'match', 'cached')).toBeNull();
+    expect(f.calls).toHaveLength(1);
   });
   test('задача выключена, Laya недоступна, бюджет исчерпан — правила', async () => {
     const db = testDb();

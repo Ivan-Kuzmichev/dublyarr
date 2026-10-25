@@ -2,7 +2,7 @@
 
 Сама Laya не меняется. Веса учатся на Mac (laya-train/probe.py) по ответам пользователя и лежат в laya/probe/<задача>.json
 (свои — ${LAYA_DIR}/probe, важнее образа). Файл помнит модель, ревизию и версию laya: другое — не применяется.
-Выключатель — тот же, что у голов: ${LAYA_DIR}/heads.disabled.
+Выключателя нет (2.8): есть веса — применяются всегда.
 """
 
 import json
@@ -12,7 +12,6 @@ from typing import Dict, Optional
 
 FORMAT = 1  # формат текста вопроса для эмбеддинга (text_of): другой — веса не годятся
 DIR = "probe"
-DISABLED = "heads.disabled"
 
 
 def text_of(state, instructions: str) -> str:
@@ -46,9 +45,7 @@ def save_probe(path: str, w, b: float, mu, sd, meta: Dict) -> None:
 
 
 def pick_dir(laya_dir: str, image_dir: str) -> Optional[str]:
-    """Свои веса (${LAYA_DIR}/probe) важнее, чем в образе; heads.disabled — без надстройки."""
-    if os.path.exists(os.path.join(laya_dir, DISABLED)):
-        return None
+    """Свои веса (${LAYA_DIR}/probe) важнее, чем в образе."""
     for d in (os.path.join(laya_dir, DIR), image_dir):
         if os.path.isdir(d) and any(n.endswith(".json") for n in os.listdir(d)):
             return d

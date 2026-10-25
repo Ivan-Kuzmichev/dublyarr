@@ -31,6 +31,7 @@ import { getConfig } from '../lib/config';
 import { processSeason } from '../lib/intros/run';
 import { systemIntroTools } from '../lib/intros/tools';
 import { getIntroSettings } from '../lib/intros/settings';
+import { checkNotFound } from '../lib/not-found';
 
 const log = logger('worker');
 
@@ -121,6 +122,9 @@ export const buildHandlers = (db: Db): Record<string, Handler> => ({
     if (!paths) return;
     const r = await searchDueTitles(db, { qbit: getQbit(db), fetchTorrent: (rel) => fetchTorrentFile(rel), paths });
     if (r.titles) log.info(r, 'scheduled search done');
+    // серии, которые так и не нашлись за N дней после выхода, — сообщение в Telegram
+    const lost = checkNotFound(db);
+    if (lost) log.info({ episodes: lost }, 'not found notified');
     // проверка паков выключена отдельно — паки проверяются вместе с поиском
     if (r.titles && !getSchedule(db).packChecks) await packsJob(db);
   },

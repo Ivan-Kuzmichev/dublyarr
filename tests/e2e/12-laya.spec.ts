@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { loginWithCode } from './helpers';
 
-test('Laya: статус и проверка → ответ «Не тот сериал» — пример в «Примерах», его можно убрать', async ({ page }) => {
+test('Laya: статус и проверка, выключатель → ответ «Не тот сериал» — пример в «Примерах», его можно убрать', async ({ page }) => {
   test.setTimeout(180_000);
   await loginWithCode(page);
 
@@ -20,16 +20,22 @@ test('Laya: статус и проверка → ответ «Не тот сер
   await page.reload();
   await expect(page.getByRole('group', { name: 'Порог уверенности' })).toContainText('86%');
 
-  // «Дообученная Laya»: надстройка в образе есть; переключается без перезапуска (заглушка — без дообучения, работает базовая)
-  const tuned = page.getByRole('checkbox', { name: 'Использовать Laya, дообученную на ваших ответах' });
-  await tuned.uncheck();
-  await page.getByRole('button', { name: 'Применить' }).click();
-  await expect(page.getByText('Работает базовая Laya')).toBeVisible();
+  // главный выключатель: выключена — laya-serve остановлен, разделы ниже не действуют; включена — запускается снова
+  const power = page.getByRole('switch', { name: 'Laya включена' });
+  await power.click();
+  await expect(page.getByText('Laya выключена и выгружена из памяти')).toBeVisible();
   await page.reload();
-  await expect(tuned).not.toBeChecked();
-  await tuned.check();
-  await page.getByRole('button', { name: 'Применить' }).click();
-  await expect(page.getByText('Дообучения для этой модели нет — работает базовая')).toBeVisible();
+  await expect(power).toHaveAttribute('aria-checked', 'false');
+  await expect(page.getByText(/^Разделы ниже не действуют/)).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Проверить' })).toHaveCount(0);
+  await power.click();
+  await expect(page.getByText(/^Laya запускается/)).toBeVisible();
+  await expect(async () => {
+    await page.reload();
+    await expect(page.getByText(/^Модель загружена/)).toBeVisible({ timeout: 1000 });
+  }).toPass({ timeout: 60_000 });
+  await page.getByRole('button', { name: 'Проверить' }).click();
+  await expect(page.getByText(/^Laya отвечает · /)).toBeVisible();
 
   // ответ в ручном поиске — пример для дообучения
   await page.goto('/search/1399?s=1');

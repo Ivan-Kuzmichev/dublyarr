@@ -10,8 +10,9 @@ import { validateMovieProfile } from '../movie-profile';
 import { parseProfileJson } from '../profile-core';
 import { saveDefaultProfile } from '../profile';
 import { listStudios } from '../studios';
-import { parseLayaForm } from '../laya/settings';
+import { parseLayaForm, setLayaEnabled } from '../laya/settings';
 import { parseLogForm, saveLogSettings } from '../log-settings';
+import { parseNotFoundDays, setNotFoundDays } from '../not-found';
 import { checkQbittorrent, type QbitConfig } from '../integrations/qbittorrent';
 import { enqueue } from '../../worker/jobs';
 
@@ -48,8 +49,23 @@ export const SETTINGS_WRITE: Record<string, (db: Db, form: FormData) => Promise<
   }),
   processing: simple(parseProcessingForm, (db, v) => setSetting(db, 'processing', v)),
   retention: simple(parseRetentionForm, saveRetentionSettings),
-  laya: simple(parseLayaForm, (db, v) => setSetting(db, 'laya', v)),
+  laya: async (db, form) => {
+    // главный выключатель — по желанию (enabled: true/false), без него меняются только задачи и порог
+    const enabled = form.get('enabled');
+    if (enabled !== null) {
+      if (enabled !== 'true' && enabled !== 'false') return { error: 'enabled — true или false' };
+      setLayaEnabled(db, enabled === 'true');
+      if (form.get('threshold') === null) return OK;
+    }
+    return simple(parseLayaForm, (d, v) => setSetting(d, 'laya', v))(db, form);
+  },
   logging: simple(parseLogForm, saveLogSettings),
+  notFound: async (db, form) => {
+    const days = parseNotFoundDays(form.get('days'));
+    if (typeof days !== 'number') return days;
+    setNotFoundDays(db, days);
+    return OK;
+  },
   'profile.series': profileJson('series'),
   'profile.anime': profileJson('anime'),
   'profile.movie': async (db, form) => {

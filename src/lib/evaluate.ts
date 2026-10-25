@@ -16,7 +16,17 @@ export type Verdict = {
   tone: 'best' | 'ok' | 'wait' | 'reject' | 'ask';
   until?: string; // для ожидания — дата, когда позиция откроется
 };
-type Ctx = { profile: Profile; episodes: Pick<Episode, 'season' | 'number' | 'airDate'>[]; studioName: (id: number) => string | undefined; today: string };
+type Ctx = {
+  profile: Profile;
+  episodes: Pick<Episode, 'season' | 'number' | 'airDate'>[];
+  studioName: (id: number) => string | undefined;
+  today: string;
+  /** Laya выключена (2.8): сомнительное совпадение — не вопрос, а отказ. */
+  noLaya?: boolean;
+};
+
+/** Сомнительное совпадение: с Laya — вопрос (она или пользователь решит), без неё — не берём и не спрашиваем. */
+export const DOUBT_NO_LAYA = 'Сомнительное совпадение — без Laya не берём';
 
 const GB = 1024 ** 3;
 const GENERIC = GENERIC_DUB;
@@ -67,7 +77,7 @@ export function evaluateReleases(releases: Release[], ctx: Ctx, target: Target):
   const checked: Checked[] = releases.map((r) => {
     const p = r.parsed;
     if (r.match.level === 'reject') return reject(r, r.match.rule === 'reject' ? 'В чёрном списке' : 'Не тот сериал');
-    if (r.match.level === 'doubt') return reject(r, 'Сомнительное совпадение', 'ask');
+    if (r.match.level === 'doubt') return ctx.noLaya ? reject(r, DOUBT_NO_LAYA) : reject(r, 'Сомнительное совпадение', 'ask');
     if (!covers(p, target, singleSeason)) return reject(r, 'Не та серия');
     if (p.screener) return reject(r, 'Экранка');
     const res = p.resolution ?? 480;

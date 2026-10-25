@@ -3,7 +3,7 @@ import type { Db } from '../db/client';
 import { layaAnswers, layaExamples } from '../db/schema';
 import { layaClient, type LayaClient, type Question } from './client';
 import { layaHealthInfo } from './health';
-import { getLayaSettings, type LayaTaskId } from './settings';
+import { getLayaSettings, layaEnabled, type LayaTaskId } from './settings';
 import { beat } from '../heartbeat';
 
 // Решение Laya: ответ пользователя (пример) → ответ модели (кэш или вопрос) → адаптер → порог.
@@ -45,12 +45,15 @@ const cachedRaw = (db: Db, task: LayaTask, key: string) =>
     .where(and(eq(layaAnswers.task, task), eq(layaAnswers.key, key), eq(layaAnswers.model, layaHealthInfo(db).model ?? ''), eq(layaAnswers.version, QUESTION_VERSION)))
     .get();
 
+/** Задача решается Laya: Laya включена (главный выключатель) и задача отмечена. */
+const taskOn = (db: Db, task: LayaTask) => layaEnabled(db) && getLayaSettings(db).tasks[task];
+
 /** Laya спрашивает только воркер: вопросы идут по одному каналу, без очереди из двух процессов (веб берёт кэш и ответы). */
 const mayAsk = () => process.env.DUBLYARR_PROCESS !== 'web';
 
 /** Без запроса: выключено, ответ пользователя, кэш модели; иначе null — нужен вопрос. */
 function known<T>(db: Db, task: LayaTask, input: DecideInput): Decision<T> | null {
-  if (!getLayaSettings(db).tasks[task]) return { by: 'rules' };
+  if (!taskOn(db, task)) return { by: 'rules' };
   const user = userDecision<T>(db, task, input.key);
   if (user) return user;
   const cached = cachedRaw(db, task, input.key);
@@ -102,7 +105,7 @@ export async function decideMany<T extends string | boolean>(db: Db, task: LayaT
 
 /** Уже известное решение (ответ пользователя или кэш модели) без запроса — для синхронного переразбора раздач. */
 export function cachedDecision<T extends string | boolean>(db: Db, task: LayaTask, key: string, _features: number[] = []): Decision<T> | null {
-  if (!getLayaSettings(db).tasks[task]) return null;
+  if (!taskOn(db, task)) return null;
   const user = userDecision<T>(db, task, key);
   if (user) return user;
   const c = cachedRaw(db, task, key);

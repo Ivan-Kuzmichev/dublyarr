@@ -24,9 +24,10 @@ import { getCleanup } from '../cleanup';
 import { getProcessing } from '../media/tracks';
 import { getRetention } from '../retention-settings';
 import { getDefaultProfile, getMovieDefault } from '../profile';
-import { getLayaSettings } from '../laya/settings';
+import { getLayaSettings, layaEnabled } from '../laya/settings';
 import { getLogSettings } from '../log-settings';
 import { ApiError, type ApiCtx, type Route } from './types';
+import { getNotFoundDays } from '../not-found';
 
 // Чтение через API: те же функции, что у экранов. Секреты — только «задан / не задан».
 
@@ -63,8 +64,9 @@ export const SETTINGS_READ: Record<string, (db: Db) => unknown> = {
   'profile.series': (db) => getDefaultProfile(db, 'series'),
   'profile.anime': (db) => getDefaultProfile(db, 'anime'),
   'profile.movie': getMovieDefault,
-  laya: getLayaSettings,
+  laya: (db) => ({ enabled: layaEnabled(db), ...getLayaSettings(db) }),
   logging: getLogSettings,
+  notFound: (db) => ({ days: getNotFoundDays(db) }),
   qbittorrent: (db) => {
     const q = tryGetSecretSetting<{ url: string; username: string; password: string }>(db, 'qbittorrent');
     return q ? { url: q.url, username: q.username, password: set(q.password) } : null;

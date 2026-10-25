@@ -8,6 +8,8 @@ import { eq } from 'drizzle-orm';
 import { getTelegramSettings, applyTelegramForm, createTelegram, telegramProxy, TelegramError } from '@/lib/telegram';
 import { setUserChat } from '@/lib/telegram-updates';
 import { parseEventsForm } from '@/lib/notify';
+import { parseNotFoundDays, setNotFoundDays } from '@/lib/not-found';
+import { isAdmin } from '@/lib/auth/permissions';
 import { formValues } from '@/lib/form-values';
 
 export type TgState = { ok?: string; error?: string; values?: Record<string, string> };
@@ -68,7 +70,14 @@ export async function myChatAction(_prev: TgState, form: FormData): Promise<TgSt
 /** Свои события. */
 export async function saveEventsAction(_prev: TgState, form: FormData): Promise<TgState> {
   const { user } = await requireSession();
-  getDb().update(users).set({ notifyEvents: parseEventsForm(form) }).where(eq(users.id, user.id)).run();
+  const db = getDb();
+  // N дней «не нашлась» — общая настройка, только у администратора
+  if (isAdmin(user) && form.has('notFoundDays')) {
+    const days = parseNotFoundDays(form.get('notFoundDays'));
+    if (typeof days !== 'number') return days;
+    setNotFoundDays(db, days);
+  }
+  db.update(users).set({ notifyEvents: parseEventsForm(form) }).where(eq(users.id, user.id)).run();
   revalidatePath('/settings/notifications');
   return { ok: 'Сохранено' };
 }

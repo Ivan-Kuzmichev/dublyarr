@@ -13,6 +13,7 @@ import type { Verdict } from './evaluate';
 import { finalChecks } from './laya/final';
 import { FINAL_BUDGET } from './laya/decide';
 import type { AutoDeps } from './autosearch';
+import { layaEnabled } from './laya/settings';
 
 const log = logger('downloads');
 
@@ -92,7 +93,7 @@ export async function searchMovie(db: Db, titleId: number, deps: AutoDeps) {
   // финальная проверка Laya: «это фильм X в переводе Y?» — до трёх лучших
   const target = { title, codeOf: () => 'фильм', what: 'фильм', today, dubOf: (v: Verdict) => (label(profile, v.position) ?? 'любой').toLowerCase() };
   const finalOpts = { budget: { left: FINAL_BUDGET }, client: deps.layaClient };
-  const evaluated = evaluateMovie(usable, { profile, digital, today });
+  const evaluated = evaluateMovie(usable, { profile, digital, today, noLaya: !layaEnabled(db) });
   const verdicts = (file ? evaluated : await finalChecks(db, evaluated, byId, target, finalOpts)) as MovieVerdict[];
   const dl: DownloadDeps | null = deps.qbit ? { qbit: deps.qbit, fetchTorrent: deps.fetchTorrent, paths: { qbitDownloads: deps.paths.qbitDownloads ?? deps.paths.downloads }, now } : null;
 

@@ -294,6 +294,17 @@ Self-hosted сервис для дома (администратор + поль�
   - папка с несколькими сериалами — позиция на подпапку; сквозные номера — сезон 1, при добавлении — `absoluteToSeason` по TMDB.
 - API: `GET/POST media/scan`, `POST media/adopt { picks }`. e2e — `15-media-scan`.
 
+## Решения (2.8 — режим без Laya)
+
+- Главный выключатель — `app_settings['laya.enabled']` (`layaEnabled`/`setLayaEnabled` в `src/lib/laya/settings.ts`; API — `PATCH settings/laya { enabled }`).
+  Супервизор (`wanted` + `watchMs` 5 с в `startSupervisor`, `src/entry/main.ts` держит базу открытой) останавливает laya-serve и не перезапускает его; включили — запускает.
+  Воркер не опрашивает выключенную Laya, `heartbeats.laya` = `{status: 'disabled'}` → «Сервисы: Laya — выключена».
+- Выключена — `decide`/`cachedDecision` отвечают «правила» по всем задачам (`taskOn`); `evaluateReleases`/`evaluateMovie` с `noLaya` — сомнительное совпадение не `ask`, а отказ `DOUBT_NO_LAYA`. «Неизвестная студия» по-прежнему вопрос.
+- Дообученная Laya — без выключателя: `heads.disabled` больше не читается ни в Node, ни в laya-serve; `setHeadsAction`/`HeadsCard` убраны.
+- «Не нашлась за N дней» — `src/lib/not-found.ts` (`checkNotFound` в конце `subscriptions.tick`): `wanted_state` в `missing`/`ask`, эфир + max(N, самое долгое ожидание профиля) ≤ сегодня;
+  отметка `wanted_state.not_found_at` (ставится и без получателей); событие `not-found` (вкл. по умолчанию), N — `app_settings['notFound']` (1–90, по умолчанию 7) в «Уведомлениях» у админа. Фильмы — нет.
+- Экран «AI» по макету: выключатель (`ui/Switch`) в карточке статуса, при выключенной Laya задачи и порог затемнены (`inert`).
+
 # This is NOT the Next.js you know
 
 This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.

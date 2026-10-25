@@ -13,6 +13,7 @@ import { PACK_CHECK_EVERY } from '../lib/pack-watch';
 import { backfillSightings } from '../lib/sightings';
 import { cleanRemuxTmp } from '../lib/media/process';
 import { getSetting } from '../lib/settings';
+import { layaEnabled } from '../lib/laya/settings';
 import { scheduleDaily, scheduleEvery } from './schedule';
 
 const log = logger('worker');
@@ -24,6 +25,11 @@ let lastLaya = 0;
 let layaOk = false;
 
 async function checkLaya() {
+  if (!layaEnabled(db)) {
+    layaOk = false; // выключена — опрашивать нечего; выключатель смотрим раз в 10 с, чтобы после включения поймать запуск
+    beat(db, 'laya', false, JSON.stringify({ status: 'disabled' }));
+    return;
+  }
   try {
     const r = await fetch(`http://127.0.0.1:${getConfig().layaPort}/health`, { signal: AbortSignal.timeout(3000) });
     const text = await r.text();

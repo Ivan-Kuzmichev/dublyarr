@@ -12,7 +12,6 @@ HEAD_KEYS = ("scorer", "type_emb", "head", "temperature")
 WEIGHTS = "heads.safetensors"
 META = "meta.json"
 CALIBRATION = "calibration.json"
-DISABLED = "heads.disabled"
 
 
 def _is_head(key: str, keys: Iterable[str] = HEAD_KEYS) -> bool:
@@ -36,9 +35,7 @@ def save_heads(model, out_dir: str, keys: Iterable[str], meta: Dict) -> str:
 
 
 def pick_heads_dir(data_dir: str, image_dir: str) -> Optional[str]:
-    """Свои головы (${DATA_DIR}/laya/heads) важнее, чем в образе; файл heads.disabled — базовая модель."""
-    if os.path.exists(os.path.join(data_dir, DISABLED)):
-        return None
+    """Свои головы (${DATA_DIR}/laya/heads) важнее, чем в образе (выключателя нет с 2.8)."""
     for d in (os.path.join(data_dir, "heads"), image_dir):
         if os.path.exists(os.path.join(d, WEIGHTS)):
             return d

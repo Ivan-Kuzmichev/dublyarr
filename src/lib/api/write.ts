@@ -180,7 +180,9 @@ export const WRITE_ROUTES: Route[] = [
     run: async (c) => {
       const write = SETTINGS_WRITE[c.params.section];
       if (!write) throw new ApiError(404, 'Этот раздел через API не меняется');
-      return fail(await write(c.db, toFormData(c.body)));
+      // false в FormData теряется — главный выключатель Laya передаём строкой
+      const body = c.params.section === 'laya' && typeof c.body?.enabled === 'boolean' ? { ...c.body, enabled: String(c.body.enabled) } : c.body;
+      return fail(await write(c.db, toFormData(body)));
     },
   },
   {

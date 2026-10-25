@@ -1,5 +1,5 @@
 import type { Release } from './db/schema';
-import type { Verdict } from './evaluate';
+import { DOUBT_NO_LAYA, type Verdict } from './evaluate';
 import { dice, DOUBT_AT, MATCH_AT } from './match';
 import type { MatchResult } from './match-types';
 import { MOVIE_DUB_LABEL, type MovieDubKind, type MovieProfile } from './movie-profile';
@@ -68,7 +68,7 @@ export function matchMovie(
 }
 
 export type MovieVerdict = Verdict & { remux: boolean };
-type Ctx = { profile: MovieProfile; digital: string | null; today: string };
+type Ctx = { profile: MovieProfile; digital: string | null; today: string; noLaya?: boolean };
 
 /** Вердикты раздач фильма; лучшая — `best`. Ниже дубляжа позиция открывается через waitDubDays после цифрового релиза. */
 export function evaluateMovie(releases: Release[], ctx: Ctx): MovieVerdict[] {
@@ -85,7 +85,7 @@ export function evaluateMovie(releases: Release[], ctx: Ctx): MovieVerdict[] {
   const checked = releases.map((r): Checked => {
     const p = r.parsed;
     if (r.match.level === 'reject') return reject(r, r.match.rule === 'reject' ? 'В чёрном списке' : 'Не тот фильм');
-    if (r.match.level === 'doubt') return reject(r, 'Сомнительное совпадение', 'ask');
+    if (r.match.level === 'doubt') return ctx.noLaya ? reject(r, DOUBT_NO_LAYA) : reject(r, 'Сомнительное совпадение', 'ask');
     const source = movieSource(r.title, p);
     if (source === 'disc') return reject(r, 'Диск, а не файл');
     if (source === 'cam') {

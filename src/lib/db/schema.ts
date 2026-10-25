@@ -390,6 +390,7 @@ export const wantedState = sqliteTable(
     until: text('until'), // дата открытия ближайшей позиции (для waiting)
     releaseId: integer('release_id').references(() => releases.id, { onDelete: 'set null' }), // о какой раздаче вопрос (для ask)
     checkedAt: ts('checked_at').notNull(),
+    notFoundAt: ts('not_found_at'), // когда ушло «не нашлась за N дней» (2.8): одно сообщение на серию
   },
   (t) => [uniqueIndex('wanted_state_title_season_number').on(t.titleId, t.season, t.number)],
 );
@@ -455,7 +456,7 @@ export const notifications = sqliteTable(
   {
     id: integer('id').primaryKey({ autoIncrement: true }),
     key: text('key').notNull(), // от повторов: «import:42»
-    kind: text('kind', { enum: ['downloaded', 'stuck', 'ask', 'original', 'source-down'] }).notNull(),
+    kind: text('kind', { enum: ['downloaded', 'stuck', 'ask', 'original', 'source-down', 'not-found'] }).notNull(),
     text: text('text').notNull(),
     buttons: json<{ text: string; data?: string; url?: string }[][]>('buttons'),
     ref: json<Record<string, unknown>>('ref'),

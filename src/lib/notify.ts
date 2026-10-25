@@ -9,8 +9,8 @@ const log = logger('telegram');
 
 // Очередь сообщений в Telegram (spec §12): события пишутся сразу, воркер отправляет; Telegram недоступен — повторы с паузой.
 
-export type NotifyKind = 'downloaded' | 'stuck' | 'ask' | 'original' | 'source-down';
-export const DEFAULT_EVENTS: Record<NotifyKind, boolean> = { downloaded: true, stuck: true, ask: true, original: false, 'source-down': true };
+export type NotifyKind = 'downloaded' | 'stuck' | 'ask' | 'original' | 'source-down' | 'not-found';
+export const DEFAULT_EVENTS: Record<NotifyKind, boolean> = { downloaded: true, stuck: true, ask: true, original: false, 'source-down': true, 'not-found': true };
 /** События учётки: свои или по умолчанию. */
 export const eventsOf = (u: { notifyEvents: Record<string, boolean> | null }): Record<NotifyKind, boolean> => ({ ...DEFAULT_EVENTS, ...(u.notifyEvents ?? {}) });
 

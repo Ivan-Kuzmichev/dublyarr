@@ -39,12 +39,12 @@ def test_incompatible_probe_is_skipped_with_reason(tmp_path):
     assert "match" not in load_probes(str(tmp_path), LOADED, 4)  # другой размер эмбеддинга
 
 
-def test_pick_dir_own_beats_image_and_disabled_turns_off(tmp_path):
+def test_pick_dir_own_beats_image_and_no_switch(tmp_path):
     laya_dir, image = tmp_path / "data", tmp_path / "image"
     os.makedirs(laya_dir)
     saved(str(image))
     assert pick_dir(str(laya_dir), str(image)) == str(image)
     saved(str(laya_dir / "probe"))
     assert pick_dir(str(laya_dir), str(image)) == str(laya_dir / "probe")
-    (laya_dir / "heads.disabled").write_text("")
-    assert pick_dir(str(laya_dir), str(image)) is None
+    (laya_dir / "heads.disabled").write_text("")  # выключателя нет с 2.8 — старый файл не мешает
+    assert pick_dir(str(laya_dir), str(image)) == str(laya_dir / "probe")

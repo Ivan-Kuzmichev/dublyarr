@@ -64,6 +64,8 @@ export function serviceStatuses(db: Db, now = Date.now()): ServiceStatus[] {
   }
   const laya: ServiceStatus = !l
     ? { name: 'Laya', state: 'off', note: 'нет данных' }
+    : health.status === 'disabled'
+      ? { name: 'Laya', state: 'off', note: 'выключена' }
     : !l.ok || now - l.at >= 180_000 || health.status === 'error'
       ? { name: 'Laya', state: 'warn', note: 'недоступна' }
       : health.status === 'downloading'

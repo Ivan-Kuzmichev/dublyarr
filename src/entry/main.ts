@@ -6,6 +6,7 @@ import { openDb, migrateDb } from '../lib/db/client';
 import { loadMasterKey } from '../lib/crypto/key';
 import { startSupervisor } from './supervisor';
 import { layaChild } from './laya-child';
+import { layaEnabled } from '../lib/laya/settings';
 import { createLogSink } from './log-sink';
 
 const cfg = loadConfig();
@@ -19,7 +20,6 @@ if (!cfg.secretKeyEnv && !hadKeyFile) {
 const db = openDb(cfg.dbPath);
 migrateDb(db);
 const laya = layaChild(cfg, db);
-db.$client.close();
 
 const sink = createLogSink(path.join(cfg.dataDir, 'logs'));
 if (sink.error) console.warn(`[supervisor] ${sink.error}`);
@@ -31,10 +31,22 @@ const sup = startSupervisor({
     { name: 'worker', command: process.execPath, args: ['dist/worker.cjs'] },
     laya,
   ],
+  // выключатель Laya (Настройки → AI): выключена — laya-serve не держит память и процессор NAS
+  wanted: (name) => {
+    if (name !== 'laya') return true;
+    try {
+      return layaEnabled(db);
+    } catch {
+      return true;
+    }
+  },
 });
 
 const shutdown = () => {
-  void sup.stop().then(() => process.exit(0));
+  void sup.stop().then(() => {
+    db.$client.close();
+    process.exit(0);
+  });
 };
 process.on('SIGTERM', shutdown);
 process.on('SIGINT', shutdown);

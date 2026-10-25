@@ -6,11 +6,11 @@ LAYA_STUB=1 — без модели: предсказуемые ответы д�
 
 GET  /health -> {"status": "downloading|loading|ready|error", "runtime", "laya", "model", "error"?}
 POST /ask    {"state": ..., "questions": {...}, "probe"?: {id: "match"}} -> {"answers": {id: {"choice", "probabilities"} | {"noul", "base"?}}, "ms"}
-POST /reload — перечитать модель (включили/выключили дообученные головы)
+POST /reload — перечитать модель (подложили новые головы или веса надстройки)
 
-Дообученные головы (laya/heads_util.py): ${LAYA_DIR}/heads важнее, чем laya/heads из образа; ${LAYA_DIR}/heads.disabled — базовая модель.
+Дообученные головы (laya/heads_util.py): ${LAYA_DIR}/heads важнее, чем laya/heads из образа; есть — применяются всегда (2.8).
 Надстройка (laya/probe_util.py, 2.6): для вопросов с пометкой probe — уверенность пересчитывается по ответу Laya и эмбеддингу вопроса;
-веса — laya/probe/<задача>.json (свои — ${LAYA_DIR}/probe), выключается тем же heads.disabled.
+веса — laya/probe/<задача>.json (свои — ${LAYA_DIR}/probe).
 """
 import argparse
 import faulthandler

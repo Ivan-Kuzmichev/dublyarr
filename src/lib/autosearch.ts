@@ -21,6 +21,7 @@ import { FINAL_BUDGET } from './laya/decide';
 import type { LayaClient } from './laya/client';
 import { searchMovie } from './movie-search';
 import { getSchedule, inNightWindow, searchDue, type ScheduleSettings } from './schedule';
+import { layaEnabled } from './laya/settings';
 
 const log = logger('downloads');
 
@@ -129,7 +130,7 @@ export async function searchSubscription(db: Db, titleId: number, deps: AutoDeps
   const usable = usableFor();
   const byId = new Map(releases.map((r) => [r.id, r]));
   const names = new Map(listStudios(db).map((s) => [s.id, s.name]));
-  const ctx = { profile, episodes: eps, studioName: (id: number) => names.get(id), today };
+  const ctx = { profile, episodes: eps, studioName: (id: number) => names.get(id), today, noLaya: !layaEnabled(db) };
   const dl: DownloadDeps | null = deps.qbit ? { qbit: deps.qbit, fetchTorrent: deps.fetchTorrent, paths: { qbitDownloads: deps.paths.qbitDownloads ?? deps.paths.downloads }, now } : null;
 
   // Что запустить: раздача → серии (серии одного пака — одной загрузкой).

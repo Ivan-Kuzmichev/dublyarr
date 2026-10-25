@@ -31,7 +31,7 @@ function fakeTg(fail?: () => Error | null) {
 test('события по умолчанию; никто не ждёт — не пишется; один ключ — одна запись', () => {
   const db = testDb();
   const admin = person(db, 'admin', '42');
-  expect(DEFAULT_EVENTS).toEqual({ downloaded: true, stuck: true, ask: true, original: false, 'source-down': true });
+  expect(DEFAULT_EVENTS).toEqual({ downloaded: true, stuck: true, ask: true, original: false, 'source-down': true, 'not-found': true });
   expect(notify(db, { key: 'w:1', kind: 'original', text: 'x' }, 1)).toBe(false);
   expect(notify(db, { key: 'import:1', kind: 'downloaded', text: 'x' }, 1)).toBe(true);
   expect(notify(db, { key: 'import:1', kind: 'downloaded', text: 'x' }, 2)).toBe(false);
@@ -99,7 +99,7 @@ test('разбор формы событий', async () => {
   const f = new FormData();
   f.set('downloaded', 'on');
   f.set('original', 'on');
-  expect(parseEventsForm(f)).toEqual({ downloaded: true, stuck: false, ask: false, original: true, 'source-down': false });
+  expect(parseEventsForm(f)).toEqual({ downloaded: true, stuck: false, ask: false, original: true, 'source-down': false, 'not-found': false });
 });
 
 test('Telegram недоступен — после первой ошибки сети проход прекращается (не ждём таймаут на каждом)', async () => {

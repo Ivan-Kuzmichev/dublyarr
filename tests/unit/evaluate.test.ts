@@ -63,6 +63,10 @@ test('отказы', () => {
   expect(one(rel({ level: 'doubt' }))).toMatchObject({ tone: 'ask', reason: 'Сомнительное совпадение' });
 });
 
+test('Laya выключена: сомнительное совпадение — отказ без вопроса', () => {
+  expect(evaluateReleases([rel({ level: 'doubt' })], { ...ctx('2026-09-30'), noLaya: true }, e3)[0]).toMatchObject({ ok: false, tone: 'reject', reason: 'Сомнительное совпадение — без Laya не берём' });
+});
+
 test('озвучка: не в профиле и неизвестная студия', () => {
   const noAny: Profile = { ...profile, dubs: profile.dubs.slice(0, 2) };
   expect(one(rel({ dubs: [dub(TVS)] }), '2026-10-30', noAny)).toMatchObject({ tone: 'reject', reason: 'Не в профиле озвучки' });

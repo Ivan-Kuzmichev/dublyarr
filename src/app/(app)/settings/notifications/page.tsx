@@ -5,6 +5,7 @@ import { notifications } from '@/lib/db/schema';
 import { getTelegramSettings } from '@/lib/telegram';
 import { getTmdbSettings } from '@/lib/tmdb';
 import { eventsOf } from '@/lib/notify';
+import { getNotFoundDays } from '@/lib/not-found';
 import { requireSession } from '@/lib/auth/current';
 import { isAdmin } from '@/lib/auth/permissions';
 import { MyChatCard } from './MyChatCard';
@@ -27,7 +28,7 @@ export default async function NotificationsPage() {
       <SectionHeader title="Уведомления" description="Сообщения в Telegram о новых сериях, проблемах и вопросах." />
       {admin && <TelegramCard hasToken={!!s?.token} proxy={s?.proxy ?? ''} baseUrl={s?.baseUrl ?? ''} tmdbProxy={!!getTmdbSettings(db)?.proxy} />}
       <MyChatCard linked={!!user.telegramChatId} chatId={user.telegramChatId} bot={!!s?.token} />
-      <EventsCard value={eventsOf(user)} />
+      <EventsCard value={eventsOf(user)} notFoundDays={getNotFoundDays(db)} admin={admin} />
       {admin && recent.length > 0 && (
         <Card className="flex min-w-0 flex-col gap-3">
           <h3 className="m-0 text-base font-semibold">Последние сообщения</h3>

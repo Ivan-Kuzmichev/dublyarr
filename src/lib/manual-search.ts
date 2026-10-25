@@ -16,6 +16,7 @@ import { evaluateReleases, type Target, type Verdict } from './evaluate';
 import { addRule } from './release-rules';
 import { todayIso } from './dates';
 import type { DubBy } from './parse/types';
+import { layaEnabled } from './laya/settings';
 
 export type ManualRow = { release: Release; verdict: Verdict; dubs: { label: string; studioName?: string; by: DubBy }[] };
 export type ManualResult = { rows: ManualRow[]; sources: SourceStatus[]; profileSource: 'subscription' | 'default'; searchedAt: number | null };
@@ -51,7 +52,7 @@ export async function runManualSearch(db: Db, tmdbId: number, target: Target, op
   const profile = sub && !isMovieProfile(sub.profile) ? sub.profile : getDefaultProfile(db, title.kind);
   const names = new Map(listStudios(db).map((s) => [s.id, s.name]));
   const episodes = listSeasons(db, title.id).flatMap((s) => listEpisodes(db, title.id, s.number));
-  const verdicts = evaluateReleases(list, { profile, episodes, studioName: (id) => names.get(id), today: opts.today ?? todayIso() }, target);
+  const verdicts = evaluateReleases(list, { profile, episodes, studioName: (id) => names.get(id), today: opts.today ?? todayIso(), noLaya: !layaEnabled(db) }, target);
   const byId = new Map(verdicts.map((v) => [v.releaseId, v]));
   const rows = list
     .map((release) => ({
@@ -72,7 +73,7 @@ export async function runManualMovieSearch(db: Db, tmdbId: number, opts: ManualO
   const sub = getSubscription(db, title.id);
   const profile = sub && isMovieProfile(sub.profile) ? sub.profile : getMovieDefault(db);
   const today = opts.today ?? todayIso();
-  const verdicts = evaluateMovie(list, { profile, digital: digitalReleased(fresh, today), today });
+  const verdicts = evaluateMovie(list, { profile, digital: digitalReleased(fresh, today), today, noLaya: !layaEnabled(db) });
   const names = new Map(listStudios(db).map((s) => [s.id, s.name]));
   const byId = new Map(verdicts.map((v) => [v.releaseId, v]));
   const rows = list
