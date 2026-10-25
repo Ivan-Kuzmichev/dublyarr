@@ -13,7 +13,7 @@ import { absoluteToSeason } from '../match';
 import { openMovie } from '../movies';
 import { getSubscription, setFilesOnly, subscribe } from '../subscriptions';
 import { getDefaultProfile, getMovieDefault } from '../profile';
-import { DEFAULT_TEMPLATE, renderTemplate, toLocalPath } from '../library-path';
+import { DEFAULT_TEMPLATE, renderTemplate, resolveLocalPath } from '../library-path';
 import { DEFAULT_MOVIE_TEMPLATE, mediaRoot } from '../movie-files';
 import { processEpisode, WrongEpisodeError } from '../media/process';
 import { wrongEpisode, wrongMovie } from '../media/checks';
@@ -52,7 +52,7 @@ export async function seedingPaths(qbit: Qbit | null, paths: Paths): Promise<Set
   try {
     const out = new Set<string>();
     for (const t of await qbit.list()) {
-      for (const f of await qbit.files(t.hash)) out.add(path.resolve(toLocalPath(`${t.save_path.replace(/\/+$/, '')}/${f.name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads)));
+      for (const f of await qbit.files(t.hash)) out.add(path.resolve(resolveLocalPath(`${t.save_path.replace(/\/+$/, '')}/${f.name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads)));
     }
     return out;
   } catch (e) {

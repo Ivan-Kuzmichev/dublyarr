@@ -131,6 +131,25 @@ test('путь qBittorrent вне папки загрузок — ошибка �
   expect(db.select().from(downloads).get()!.lastError).toBe('Путь qBittorrent вне папки загрузок: /elsewhere/Game.of.Thrones.S01E01.mkv');
 });
 
+test('папки в настройках разошлись, но путь qBittorrent виден как есть — импорт по нему; нигде нет — понятная ошибка', async () => {
+  const { db, mk, fq, files, deps, paths, media } = setup();
+  const r = mk('GoT S01E01', { pack: false });
+  files.set(r.id, torrent('Game.of.Thrones.S01E01.mkv', null));
+  const d = await startRelease(db, deps, r, [{ season: 1, number: 1 }], 'episode', 'X');
+  // как на NAS в 2.8.0: в настройках папка qBittorrent `/downloads/media`, Dublyarr — `/downloads`, а тома одинаковые
+  const qroot = path.join(path.dirname(media), 'media-dl');
+  const real = path.join(qroot, 'dublyarr');
+  const split = { ...paths, qbitDownloads: qroot };
+  Object.assign(fq.torrents.get(d.hash)!, { progress: 1, save_path: real });
+  await syncDownloads(db, { qbit: fq.qbit, paths: split, now: HOUR });
+  expect(db.select().from(downloads).get()!.lastError).toMatch(/^Ошибка импорта: Файл раздачи не найден: .*«Загрузка и папки»$/);
+  mkdirSync(real, { recursive: true });
+  writeFileSync(path.join(real, 'Game.of.Thrones.S01E01.mkv'), 'video');
+  await syncDownloads(db, { qbit: fq.qbit, paths: split, now: 2 * HOUR });
+  expect(db.select().from(downloads).get()).toMatchObject({ state: 'imported', lastError: null });
+  expect(existsSync(path.join(media, db.select().from(episodeFiles).get()!.path))).toBe(true);
+});
+
 test('в паке сезона нет файла одной серии — остальные импортируются, загрузка завершена, серия «нет файла»', async () => {
   const { db, t, mk, fq, files, deps, paths, media, finish } = setup();
   const r = mk('Игра престолов S01', {});

@@ -2,7 +2,7 @@ import { and, desc, eq, inArray } from 'drizzle-orm';
 import type { Db } from './db/client';
 import path from 'node:path';
 import { downloads, episodeFiles, episodes, oldCopies, releases, studios, subscriptions, titles, wantedState, type Download, type DownloadFile, type EpisodeRef, type Release } from './db/schema';
-import { DEFAULT_TEMPLATE, PathError, renderTemplate, toLocalPath } from './library-path';
+import { DEFAULT_TEMPLATE, PathError, renderTemplate, resolveLocalPath } from './library-path';
 import { DEFAULT_MOVIE_TEMPLATE, mediaRoot, pickMovieFile } from './movie-files';
 import { MOVIE_EP } from './movies';
 import { importFile } from './importer';
@@ -577,7 +577,7 @@ async function importMovie(db: Db, d: Download, title: typeof titles.$inferSelec
   const ctx = processingContext(db, d, title, files, savePath, view, runner);
   const ext = new Set(pick.external);
   const settings = getProcessing(db);
-  const local = (name: string) => toLocalPath(`${savePath.replace(/\/+$/, '')}/${name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
+  const local = (name: string) => resolveLocalPath(`${savePath.replace(/\/+$/, '')}/${name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
   const main = files.find((f) => f.index === pick.main)!;
   const movieCtx: ProcessingContext = {
     ...ctx,
@@ -618,7 +618,7 @@ function processingContext(db: Db, d: Download, title: typeof titles.$inferSelec
   // фильм: нужная дорожка — по типу перевода («Dub …», «MVO …»), а не по студии
   const wanted = movie ? (pos?.kind === 'dub' ? [-1] : pos?.kind === 'mvo' ? [-2] : []) : pos?.kind === 'studio' ? [pos.studioId] : byLabel ? [byLabel.id] : [];
   const backups = movie ? [] : dubs.flatMap((x, i) => (x.kind === 'studio' && i !== d.dubPosition ? [x.studioId] : []));
-  const local = (name: string) => toLocalPath(`${savePath.replace(/\/+$/, '')}/${name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
+  const local = (name: string) => resolveLocalPath(`${savePath.replace(/\/+$/, '')}/${name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
   const videos = files.filter((f) => isVideo(f.name));
   return {
     base: { runner, settings, wanted, backups, originalLang: title.originalLanguage, studios: movie ? MOVIE_AUDIO : allStudios.map((s) => ({ id: s.id, name: s.name, aliases: s.aliases })) },
@@ -654,7 +654,7 @@ async function importEpisode(
   now: number,
   ctx: ProcessingContext,
 ) {
-  const src = toLocalPath(`${savePath.replace(/\/+$/, '')}/${file.name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
+  const src = resolveLocalPath(`${savePath.replace(/\/+$/, '')}/${file.name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads);
   const runtime =
     title.kind === 'movie'
       ? title.runtime
@@ -670,6 +670,9 @@ async function importEpisode(
     if (mine.dubPosition !== d.dubPosition) db.update(episodeFiles).set({ dubPosition: d.dubPosition }).where(eq(episodeFiles.id, mine.id)).run();
     return;
   }
+  // ни по замене папок, ни по пути qBittorrent файла нет — понятная причина вместо «Файл не читается» / ENOENT
+  if (!(await fileExists(src)))
+    throw new Error(`Файл раздачи не найден: ${src} (qBittorrent: ${savePath.replace(/\/+$/, '')}/${file.name}) — проверьте папки в «Загрузка и папки»`);
   const proc = await processEpisode({
     ...ctx.base,
     src,

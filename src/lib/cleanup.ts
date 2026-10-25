@@ -6,7 +6,7 @@ import type { Db } from './db/client';
 import { downloads, titles, type Download } from './db/schema';
 import type { Qbit, QbitTorrent } from './qbit';
 import { CATEGORY, type Paths } from './downloads';
-import { toLocalPath } from './library-path';
+import { resolveLocalPath } from './library-path';
 import { getSetting, setSetting } from './settings';
 import { notifyPendingConfirm } from './notify-events';
 import { formatSize } from './format';
@@ -50,7 +50,8 @@ const norm = (p: string) => path.resolve(p).normalize('NFC');
 
 const localOf = (paths: Paths, savePath: string, name: string) => {
   try {
-    return norm(toLocalPath(`${savePath.replace(/\/+$/, '')}/${name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads));
+    // как при импорте: папки в настройках разошлись, а путь qBittorrent виден как есть — по нему (2.8.1)
+    return norm(resolveLocalPath(`${savePath.replace(/\/+$/, '')}/${name}`, paths.qbitDownloads ?? paths.downloads, paths.downloads));
   } catch {
     return null;
   }

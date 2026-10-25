@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs';
 import path from 'node:path';
 
 // Пути: перевод «как видит qBittorrent» → «как видит Dublyarr» и имя файла в медиатеке по шаблону.
@@ -55,4 +56,22 @@ export function toLocalPath(qbitPath: string, qbitRoot: string, localRoot: strin
   if (p === root) return local;
   if (!p.startsWith(`${root}/`)) throw fail();
   return `${local}${p.slice(root.length)}`;
+}
+
+/**
+ * Файл раздачи в Dublyarr: по замене префикса; а если там его нет, но путь qBittorrent виден как есть (тома у контейнеров одинаковые,
+ * а в «Загрузка и папки» папки разошлись — 2.8.0: qBittorrent `/downloads/media`, Dublyarr `/downloads`) — по пути qBittorrent.
+ */
+export function resolveLocalPath(qbitPath: string, qbitRoot: string, localRoot: string, exists: (p: string) => boolean = existsSync): string {
+  let mapped: string | null = null;
+  try {
+    mapped = toLocalPath(qbitPath, qbitRoot, localRoot);
+  } catch (e) {
+    if (!(e instanceof PathError) || qbitPath.includes('\\') || /^[A-Za-z]:/.test(qbitPath)) throw e;
+  }
+  if (mapped && exists(mapped)) return mapped;
+  const raw = path.posix.normalize(qbitPath).replace(/\/+$/, '');
+  if (exists(raw)) return raw;
+  if (mapped) return mapped;
+  return toLocalPath(qbitPath, qbitRoot, localRoot); // та же ошибка «вне папки загрузок»
 }

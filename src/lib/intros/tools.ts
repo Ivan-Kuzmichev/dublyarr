@@ -24,14 +24,22 @@ function run(cmd: string, args: string[], timeout: number) {
   });
 }
 
-let avail: Promise<boolean> | null = null;
+let avail: { p: Promise<boolean>; until: number } | null = null;
+/** «Нет» (в том числе не успели ответить — NAS занят) — проверяем снова через 10 мин, а не до перезапуска воркера. */
+const RECHECK = 10 * 60_000;
 
 export const systemIntroTools: IntroTools = {
   available() {
-    avail ??= Promise.all([run('ffmpeg', ['-hide_banner', '-muxers'], 10_000), run('mkvpropedit', ['--version'], 10_000)]).then(
-      ([f, m]) => f.code === 0 && f.stdout.toString().includes('chromaprint') && m.code === 0,
-    );
-    return avail;
+    if (!avail || Date.now() >= avail.until) {
+      const entry = { p: Promise.resolve(false), until: Infinity };
+      entry.p = Promise.all([run('ffmpeg', ['-hide_banner', '-muxers'], 30_000), run('mkvpropedit', ['--version'], 30_000)]).then(([f, m]) => {
+        const ok = f.code === 0 && f.stdout.toString().includes('chromaprint') && m.code === 0;
+        if (!ok) entry.until = Date.now() + RECHECK;
+        return ok;
+      });
+      avail = entry;
+    }
+    return avail.p;
   },
   async fingerprint(file, start, dur) {
     const r = await run('ffmpeg', ['-v', 'error', '-ss', String(start), '-t', String(dur), '-i', file, '-vn', '-ac', '1', '-f', 'chromaprint', '-fp_format', 'raw', '-'], 10 * 60_000);
